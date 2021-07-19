@@ -1,0 +1,29 @@
+<config name="FIX4.4">
+    <types>
+        <type name="UTCTIMESTAMP" cast="String" format="20060102-15:04:05.000"/>
+        <type name="EXCHANGE" cast="String"/>
+        <type name="COUNTRY" cast="String"/>
+        <type name="MONTHYEAR" cast="String"/>
+        <type name="UTCDATEONLY" cast="String"/>
+        <type name="LOCALMKTDATE" cast="String"/>
+        <type name="UTCTIMEONLY" cast="String"/>
+        <type name="STRING" cast="String"/>
+        <type name="CHAR" cast="String"/>
+        <type name="CURRENCY" cast="String"/>
+        <type name="MULTIPLEVALUESTRING" cast="String"/>
+        <type name="DATA" cast="String"/>
+        <type name="BOOLEAN" cast="Bool"/>
+        <type name="BOOLEAN" cast="Bool"/>
+        <type name="DAYOFMONTH" cast="Int"/>
+        <type name="INT" cast="Int"/>
+        <type name="SEQNUM" cast="Int"/>
+        <type name="LENGTH" cast="Int"/>
+        <type name="NUMINGROUP" cast="Int"/>
+        <type name="FLOAT" cast="Float"/>
+        <type name="PERCENTAGE" cast="Float"/>
+        <type name="QTY" cast="Float"/>
+        <type name="AMT" cast="Float"/>
+        <type name="PRICE" cast="Float"/>
+        <type name="PRICEOFFSET" cast="Float"/>
+    </types>
+</config>
