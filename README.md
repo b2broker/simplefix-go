@@ -1,12 +1,19 @@
 # Simple Fix
 
 [What is FIX](#what-is-fix-api)
+
 [Installation](#installation)
+
 [Getting started](#getting-started)
+
 [Generator](#generator)
+
 [Client (Initiator)](#starting-as-client)
+
 [Server (Acceptor)](#starting-as-server)
+
 [Features](#features)
+
 
 ## What is FIX API?
 
