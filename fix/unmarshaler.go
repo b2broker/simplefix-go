@@ -24,6 +24,7 @@ type unmarshaler struct {
 	strict bool
 }
 
+// scanKeyValue reads data from message part to special KeyValue
 func (u *unmarshaler) scanKeyValue(data []byte, el *KeyValue) error {
 	from := bytes.Index(data, append([]byte(el.Key), '='))
 	if from == -1 {
@@ -45,6 +46,8 @@ func (u *unmarshaler) scanKeyValue(data []byte, el *KeyValue) error {
 	return nil
 }
 
+// splitGroup splits part of message which we think are group to group items
+// it is separates repeated parts and allows to looking for the same tags without repeat.
 func splitGroup(line []byte, firstTag []byte) (array [][]byte) {
 	ok := true
 	var index int
@@ -62,6 +65,8 @@ func splitGroup(line []byte, firstTag []byte) (array [][]byte) {
 	return array
 }
 
+// unmarshal is traversal of fixItem and scan bytes from data into fixItem
+// fixItem is a prepared fix message (or part of message) with KeyValue, Component and Group items
 func (u *unmarshaler) unmarshal(data []byte, fixItem Item) error {
 	switch el := fixItem.(type) {
 	case *KeyValue:
