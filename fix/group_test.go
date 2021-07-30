@@ -42,7 +42,7 @@ func newHeader(msgSeqNumV int, senderCompIDV, targetCompIDV string, sendingTimeV
 }
 
 func TestGroup_AddItem(t *testing.T) {
-	var testMsg = []byte("8=FIX.4.49=23635=A34=149=sender56=target52=20210208-15:51:43.000262=1263=1264=20267=2269=0269=1146=355=BTC/USD864=2865=1868=put865=2868=call55=ETH/USD864=2865=1868=put865=2868=call55=KGB/FBI864=2865=1868=put865=2868=call10=051")
+	var testMsg = []byte("8=FIX.4.49=23635=A34=149=sender56=target52=20210208-12:51:43.000262=1263=1264=20267=2269=0269=1146=355=BTC/USD864=2865=1868=put865=2868=call55=ETH/USD864=2865=1868=put865=2868=call55=KGB/FBI864=2865=1868=put865=2868=call10=051")
 
 	var (
 		beginStringValue = "FIX.4.4"
