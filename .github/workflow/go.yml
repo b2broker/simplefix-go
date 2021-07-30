@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: golangci/golangci-lint-action@v2
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+        run: go test -race ./...
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: go-semantic-release/action@v1
+        id: semrel
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          changelog-generator-opt: "emojis=true"
