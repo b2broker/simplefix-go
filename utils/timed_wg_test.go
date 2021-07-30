@@ -12,11 +12,11 @@ func TestTimedWaitGroup_WaitWithTimeoutNegative(t *testing.T) {
 	wg.Add(1)
 
 	go func() {
-		time.Sleep(time.Millisecond)
+		time.Sleep(time.Millisecond * 10)
 		wg.Done()
 	}()
 
-	err := wg.WaitWithTimeout(time.Millisecond / 2)
+	err := wg.WaitWithTimeout(time.Millisecond)
 	if !errors.Is(err, ErrWGExpired) {
 		t.Fatalf("unexpected error: %s", err)
 	}
