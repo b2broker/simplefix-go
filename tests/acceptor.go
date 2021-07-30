@@ -60,5 +60,10 @@ func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) {
 		})
 	})
 
-	go server.ListenAndServe()
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			panic(err)
+		}
+	}()
 }

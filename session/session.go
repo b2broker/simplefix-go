@@ -164,8 +164,6 @@ func (s *Session) SetMessageStorage(storage MessageStorage) {
 		id, _ := strconv.Atoi(string(value))
 
 		_ = storage.Save(msg, id)
-
-		return
 	})
 	s.msgStorageResendHandler = s.router.HandleIncoming(s.ResendRequestBuilder.MsgType(), func(msg []byte) {
 		resendMsg, err := s.ResendRequestBuilder.Parse(msg)
@@ -184,8 +182,6 @@ func (s *Session) SetMessageStorage(storage MessageStorage) {
 			_ = s.router.SendRaw(string(msgType), message)
 		}
 	})
-
-	return
 }
 
 func (s *Session) Logout() error {
@@ -438,6 +434,7 @@ func (s *Session) Send(msg messages.Message) {
 	err := s.router.Send(msg)
 	if err != nil {
 		// todo error
+		return
 	}
 }
 

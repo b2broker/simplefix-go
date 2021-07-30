@@ -52,7 +52,7 @@ func RunNewInitiator(port int, t *testing.T, settings session.LogonSettings) (s 
 	go func() {
 		err = client.Serve()
 		if err != nil {
-			t.Fatalf("serve client: %s", err)
+			panic(fmt.Errorf("serve client: %s", err))
 		}
 	}()
 

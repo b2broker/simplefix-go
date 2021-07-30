@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	"github.com/b2broker/simplefix-go/utils"
+	"os"
 	"testing"
 )
 
@@ -23,4 +24,5 @@ func TestMain(m *testing.M) {
 	generator = NewGenerator(doc, config, "fix")
 
 	m.Run()
+	os.Exit(0)
 }
