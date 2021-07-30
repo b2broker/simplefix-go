@@ -1,19 +1,24 @@
 # Simple Fix
+[![Generic badge](https://img.shields.io/github/v/release/b2broker/simplefix-go.svg)](https://github.com/b2broker/simplefix-go/releases/latest)
+[![Generic badge](https://img.shields.io/github/workflow/status/b2broker/simplefix-go/ci)](https://github.com/b2broker/simplefix-go/actions?workflow=ci)
+[![Generic badge](https://goreportcard.com/badge/github.com/b2broker/simplefix-go)](https://goreportcard.com/report/github.com/b2broker/simplefix-go)
+[![Generic badge](https://img.shields.io/github/stars/b2broker/simplefix-go)](https://github.com/b2broker/simplefix-go/stargazers)
+[![Generic badge](https://img.shields.io/badge/Go->=1.16-green.svg)](https://github.com/b2broker/simplefix-go/stargazers)
+[![Generic badge](https://img.shields.io/badge/semver-sv4git-green.svg)](https://github.com/bvieira/sv4git)
 
-[What is FIX](#what-is-fix-api)
+<details>
+<summary>Table of content</summary>
 
-[Installation](#installation)
+## Table of contents
+- [What is FIX](#what-is-fix-api)
+- [Installation](#installation)
+- [Getting started](#getting-started)
+- [Generator](#generator)
+- [Client (Initiator)](#starting-as-client)
+- [Server (Acceptor)](#starting-as-server)
+- [Features](#features)
 
-[Getting started](#getting-started)
-
-[Generator](#generator)
-
-[Client (Initiator)](#starting-as-client)
-
-[Server (Acceptor)](#starting-as-server)
-
-[Features](#features)
-
+</details>
 
 ## What is FIX API?
 
