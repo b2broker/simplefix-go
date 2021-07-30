@@ -29,7 +29,9 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: build
+    needs:
+      - job: lint
+      - job: test
     steps:
       - uses: go-semantic-release/action@v1
         id: semrel
