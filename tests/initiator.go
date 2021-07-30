@@ -3,11 +3,13 @@ package tests
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
+	"io"
 	"net"
 	"testing"
 	"time"
@@ -51,7 +53,7 @@ func RunNewInitiator(port int, t *testing.T, settings session.LogonSettings) (s 
 
 	go func() {
 		err = client.Serve()
-		if err != nil {
+		if err != nil && !errors.Is(err, io.EOF) {
 			panic(fmt.Errorf("serve client: %s", err))
 		}
 	}()

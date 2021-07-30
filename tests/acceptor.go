@@ -1,11 +1,9 @@
 package tests
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	simplefixgo "github.com/b2broker/simplefix-go"
-	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
 	"net"
@@ -13,7 +11,7 @@ import (
 	"time"
 )
 
-func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) {
+func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) *simplefixgo.Acceptor {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		t.Fatalf("listen error: %s", err)
@@ -53,17 +51,12 @@ func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) {
 
 		// log messages
 		handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
-			t.Log("incoming:", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+			//t.Log("incoming:", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
 		})
 		handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
-			t.Log("outgoing:", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+			//t.Log("outgoing:", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
 		})
 	})
 
-	go func() {
-		err := server.ListenAndServe()
-		if err != nil {
-			panic(err)
-		}
-	}()
+	return server
 }

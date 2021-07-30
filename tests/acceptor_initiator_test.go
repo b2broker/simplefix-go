@@ -2,6 +2,7 @@ package tests
 
 import (
 	"bytes"
+	"errors"
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session"
@@ -21,7 +22,15 @@ func TestHeartbeat(t *testing.T) {
 	)
 
 	// close acceptor after work
-	RunAcceptor(port, t, memory.NewStorage(100, 100))
+	acceptor := RunAcceptor(port, t, memory.NewStorage(100, 100))
+	defer acceptor.Close()
+	go func() {
+		err := acceptor.ListenAndServe()
+		if err != nil && !errors.Is(err, simplefixgo.ErrServerClosed) {
+			panic(err)
+		}
+	}()
+
 	initiatorSession, initiatorHandler := RunNewInitiator(port, t, session.LogonSettings{
 		TargetCompID:  "Server",
 		SenderCompID:  "Client",
@@ -60,7 +69,15 @@ func TestTestRequest(t *testing.T) {
 	)
 
 	// close acceptor after work
-	RunAcceptor(port, t, memory.NewStorage(100, 100))
+	acceptor := RunAcceptor(port, t, memory.NewStorage(100, 100))
+	defer acceptor.Close()
+	go func() {
+		err := acceptor.ListenAndServe()
+		if err != nil && !errors.Is(err, simplefixgo.ErrServerClosed) {
+			panic(err)
+		}
+	}()
+
 	initiatorSession, initiatorHandler := RunNewInitiator(port, t, session.LogonSettings{
 		TargetCompID:  "Server",
 		SenderCompID:  "Client",
@@ -102,7 +119,7 @@ func TestTestRequest(t *testing.T) {
 
 func TestResendSequence(t *testing.T) {
 	const (
-		waitingResend       = time.Second * 5
+		waitingResend       = time.Second * 6
 		beforeResendRequest = time.Second * 3
 		port                = 9993
 		resendBegin         = 1
@@ -112,7 +129,15 @@ func TestResendSequence(t *testing.T) {
 	var countOfResending = resendEnd - resendBegin + 1 // including
 
 	// close acceptor after work
-	RunAcceptor(port, t, memory.NewStorage(100, 100))
+	acceptor := RunAcceptor(port, t, memory.NewStorage(100, 100))
+	defer acceptor.Close()
+	go func() {
+		err := acceptor.ListenAndServe()
+		if err != nil && !errors.Is(err, simplefixgo.ErrServerClosed) {
+			panic(err)
+		}
+	}()
+
 	initiatorSession, initiatorHandler := RunNewInitiator(port, t, session.LogonSettings{
 		TargetCompID:  "Server",
 		SenderCompID:  "Client",
