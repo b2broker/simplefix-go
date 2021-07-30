@@ -68,7 +68,7 @@ func TestGroup_AddItem(t *testing.T) {
 			entryTypes,
 			relatedSym,
 		).
-		SetHeader(newHeader(1, sender, target, time.Unix(1612788703, 0)))
+		SetHeader(newHeader(1, sender, target, time.Unix(1612788703, 0).UTC()))
 
 	entryTypes.AddEntry(Items{
 		NewKeyValue(mdEntryType, NewString("0")),
