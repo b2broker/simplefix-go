@@ -1,10 +1,9 @@
 # Simple Fix
-[![Generic badge](https://img.shields.io/github/v/release/b2broker/simplefix-go.svg)](https://github.com/b2broker/simplefix-go/releases/latest)
-[![Generic badge](https://img.shields.io/github/workflow/status/b2broker/simplefix-go/ci)](https://github.com/b2broker/simplefix-go/actions?workflow=ci)
-[![Generic badge](https://goreportcard.com/badge/github.com/b2broker/simplefix-go)](https://goreportcard.com/report/github.com/b2broker/simplefix-go)
-[![Generic badge](https://img.shields.io/github/stars/b2broker/simplefix-go)](https://github.com/b2broker/simplefix-go/stargazers)
-[![Generic badge](https://img.shields.io/badge/Go->=1.16-green.svg)](https://github.com/b2broker/simplefix-go/stargazers)
-[![Generic badge](https://img.shields.io/badge/semver-sv4git-green.svg)](https://github.com/bvieira/sv4git)
+[![Generic badge](https://img.shields.io/github/v/release/b2broker/simplefix-go.svg?style=for-the-badge)](https://github.com/b2broker/simplefix-go/releases/latest)
+[![Generic badge](https://goreportcard.com/badge/github.com/b2broker/simplefix-go?style=for-the-badge)](https://goreportcard.com/report/github.com/b2broker/simplefix-go)
+[![Generic badge](https://img.shields.io/github/stars/b2broker/simplefix-go?style=for-the-badge&logo=GitHub)](https://github.com/b2broker/simplefix-go/stargazers)
+[![Generic badge](https://img.shields.io/badge/Go->=1.16-blue.svg?style=for-the-badge&logo=go)](https://golang.org/doc/go1.16)
+[![Generic badge](https://img.shields.io/badge/semver-semantic_release-blue.svg?style=for-the-badge&logo=semantic-release)](https://github.com/go-semantic-release/semantic-release)
 
 <details>
 <summary>Table of content</summary>
