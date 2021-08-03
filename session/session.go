@@ -7,6 +7,7 @@ import (
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session/messages"
 	"github.com/b2broker/simplefix-go/utils"
+	"math"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -329,12 +330,14 @@ func (s *Session) Run() (err error) {
 }
 
 func (s *Session) start() {
-	incomingMsgTimer, err := utils.NewTimer(time.Second * time.Duration(s.LogonSettings.HeartBtInt))
+	tolerance := int(math.Max(float64(s.LogonSettings.HeartBtInt/20), 1))
+	incomingMsgTimer, err := utils.NewTimer(time.Second * time.Duration(s.LogonSettings.HeartBtInt+tolerance))
+
 	if err != nil {
 		// todo handler error
 		panic(err)
 	}
-	outgoingMsgTimer, err := utils.NewTimer(time.Second * time.Duration(s.LogonSettings.HeartBtInt))
+	outgoingMsgTimer, err := utils.NewTimer(time.Second * time.Duration(s.LogonSettings.HeartBtInt-tolerance))
 	if err != nil {
 		// todo handler error
 		panic(err)
