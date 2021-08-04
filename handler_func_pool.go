@@ -47,15 +47,26 @@ func (p *HandlerPool) Remove(msgType string, id int64) error {
 	return nil
 }
 
-func (p *HandlerPool) Range(msgType string, f func(HandlerFunc) bool) {
+func (p *HandlerPool) handlersByMsgType(msgType string) (result []HandlerFunc) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	if handlers, ok := p.handlers[msgType]; ok {
-		for _, handle := range handlers {
-			if !f(handle) {
-				break
-			}
+	handlers, ok := p.handlers[msgType]
+	if !ok {
+		return
+	}
+
+	for _, handler := range handlers {
+		result = append(result, handler)
+	}
+
+	return result
+}
+
+func (p *HandlerPool) Range(msgType string, f func(HandlerFunc) bool) {
+	for _, handle := range p.handlersByMsgType(msgType) {
+		if !f(handle) {
+			break
 		}
 	}
 }
