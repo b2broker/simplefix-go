@@ -87,8 +87,9 @@ type Session struct {
 	//maxMessageSize  int64  // validation
 	//encryptedMethod string // validation
 
-	ctx    context.Context
-	cancel context.CancelFunc
+	ctx          context.Context
+	cancel       context.CancelFunc
+	errorHandler func(error)
 }
 
 func NewInitiatorSession(ctx context.Context, router Handler, params SessionOpts,
@@ -189,7 +190,7 @@ func (s *Session) SetMessageStorage(storage MessageStorage) {
 func (s *Session) Logout() error {
 	s.changeState(WaitingLogoutAnswer)
 
-	s.Send(s.LogoutBuilder.New())
+	s.sendWithErrorCheck(s.LogoutBuilder.New())
 
 	return nil
 }
@@ -211,9 +212,20 @@ func (s *Session) LogonRequest() error {
 		SetFieldPassword(s.LogonSettings.Password).
 		SetFieldUsername(s.LogonSettings.Username)
 
-	s.Send(msg)
-
+	s.sendWithErrorCheck(msg)
 	return nil
+}
+
+func (s *Session) handlerError(err error) {
+	if s.errorHandler != nil && err != nil {
+		s.errorHandler(err)
+	}
+}
+
+// OnError calls when something wrong, but connection is still working
+// you can use it if you want to handler errors in standard process
+func (s *Session) OnError(handler func(error)) {
+	s.errorHandler = handler
 }
 
 func (s *Session) Run() (err error) {
@@ -221,7 +233,7 @@ func (s *Session) Run() (err error) {
 	if s.side == SideInitiator {
 		err = s.LogonRequest()
 		if err != nil {
-			return fmt.Errorf("send logon request: %w", err)
+			return fmt.Errorf("sendWithErrorCheck logon request: %w", err)
 		}
 
 		err = s.start()
@@ -268,7 +280,7 @@ func (s *Session) Run() (err error) {
 
 				s.state = SuccessfulLogged
 
-				s.Send(answer)
+				s.sendWithErrorCheck(answer)
 				return
 
 			case WaitingLogonAnswer:
@@ -292,7 +304,7 @@ func (s *Session) Run() (err error) {
 			case SuccessfulLogged:
 				s.changeState(WaitingLogoutAnswer)
 
-				s.Send(s.LogoutBuilder.New())
+				s.sendWithErrorCheck(s.LogoutBuilder.New())
 
 			default:
 				s.RejectMessage(msg)
@@ -328,7 +340,7 @@ func (s *Session) Run() (err error) {
 				return
 			}
 
-			s.Send(s.HeartbeatBuilder.New().
+			s.sendWithErrorCheck(s.HeartbeatBuilder.New().
 				SetFieldTestReqID(incomingTestRequest.TestReqID()))
 
 		}),
@@ -377,7 +389,7 @@ func (s *Session) start() error {
 			expectedTestReq := strconv.Itoa(testReqCounter)
 			testRequest.SetFieldTestReqID(expectedTestReq)
 
-			s.Send(testRequest)
+			s.sendWithErrorCheck(testRequest)
 		}
 	}()
 
@@ -395,7 +407,7 @@ func (s *Session) start() error {
 
 			heartbeat := s.HeartbeatBuilder.New()
 
-			s.Send(heartbeat)
+			s.sendWithErrorCheck(heartbeat)
 		}
 	}()
 
@@ -408,7 +420,7 @@ func (s *Session) RejectMessage(msg []byte) {
 	seqNumB, err := fix.ValueByTag(msg, strconv.Itoa(s.Tags.MsgSeqNum))
 	if err != nil {
 		reject.SetFieldRefTagID(s.Tags.MsgSeqNum)
-		s.Send(reject)
+		s.sendWithErrorCheck(reject)
 		return
 	}
 
@@ -416,13 +428,13 @@ func (s *Session) RejectMessage(msg []byte) {
 	if err != nil {
 		reject.SetFieldSessionRejectReason(strconv.Itoa(5)) // Value is incorrect (out of range) for this tag
 		reject.SetFieldRefTagID(s.Tags.MsgSeqNum)
-		s.Send(reject)
+		s.sendWithErrorCheck(reject)
 		return
 	}
 
 	reject.SetFieldRefSeqNum(seqNum)
 
-	s.Send(reject)
+	s.sendWithErrorCheck(reject)
 }
 
 func (s *Session) currentTime() time.Time {
@@ -435,18 +447,22 @@ func (s *Session) currentTime() time.Time {
 // - targetCompIDm senderCompID
 // - sending time with current time zone
 // if you want to send message with custom fields please use Send method at Handler
-func (s *Session) Send(msg messages.Message) {
+func (s *Session) Send(msg messages.Message) error {
+	return s.send(msg)
+}
+
+func (s *Session) send(msg messages.Message) error {
 	msg.HeaderBuilder().
 		SetFieldMsgSeqNum(int(atomic.AddInt64(s.counter, 1))).
 		SetFieldTargetCompID(s.LogonSettings.TargetCompID).
 		SetFieldSenderCompID(s.LogonSettings.SenderCompID).
 		SetFieldSendingTime(s.currentTime().Format(fix.TimeLayout))
 
-	err := s.router.Send(msg)
-	if err != nil {
-		// todo error
-		return
-	}
+	return s.router.Send(msg)
+}
+
+func (s *Session) sendWithErrorCheck(msg messages.Message) {
+	s.handlerError(s.send(msg))
 }
 
 func (s *Session) IsLogged() bool {

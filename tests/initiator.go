@@ -43,7 +43,10 @@ func RunNewInitiator(port int, t *testing.T, settings session.LogonSettings) (s 
 	go func() {
 		time.Sleep(time.Second * 10)
 		fmt.Println("resend request after 10 seconds")
-		s.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(2).SetFieldEndSeqNo(3))
+		err = s.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(2).SetFieldEndSeqNo(3))
+		if err != nil {
+			panic(err)
+		}
 	}()
 
 	err = s.Run()
