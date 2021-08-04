@@ -3,6 +3,7 @@ package session
 import (
 	"context"
 	"errors"
+	"fmt"
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session/messages"
@@ -220,10 +221,13 @@ func (s *Session) Run() (err error) {
 	if s.side == SideInitiator {
 		err = s.LogonRequest()
 		if err != nil {
-			return err
+			return fmt.Errorf("send logon request: %w", err)
 		}
 
-		s.start()
+		err = s.start()
+		if err != nil {
+			return fmt.Errorf("start heartbeat handler: %w", err)
+		}
 	}
 
 	s.handlersIds = []int64{
@@ -254,7 +258,11 @@ func (s *Session) Run() (err error) {
 					s.MakeReject(99, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
 				}
 
-				go s.start()
+				err = s.start()
+				if err != nil {
+					s.MakeReject(99, s.Tags.HeartBtInt, incomingLogon.HeaderBuilder().MsgSeqNum())
+					return
+				}
 
 				answer := s.LogonBuilder.New()
 
@@ -329,18 +337,16 @@ func (s *Session) Run() (err error) {
 	return nil
 }
 
-func (s *Session) start() {
+func (s *Session) start() error {
 	tolerance := int(math.Max(float64(s.LogonSettings.HeartBtInt/20), 1))
 	incomingMsgTimer, err := utils.NewTimer(time.Second * time.Duration(s.LogonSettings.HeartBtInt+tolerance))
-
 	if err != nil {
-		// todo handler error
-		panic(err)
+		return err
 	}
-	outgoingMsgTimer, err := utils.NewTimer(time.Second * time.Duration(s.LogonSettings.HeartBtInt-tolerance))
+
+	outgoingMsgTimer, err := utils.NewTimer(time.Second * time.Duration(s.LogonSettings.HeartBtInt))
 	if err != nil {
-		// todo handler error
-		panic(err)
+		return err
 	}
 
 	s.handlersIds = append(
@@ -392,6 +398,8 @@ func (s *Session) start() {
 			s.Send(heartbeat)
 		}
 	}()
+
+	return nil
 }
 
 func (s *Session) RejectMessage(msg []byte) {
