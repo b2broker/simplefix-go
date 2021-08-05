@@ -76,7 +76,6 @@ type Session struct {
 	msgStorageResendHandler int64
 
 	counter      *int64
-	handlersIds  []int64
 	eventHandler *utils.EventHandlerPool
 
 	// params
@@ -242,109 +241,107 @@ func (s *Session) Run() (err error) {
 		}
 	}
 
-	s.handlersIds = []int64{
-		s.router.HandleIncoming(s.LogonBuilder.MsgType(), func(msg []byte) {
-			incomingLogon, err := s.LogonBuilder.Parse(msg)
-			if err != nil {
-				s.RejectMessage(msg)
-				return
+	s.router.HandleIncoming(s.LogonBuilder.MsgType(), func(msg []byte) {
+		incomingLogon, err := s.LogonBuilder.Parse(msg)
+		if err != nil {
+			s.RejectMessage(msg)
+			return
+		}
+
+		switch s.state {
+		case WaitingLogon:
+			if ok, tag, reasonCode := s.checkLogonParams(incomingLogon); !ok {
+				s.MakeReject(reasonCode, tag, incomingLogon.HeaderBuilder().MsgSeqNum())
 			}
 
-			switch s.state {
-			case WaitingLogon:
-				if ok, tag, reasonCode := s.checkLogonParams(incomingLogon); !ok {
-					s.MakeReject(reasonCode, tag, incomingLogon.HeaderBuilder().MsgSeqNum())
-				}
+			s.LogonSettings = LogonSettings{
+				HeartBtInt:    incomingLogon.HeartBtInt(),
+				EncryptMethod: incomingLogon.EncryptMethod(),
+				Password:      incomingLogon.Password(),
+				Username:      incomingLogon.Username(),
+				TargetCompID:  incomingLogon.HeaderBuilder().TargetCompID(),
+				SenderCompID:  incomingLogon.HeaderBuilder().SenderCompID(),
+			}
 
-				s.LogonSettings = LogonSettings{
-					HeartBtInt:    incomingLogon.HeartBtInt(),
-					EncryptMethod: incomingLogon.EncryptMethod(),
-					Password:      incomingLogon.Password(),
-					Username:      incomingLogon.Username(),
-					TargetCompID:  incomingLogon.HeaderBuilder().TargetCompID(),
-					SenderCompID:  incomingLogon.HeaderBuilder().SenderCompID(),
-				}
-
-				err := s.LogonHandler(s.LogonSettings)
-				if err != nil {
-					s.MakeReject(99, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
-				}
-
-				err = s.start()
-				if err != nil {
-					s.MakeReject(99, s.Tags.HeartBtInt, incomingLogon.HeaderBuilder().MsgSeqNum())
-					return
-				}
-
-				answer := s.LogonBuilder.New()
-
-				s.state = SuccessfulLogged
-
-				s.sendWithErrorCheck(answer)
-				return
-
-			case WaitingLogonAnswer:
-				s.changeState(SuccessfulLogged)
-
-			case SuccessfulLogged:
+			err := s.LogonHandler(s.LogonSettings)
+			if err != nil {
 				s.MakeReject(99, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
 			}
-		}),
-		s.router.HandleIncoming(s.LogoutBuilder.MsgType(), func(msg []byte) {
-			_, err := s.LogoutBuilder.Parse(msg)
+
+			err = s.start()
 			if err != nil {
-				s.RejectMessage(msg)
+				s.MakeReject(99, s.Tags.HeartBtInt, incomingLogon.HeaderBuilder().MsgSeqNum())
 				return
 			}
 
-			switch s.state {
-			case WaitingLogoutAnswer:
-				s.changeState(WaitingLogon)
+			answer := s.LogonBuilder.New()
 
-			case SuccessfulLogged:
-				s.changeState(WaitingLogoutAnswer)
+			s.state = SuccessfulLogged
 
-				s.sendWithErrorCheck(s.LogoutBuilder.New())
+			s.sendWithErrorCheck(answer)
+			return
 
-			default:
-				s.RejectMessage(msg)
-			}
+		case WaitingLogonAnswer:
+			s.changeState(SuccessfulLogged)
 
-			if s.side == SideInitiator {
-				s.changeState(WaitingLogonAnswer)
-			} else {
-				s.changeState(WaitingLogon)
-			}
-		}),
-		s.router.HandleIncoming(s.HeartbeatBuilder.MsgType(), func(msg []byte) {
-			_, err := s.HeartbeatBuilder.Parse(msg)
-			if err != nil {
-				s.RejectMessage(msg)
-				return
-			}
+		case SuccessfulLogged:
+			s.MakeReject(99, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
+		}
+	})
+	s.router.HandleIncoming(s.LogoutBuilder.MsgType(), func(msg []byte) {
+		_, err := s.LogoutBuilder.Parse(msg)
+		if err != nil {
+			s.RejectMessage(msg)
+			return
+		}
 
-			if !s.IsLogged() {
-				s.RejectMessage(msg)
-				return
-			}
-		}),
-		s.router.HandleIncoming(s.TestRequestBuilder.MsgType(), func(msg []byte) {
-			incomingTestRequest, err := s.TestRequestBuilder.Parse(msg)
-			if err != nil {
-				s.RejectMessage(msg)
-				return
-			}
+		switch s.state {
+		case WaitingLogoutAnswer:
+			s.changeState(WaitingLogon)
 
-			if !s.IsLogged() {
-				s.RejectMessage(msg)
-				return
-			}
+		case SuccessfulLogged:
+			s.changeState(WaitingLogoutAnswer)
 
-			s.sendWithErrorCheck(s.HeartbeatBuilder.New().
-				SetFieldTestReqID(incomingTestRequest.TestReqID()))
+			s.sendWithErrorCheck(s.LogoutBuilder.New())
 
-		}),
-	}
+		default:
+			s.RejectMessage(msg)
+		}
+
+		if s.side == SideInitiator {
+			s.changeState(WaitingLogonAnswer)
+		} else {
+			s.changeState(WaitingLogon)
+		}
+	})
+	s.router.HandleIncoming(s.HeartbeatBuilder.MsgType(), func(msg []byte) {
+		_, err := s.HeartbeatBuilder.Parse(msg)
+		if err != nil {
+			s.RejectMessage(msg)
+			return
+		}
+
+		if !s.IsLogged() {
+			s.RejectMessage(msg)
+			return
+		}
+	})
+	s.router.HandleIncoming(s.TestRequestBuilder.MsgType(), func(msg []byte) {
+		incomingTestRequest, err := s.TestRequestBuilder.Parse(msg)
+		if err != nil {
+			s.RejectMessage(msg)
+			return
+		}
+
+		if !s.IsLogged() {
+			s.RejectMessage(msg)
+			return
+		}
+
+		s.sendWithErrorCheck(s.HeartbeatBuilder.New().
+			SetFieldTestReqID(incomingTestRequest.TestReqID()))
+
+	})
 
 	return nil
 }
@@ -361,15 +358,12 @@ func (s *Session) start() error {
 		return err
 	}
 
-	s.handlersIds = append(
-		s.handlersIds, // refresh timers
-		s.router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
-			incomingMsgTimer.Refresh()
-		}),
-		s.router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
-			outgoingMsgTimer.Refresh()
-		}),
-	)
+	s.router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
+		incomingMsgTimer.Refresh()
+	})
+	s.router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
+		outgoingMsgTimer.Refresh()
+	})
 
 	go func() {
 		defer incomingMsgTimer.Close()

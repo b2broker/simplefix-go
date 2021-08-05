@@ -48,14 +48,6 @@ func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) *simple
 		}
 
 		s.SetMessageStorage(storage)
-
-		// log messages
-		handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
-			//t.Log("incoming:", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
-		})
-		handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
-			//t.Log("outgoing:", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
-		})
 	})
 
 	return server

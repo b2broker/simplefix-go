@@ -23,7 +23,7 @@ type AcceptorHandler interface {
 	ServeIncoming(msg []byte)
 	Outgoing() <-chan []byte
 	Run() error
-	Stop(err error)
+	StopWithError(err error)
 	Send(message SendingMessage) error
 	SendRaw(msgType string, message []byte) error
 	RemoveIncomingHandler(msgType string, id int64) (err error)
@@ -74,9 +74,9 @@ func (s *Acceptor) Close() {
 func (s *Acceptor) ListenAndServe() error {
 	listenErr := make(chan error)
 	defer s.Close()
+	defer s.listener.Close()
 
 	go func() {
-		defer s.ctx.Done()
 		for {
 			conn, err := s.listener.Accept()
 			if err != nil {
@@ -94,7 +94,7 @@ func (s *Acceptor) ListenAndServe() error {
 			return fmt.Errorf("could not accept conn: %w", err)
 
 		case <-s.ctx.Done():
-			return ErrServerClosed
+			return nil
 		}
 	}
 }
@@ -132,14 +132,13 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 
 		case err := <-connErr:
 			if errors.Is(err, io.EOF) {
-				handler.Stop(ErrClientDisconnect)
+				handler.StopWithError(ErrConnClosed)
 				return
 			}
-			handler.Stop(err)
+			handler.StopWithError(err)
 			return
 
 		case <-s.ctx.Done():
-			handler.Stop(ErrServerClosed)
 			return
 
 		case msg, ok := <-conn.Reader():
