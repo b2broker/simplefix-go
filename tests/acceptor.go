@@ -20,7 +20,7 @@ func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) *simple
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
-		s := session.NewAcceptorSession(
+		s, err := session.NewAcceptorSession(
 			context.Background(),
 			PseudoGeneratedOpts,
 			handler,
@@ -42,6 +42,10 @@ func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) *simple
 				return nil
 			},
 		)
+		if err != nil {
+			panic(err)
+		}
+
 		err = s.Run()
 		if err != nil {
 			t.Fatalf("run s: %s", err)

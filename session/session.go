@@ -65,7 +65,7 @@ type Handler interface {
 }
 
 type Session struct {
-	SessionOpts
+	Opts
 	side  Side
 	state LogonState
 
@@ -89,32 +89,39 @@ type Session struct {
 	ctx          context.Context
 	cancel       context.CancelFunc
 	errorHandler func(error)
+	timeLocation *time.Location
 }
 
-func NewInitiatorSession(ctx context.Context, router Handler, params SessionOpts,
-	settings LogonSettings) *Session {
-	s := newSession(ctx, params, router, settings)
+func NewInitiatorSession(ctx context.Context, router Handler, params Opts,
+	settings LogonSettings) (s *Session, err error) {
+	s, err = newSession(ctx, params, router, settings)
+	if err != nil {
+		return
+	}
 
 	s.side = SideInitiator
 	s.state = WaitingLogonAnswer
 
-	return s
+	return
 }
 
-func NewAcceptorSession(ctx context.Context, params SessionOpts, router Handler,
-	settings LogonSettings, onLogon logonHandler) *Session {
-	s := newSession(ctx, params, router, settings)
+func NewAcceptorSession(ctx context.Context, params Opts, router Handler,
+	settings LogonSettings, onLogon logonHandler) (s *Session, err error) {
+	s, err = newSession(ctx, params, router, settings)
+	if err != nil {
+		return
+	}
 
 	s.side = SideAcceptor
 	s.state = WaitingLogon
 	s.LogonHandler = onLogon
 
-	return s
+	return
 }
 
-func newSession(ctx context.Context, params SessionOpts, router Handler, settings LogonSettings) *Session {
-	session := &Session{
-		SessionOpts:  params,
+func newSession(ctx context.Context, params Opts, router Handler, settings LogonSettings) (session *Session, err error) {
+	session = &Session{
+		Opts:         params,
 		router:       router,
 		counter:      new(int64),
 		eventHandler: utils.NewEventHandlerPool(),
@@ -122,9 +129,18 @@ func newSession(ctx context.Context, params SessionOpts, router Handler, setting
 		LogonSettings: settings,
 	}
 
+	if params.Location != "" {
+		session.timeLocation, err = time.LoadLocation(params.Location)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		session.timeLocation = time.UTC
+	}
+
 	session.ctx, session.cancel = context.WithCancel(ctx)
 
-	return session
+	return session, nil
 }
 
 func (s *Session) changeState(state LogonState) {
@@ -432,8 +448,7 @@ func (s *Session) RejectMessage(msg []byte) {
 }
 
 func (s *Session) currentTime() time.Time {
-	local, _ := time.LoadLocation("UTC") // todo params
-	return time.Now().In(local)
+	return time.Now().In(s.timeLocation)
 }
 
 // Send sends message with preparing header tags:

@@ -4,7 +4,9 @@ import (
 	"github.com/b2broker/simplefix-go/session/messages"
 )
 
-type SessionOpts struct {
+type Opts struct {
+	Location string
+
 	HeaderBuilder  messages.HeaderBuilder
 	TrailerBuilder messages.TrailerBuilder
 

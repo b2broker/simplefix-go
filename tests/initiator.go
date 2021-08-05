@@ -23,12 +23,15 @@ func RunNewInitiator(port int, t *testing.T, settings session.LogonSettings) (s 
 	handler = simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
 	client := simplefixgo.NewInitiator(conn, handler, 10)
 
-	s = session.NewInitiatorSession(
+	s, err = session.NewInitiatorSession(
 		context.Background(),
 		handler,
 		PseudoGeneratedOpts,
 		settings,
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	// log messages
 	handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {

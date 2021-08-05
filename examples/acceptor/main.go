@@ -25,7 +25,7 @@ func mustConvToInt(s string) int {
 }
 
 // todo move boilerplate to generator
-var PseudoGenerated = session.SessionOpts{
+var PseudoGenerated = session.Opts{
 	LogonBuilder:         fixgen.Logon{}.New(),
 	LogoutBuilder:        fixgen.Logout{}.New(),
 	RejectBuilder:        fixgen.Reject{}.New(),
@@ -57,7 +57,7 @@ func main() {
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
-		session := session.NewAcceptorSession(
+		session, err := session.NewAcceptorSession(
 			context.Background(),
 			PseudoGenerated,
 			handler,
@@ -77,7 +77,12 @@ func main() {
 				)
 
 				return nil
-			})
+			},
+		)
+		if err != nil {
+			panic(err)
+		}
+
 		_ = session.Run()
 		session.SetMessageStorage(memory.NewStorage(100, 100))
 
