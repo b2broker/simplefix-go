@@ -21,3 +21,10 @@ type Opts struct {
 	AllowedEncryptedMethods map[string]struct{} // can be only None
 	SessionErrorCodes       messages.SessionErrorCodes
 }
+
+type Side int64
+
+const (
+	sideAcceptor = iota
+	sideInitiator
+)

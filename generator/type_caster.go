@@ -6,21 +6,21 @@ import (
 )
 
 const (
-	FixFloat  = "Float"
-	FixInt    = "Int"
-	FixRaw    = "Raw"
-	FixBool   = "Bool"
-	FixString = "String"
-	FixTime   = "Time"
+	fixFloat  = "Float"
+	fixInt    = "Int"
+	fixRaw    = "Raw"
+	fixBool   = "Bool"
+	fixString = "String"
+	fixTime   = "Time"
 )
 
 var allowedTypes = map[string]string{
-	FixFloat:  "float64",
-	FixInt:    "int",
-	FixRaw:    "[]byte",
-	FixBool:   "bool",
-	FixString: "string",
-	FixTime:   "time.Time",
+	fixFloat:  "float64",
+	fixInt:    "int",
+	fixRaw:    "[]byte",
+	fixBool:   "bool",
+	fixString: "string",
+	fixTime:   "time.Time",
 }
 
 func (g *Generator) initTypes() {
@@ -47,12 +47,12 @@ func (g *Generator) initTypes() {
 	}
 }
 
-func (g *Generator) fixTypeToGo(t string, def string) string {
+func (g *Generator) fixTypeToGo(t string) string {
 	if tp, ok := allowedTypes[t]; ok {
 		return tp
 	}
 
-	return def
+	return "string"
 }
 
 func (g *Generator) typeToFix(t string) string {
@@ -64,5 +64,5 @@ func (g *Generator) typeToFix(t string) string {
 		panic(fmt.Errorf("could not find type %s at map", t))
 	}
 
-	return FixRaw
+	return fixRaw
 }

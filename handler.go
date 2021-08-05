@@ -10,11 +10,13 @@ import (
 
 const AllMsgTypes = "ALL"
 
+// SendingMessage basic method for sending message
 type SendingMessage interface {
 	MsgType() string
 	ToBytes() ([]byte, error)
 }
 
+// DefaultHandler is a standard handler for
 type DefaultHandler struct {
 	out      chan []byte
 	incoming chan []byte
@@ -31,6 +33,7 @@ type DefaultHandler struct {
 	errors chan error
 }
 
+// NewAcceptorHandler creates handler for Acceptor
 func NewAcceptorHandler(ctx context.Context, msgTypeTag string, bufferSize int) *DefaultHandler {
 	sh := &DefaultHandler{
 		msgTypeTag:    msgTypeTag,
@@ -49,6 +52,7 @@ func NewAcceptorHandler(ctx context.Context, msgTypeTag string, bufferSize int) 
 	return sh
 }
 
+// NewInitiatorHandler creates handler for Initiator
 func NewInitiatorHandler(ctx context.Context, msgTypeTag string, bufferSize int) *DefaultHandler {
 	sh := &DefaultHandler{
 		msgTypeTag:    msgTypeTag,
@@ -85,10 +89,12 @@ func (h *DefaultHandler) send(msgType string, data []byte) error {
 	return nil
 }
 
+// SendRaw send raw message
 func (h *DefaultHandler) SendRaw(msgType string, message []byte) error {
 	return h.send(msgType, message)
 }
 
+// Send send prepared message
 func (h *DefaultHandler) Send(message SendingMessage) error {
 	data, err := message.ToBytes()
 	if err != nil {
@@ -123,6 +129,7 @@ func (h *DefaultHandler) HandleOutgoing(msgType string, handle HandlerFunc) (id 
 	return h.outgoingHandlers.Add(msgType, handle)
 }
 
+// ServeIncoming it is inner method for handle incoming messages
 func (h *DefaultHandler) ServeIncoming(msg []byte) {
 	h.incoming <- msg
 }

@@ -9,16 +9,15 @@ import (
 	"net"
 )
 
-//type DefaultHandler interface {
-//	Listen(ctx context.Context, conn *Conn) error
-//}
-
+// Sender interface for any structure which can send SendingMessage
 type Sender interface {
 	Send(message SendingMessage) error
 }
 
+// HandlerFunc function for handle message
 type HandlerFunc func(msg []byte)
 
+// AcceptorHandler required methods for base work of acceptor (server)
 type AcceptorHandler interface {
 	ServeIncoming(msg []byte)
 	Outgoing() <-chan []byte
@@ -35,10 +34,12 @@ type AcceptorHandler interface {
 	OnStopped(handlerFunc utils.EventHandlerFunc)
 }
 
+// HandlerFactory makes handlers for an acceptor
 type HandlerFactory interface {
 	MakeHandler(ctx context.Context) AcceptorHandler
 }
 
+// Acceptor server side service for handling connections of clients
 type Acceptor struct {
 	listener        net.Listener
 	factory         HandlerFactory
@@ -49,10 +50,7 @@ type Acceptor struct {
 	cancel context.CancelFunc
 }
 
-var ErrServerClosed = errors.New("server closed")
-var ErrClientDisconnect = errors.New("client disconnected")
-var ErrHandlerStopped = errors.New("handler stopped")
-
+// NewAcceptor create new Acceptor
 func NewAcceptor(listener net.Listener, factory HandlerFactory, handleNewClient func(handler AcceptorHandler)) *Acceptor {
 	s := &Acceptor{
 		factory:         factory,
@@ -65,6 +63,7 @@ func NewAcceptor(listener net.Listener, factory HandlerFactory, handleNewClient 
 	return s
 }
 
+// Close cancel context of Acceptor to stop working
 func (s *Acceptor) Close() {
 	s.cancel()
 }

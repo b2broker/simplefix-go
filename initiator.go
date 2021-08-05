@@ -6,10 +6,7 @@ import (
 	"net"
 )
 
-type OutgoingMessage interface {
-	ToBytes() ([]byte, error)
-}
-
+// InitiatorHandler basic method for handle initiator
 type InitiatorHandler interface {
 	ServeIncoming(msg []byte)
 	Outgoing() <-chan []byte
@@ -18,6 +15,7 @@ type InitiatorHandler interface {
 	Send(message SendingMessage) error
 }
 
+// Initiator client side service
 type Initiator struct {
 	conn    *Conn
 	handler InitiatorHandler
@@ -26,6 +24,7 @@ type Initiator struct {
 	cancel context.CancelFunc
 }
 
+// NewInitiator creates new Initiator
 func NewInitiator(conn net.Conn, handler InitiatorHandler, bufSize int) *Initiator {
 	c := &Initiator{handler: handler}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
@@ -35,14 +34,17 @@ func NewInitiator(conn net.Conn, handler InitiatorHandler, bufSize int) *Initiat
 	return c
 }
 
+// Close cancel context
 func (c *Initiator) Close() {
 	c.cancel()
 }
 
+// Send message
 func (c *Initiator) Send(message SendingMessage) error {
 	return c.handler.Send(message)
 }
 
+// Serve starts process of serving messages
 func (c *Initiator) Serve() error {
 	connErr := make(chan error)
 	go func() {

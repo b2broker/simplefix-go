@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// Message FIX-Message
 type Message struct {
 	// beginString, bodyLength, msgType is required fields of any message
 	beginString *KeyValue
@@ -28,6 +29,7 @@ type Message struct {
 	raw []byte
 }
 
+// NewMessage creates new Message
 func NewMessage(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag, beginString, msgType string) *Message {
 	return &Message{
 		beginString: NewKeyValue(beginStringTag, NewString(beginString)),
@@ -37,6 +39,7 @@ func NewMessage(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag, beginStr
 	}
 }
 
+// NewMessageFromBytes creates new empty message
 func NewMessageFromBytes(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag string) *Message {
 	return &Message{
 		beginString: NewKeyValue(beginStringTag, &String{}),
@@ -99,6 +102,7 @@ func (msg *Message) validate() error {
 	return nil
 }
 
+// Unmarshal read data into current Message
 func (msg *Message) Unmarshal(data []byte) error {
 	message := Items{
 		msg.beginString,
@@ -115,37 +119,40 @@ func (msg *Message) Unmarshal(data []byte) error {
 		return err
 	}
 
-	if err := msg.validate(); err != nil {
-		return err
-	}
-
-	return nil
+	return msg.validate()
 }
 
+// Body returns body of message as Items
 func (msg *Message) Body() (kvs Items) {
 	return msg.body
 }
 
+// Header returns header of message as Component
 func (msg *Message) Header() *Component {
 	return msg.header
 }
 
+// Trailer returns trailer of message as Component
 func (msg *Message) Trailer() *Component {
 	return msg.trailer
 }
 
+// BeginString returns begin string
 func (msg *Message) BeginString() string {
 	return msg.beginString.Value.String()
 }
 
+// BodyLength returns length of body
 func (msg *Message) BodyLength() int {
 	return msg.bodyLength.Value.Value().(int)
 }
 
+// MsgType returns message type
 func (msg *Message) MsgType() string {
 	return msg.msgType.Value.String()
 }
 
+// CheckSum returns check sum of message
 func (msg *Message) CheckSum() string {
 	return msg.checkSum.Value.String()
 }
@@ -159,6 +166,7 @@ func (msg *Message) calcBodyLength(header, body, msgType []byte) int {
 	return count
 }
 
+// Reu
 func (msg *Message) Raw() ([]byte, error) {
 	if len(msg.raw) > 0 {
 		return msg.raw, nil
@@ -167,6 +175,7 @@ func (msg *Message) Raw() ([]byte, error) {
 	return msg.ToBytes()
 }
 
+// ToBytes convert current message to bytes
 func (msg *Message) ToBytes() ([]byte, error) {
 	bh := msg.header.ToBytes()
 	bb := msg.body.ToBytes()
@@ -193,7 +202,6 @@ func (msg *Message) ToBytes() ([]byte, error) {
 	msg.raw = bytes.Join([][]byte{
 		byteMsg,
 		makeTagValue(msg.checkSum.Key, checkSum),
-		//{'\n'},
 	}, Delimiter)
 	msg.raw = append(msg.raw, Delimiter...)
 
@@ -204,6 +212,7 @@ func (msg *Message) ToBytes() ([]byte, error) {
 	return msg.raw, nil
 }
 
+// String convert current message to string
 func (msg *Message) String() string {
 	message := Items{
 		msg.beginString,
@@ -233,11 +242,19 @@ func (msg *Message) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(items, ", "))
 }
 
-func (msg *Message) Get(id int) Item                        { return msg.body[id] }
-func (msg *Message) Set(id int, item Item) *Message         { msg.body[id] = item; return msg }
-func (msg *Message) SetRaw(raw []byte) *Message             { msg.raw = raw; return msg }
-func (msg *Message) SetHeader(header *Component) *Message   { msg.setHeader(header); return msg }
-func (msg *Message) SetBody(body ...Item) *Message          { msg.setBody(body); return msg }
+// Get returns Item of body by sequence number
+func (msg *Message) Get(id int) Item { return msg.body[id] }
+
+// Get replace Item of body by sequence number
+func (msg *Message) Set(id int, item Item) *Message { msg.body[id] = item; return msg }
+
+// SetHeader set message header
+func (msg *Message) SetHeader(header *Component) *Message { msg.setHeader(header); return msg }
+
+// SetBody set message body
+func (msg *Message) SetBody(body ...Item) *Message { msg.setBody(body); return msg }
+
+// SetTrailer set trailer of message expect of checkSum
 func (msg *Message) SetTrailer(trailer *Component) *Message { msg.setTrailer(trailer); return msg }
 
 func (msg *Message) setHeader(header *Component)   { msg.header = header }

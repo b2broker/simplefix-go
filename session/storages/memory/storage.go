@@ -6,6 +6,7 @@ import (
 	"sync"
 )
 
+// Storage store last messages
 type Storage struct {
 	maxSize    int
 	bufferSize int

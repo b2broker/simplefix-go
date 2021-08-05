@@ -1,5 +1,6 @@
 package messages
 
+// HeartbeatBuilder interface for generated Heartbeat message builder
 type HeartbeatBuilder interface {
 	// Flow Message
 	Parse(data []byte) (HeartbeatBuilder, error)

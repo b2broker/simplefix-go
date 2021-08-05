@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// ValueByTag find value by tag in raw fix-message
 func ValueByTag(msg []byte, tag string) ([]byte, error) {
 	start := bytes.Index(msg, bytes.Join([][]byte{{1}, []byte(tag), {61}}, nil))
 	if len(msg) <= len(tag) {

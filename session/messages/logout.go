@@ -1,5 +1,6 @@
 package messages
 
+// LogoutBuilder interface for generated Logout message builder
 type LogoutBuilder interface {
 
 	// Flow Message

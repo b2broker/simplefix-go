@@ -1,5 +1,7 @@
 package generator
 
+// ExcludedFields is a list of tags which not will be at generated messages
+// because they already exists in base structure
 var ExcludedFields = map[string]bool{
 	"BeginString": true,
 	"BodyLength":  true,
@@ -7,6 +9,8 @@ var ExcludedFields = map[string]bool{
 	"CheckSum":    true,
 }
 
+// RequiredHeaderFields required fields for Header
+// FIX protocol could not work without this fields
 var RequiredHeaderFields = map[string]bool{
 	// Always unencrypted, must be first field in message
 	"BeginString": true,
@@ -30,11 +34,15 @@ var RequiredHeaderFields = map[string]bool{
 	"SendingTime": true,
 }
 
+// RequiredTrailerFields required fields for Trailer
+// FIX protocol could not work without this fields
 var RequiredTrailerFields = map[string]bool{
 	// Always unencrypted, always last field in message
 	"CheckSum": true,
 }
 
+// RequiredTrailerFields required message types and tags for Trailer
+// Session pipeline could not work without this tags and messages
 var DefaultFlowFields = map[string][]string{
 	"Logon":         {"HeartBtInt", "EncryptMethod", "Password", "Username"},
 	"Logout":        nil,

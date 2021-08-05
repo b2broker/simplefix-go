@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Group structure for FIX-Group types
 type Group struct {
 	noTag    string
 	template Items
@@ -12,10 +13,12 @@ type Group struct {
 	items []Items
 }
 
+// NoTag returns tag with number of elements
 func (g *Group) NoTag() string {
 	return g.noTag
 }
 
+// String convert Group to string
 func (g *Group) String() string {
 	var items []string
 	for _, item := range g.items {
@@ -27,6 +30,7 @@ func (g *Group) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(items, ", "))
 }
 
+// NewGroup create new group from tag with number of elements and list of tags
 func NewGroup(noTags string, tags ...Item) *Group {
 	return &Group{
 		noTag:    noTags,
@@ -34,6 +38,7 @@ func NewGroup(noTags string, tags ...Item) *Group {
 	}
 }
 
+// ToBytes convert Group to bytes
 func (g *Group) ToBytes() []byte {
 	var msg [][]byte
 
@@ -55,16 +60,20 @@ func (g *Group) ToBytes() []byte {
 	return joinBody(msg...)
 }
 
+// AddEntry add entry with same list of tags
+// you can receive all tags by AsTemplate method
 func (g *Group) AddEntry(v Items) *Group {
 	g.items = append(g.items, v)
 
 	return g
 }
 
+// Entry returns entry of group by sequence number
 func (g *Group) Entry(id int) Item {
 	return g.items[id]
 }
 
+// AsTemplate returns list of group tags as Items
 func (g *Group) AsTemplate() Items {
 	tmp := make([]Item, len(g.template))
 
@@ -84,6 +93,7 @@ func (g *Group) AsTemplate() Items {
 	return tmp
 }
 
+// Entries returns all entries of group as list of Items
 func (g *Group) Entries() []Items {
 	return g.items
 }

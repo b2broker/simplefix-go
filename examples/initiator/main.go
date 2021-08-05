@@ -23,7 +23,7 @@ func mustConvToInt(s string) int {
 	return i
 }
 
-var PseudoGeneratedOpts = flow.Opts{
+var pseudoGeneratedOpts = flow.Opts{
 	LogonBuilder:         fixgen.Logon{}.New(),
 	LogoutBuilder:        fixgen.Logout{}.New(),
 	RejectBuilder:        fixgen.Reject{}.New(),
@@ -65,8 +65,8 @@ func main() {
 	session, err := flow.NewInitiatorSession(
 		context.Background(),
 		handler,
-		PseudoGeneratedOpts,
-		flow.LogonSettings{
+		&pseudoGeneratedOpts,
+		&flow.LogonSettings{
 			TargetCompID:  "Server",
 			SenderCompID:  "Client",
 			HeartBtInt:    5,

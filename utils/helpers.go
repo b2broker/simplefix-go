@@ -7,7 +7,8 @@ import (
 	"os"
 )
 
-func ParseXml(path string, data interface{}) error {
+// ParseXML helper for unmarshal XML into struct
+func ParseXML(path string, data interface{}) error {
 	var err error
 
 	source, err := os.Open(path)

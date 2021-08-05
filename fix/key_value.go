@@ -5,15 +5,19 @@ import (
 	"fmt"
 )
 
+// KeyValue basic structure of FIX-message
+// Contain tag of field and value
 type KeyValue struct {
 	Key   string
 	Value Value
 }
 
+// NewKeyValue returns new KeyValue
 func NewKeyValue(key string, value Value) *KeyValue {
 	return &KeyValue{Key: key, Value: value}
 }
 
+// AsTemplate returns copy with empty value
 func (kv *KeyValue) AsTemplate() *KeyValue {
 	switch kv.Value.(type) {
 	case *String:
@@ -31,6 +35,7 @@ func (kv *KeyValue) AsTemplate() *KeyValue {
 	}
 }
 
+// ToBytes convert KeyValue to bytes
 func (kv *KeyValue) ToBytes() []byte {
 	if kv.Value.IsNull() {
 		return nil
@@ -46,18 +51,22 @@ func (kv *KeyValue) ToBytes() []byte {
 	}, []byte{61})
 }
 
+// Set replace value
 func (kv *KeyValue) Set(value Value) {
 	kv.Value = value
 }
 
+// Load returns value
 func (kv *KeyValue) Load() Value {
 	return kv.Value
 }
 
+// FromBytes replace value from bytes
 func (kv *KeyValue) FromBytes(d []byte) error {
 	return kv.Value.FromBytes(d)
 }
 
+// String converts KeyValue to string
 func (kv *KeyValue) String() string {
 	if kv.Value.IsNull() {
 		return ""
@@ -65,8 +74,10 @@ func (kv *KeyValue) String() string {
 	return fmt.Sprintf("%s: %s", kv.Key, kv.Value)
 }
 
+// KeyValues list of KeyValue elements
 type KeyValues []*KeyValue
 
+// ToBytes convert KeyValue list to bytes
 func (kvs KeyValues) ToBytes() []byte {
 	var msg [][]byte
 	for _, kv := range kvs {

@@ -41,7 +41,7 @@ func NewGenerator(doc *Doc, config *Config, libPkg string) *Generator {
 }
 
 func (g *Generator) checkName(name string) (err error) {
-	if len(name) == 0 {
+	if name == "" {
 		return fmt.Errorf("empty name")
 	}
 
@@ -260,7 +260,7 @@ func (g *Generator) makeArg(member *ComponentMember) string {
 	case GroupItem:
 		tmp.Type = "*" + g.makeGroupTypeName(member.Name)
 	case FieldItem:
-		tmp.Type = g.fixTypeToGo(g.makeType(member.Name), "string")
+		tmp.Type = g.fixTypeToGo(g.makeType(member.Name))
 	default:
 		panic(fmt.Errorf(
 			"unexpected item time, expect: %s, %s, %s, got '%s'",
@@ -332,7 +332,7 @@ func (g *Generator) makeHeader() string {
 
 	beginString := fmt.Sprintf("var beginString = \"%s.%s.%s\"", g.doc.Type, g.doc.Major, g.doc.Minor)
 	header := g.makeComponent(g.doc.Header, componentName)
-	var fieldSetters []string
+	fieldSetters := make([]string, len(RequiredHeaderFields))
 	for fieldName := range RequiredHeaderFields {
 		if g.isFieldExcluded(fieldName) {
 			continue
@@ -350,7 +350,7 @@ func (g *Generator) makeHeader() string {
 			g.mustExecuteTemplate(defaultFieldSetterTemplateFormat, fieldGetterSetterTemplate{
 				Name:          field.Name,
 				LocalName:     g.makeLocalName(field.Name),
-				Type:          g.fixTypeToGo(g.makeType(field.Name), "string"),
+				Type:          g.fixTypeToGo(g.makeType(field.Name)),
 				ComponentName: g.makeLocalName(componentName),
 				ComponentType: componentName,
 			}),
@@ -462,7 +462,7 @@ func (g *Generator) makeMessage(message *Component) string {
 				g.mustExecuteTemplate(defaultFieldSetterTemplateFormat, fieldGetterSetterTemplate{
 					Name:          field.Name,
 					LocalName:     g.makeLocalName(field.Name),
-					Type:          g.fixTypeToGo(g.makeType(field.Name), "string"),
+					Type:          g.fixTypeToGo(g.makeType(field.Name)),
 					ComponentName: g.makeLocalName(message.Name),
 					ComponentType: message.Name,
 				}),
@@ -532,7 +532,7 @@ func (g *Generator) makeEnum(field *Field) string {
 
 	return g.mustExecuteTemplate(enumTemplateFormat, enumTemplate{
 		Name:     name,
-		FixType:  g.fixTypeToGo(g.typeToFix(field.Name), "string"),
+		FixType:  g.fixTypeToGo(g.typeToFix(field.Name)),
 		Variants: strings.Join(variants, "\n"),
 	})
 }
@@ -589,7 +589,7 @@ func (g *Generator) makeSetterGetterField(parentName string, member *ComponentMe
 
 	case FieldItem:
 		name = member.Name
-		tp = g.fixTypeToGo(g.makeType(member.Name), "string")
+		tp = g.fixTypeToGo(g.makeType(member.Name))
 	default:
 		panic(fmt.Errorf(
 			"unexpected item time, expect: %s, %s, %s, got '%s'",
