@@ -109,7 +109,10 @@ func TestTestRequest(t *testing.T) {
 		testRequestMsg := fixgen.TestRequest{}.New()
 		testRequestMsg.SetFieldTestReqID(testReqID)
 
-		initiatorSession.Send(testRequestMsg)
+		err := initiatorSession.Send(testRequestMsg)
+		if err != nil {
+			panic(err)
+		}
 
 		return true
 	})
@@ -180,10 +183,13 @@ func TestResendSequence(t *testing.T) {
 	})
 
 	time.Sleep(beforeResendRequest)
-	initiatorSession.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(resendBegin).SetFieldEndSeqNo(resendEnd))
+	err := initiatorSession.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(resendBegin).SetFieldEndSeqNo(resendEnd))
+	if err != nil {
+		panic(err)
+	}
 
 	defer acceptor.Close()
-	err := waitRepeats.WaitWithTimeout(waitingResend)
+	err = waitRepeats.WaitWithTimeout(waitingResend)
 	if err != nil {
 		t.Fatalf("wait heartbeats: %s", err)
 	}
@@ -251,7 +257,7 @@ func TestCloseInitiatorConn(t *testing.T) {
 	)
 
 	go func() {
-		err = client.Serve()
+		err := client.Serve()
 		if err != nil {
 			panic(fmt.Errorf("serve client: %s", err))
 		}
