@@ -9,7 +9,6 @@ import (
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
-	"io"
 	"net"
 	"testing"
 	"time"
@@ -43,7 +42,10 @@ func RunNewInitiator(port int, t *testing.T, settings session.LogonSettings) (s 
 	go func() {
 		time.Sleep(time.Second * 10)
 		fmt.Println("resend request after 10 seconds")
-		s.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(2).SetFieldEndSeqNo(3))
+		err = s.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(2).SetFieldEndSeqNo(3))
+		if err != nil {
+			panic(err)
+		}
 	}()
 
 	err = s.Run()
@@ -53,7 +55,7 @@ func RunNewInitiator(port int, t *testing.T, settings session.LogonSettings) (s 
 
 	go func() {
 		err = client.Serve()
-		if err != nil && !errors.Is(err, io.EOF) {
+		if err != nil && !errors.Is(err, simplefixgo.ErrConnClosed) {
 			panic(fmt.Errorf("serve client: %s", err))
 		}
 	}()

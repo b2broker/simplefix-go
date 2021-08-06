@@ -2,6 +2,7 @@ package simplefixgo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/utils"
@@ -25,9 +26,9 @@ type DefaultHandler struct {
 
 	msgTypeTag string
 
-	ctx     context.Context
-	cancel  context.CancelFunc
-	lastErr error
+	ctx    context.Context
+	cancel context.CancelFunc
+	errors chan error
 }
 
 func NewAcceptorHandler(ctx context.Context, msgTypeTag string, bufferSize int) *DefaultHandler {
@@ -37,6 +38,7 @@ func NewAcceptorHandler(ctx context.Context, msgTypeTag string, bufferSize int) 
 
 		out:      make(chan []byte, bufferSize),
 		incoming: make(chan []byte, bufferSize),
+		errors:   make(chan error),
 
 		incomingHandlers: NewHandlerPool(),
 		outgoingHandlers: NewHandlerPool(),
@@ -54,6 +56,7 @@ func NewInitiatorHandler(ctx context.Context, msgTypeTag string, bufferSize int)
 
 		out:      make(chan []byte, bufferSize),
 		incoming: make(chan []byte, bufferSize),
+		errors:   make(chan error),
 
 		incomingHandlers: NewHandlerPool(),
 		outgoingHandlers: NewHandlerPool(),
@@ -148,7 +151,6 @@ func (h *DefaultHandler) serve(msg []byte) (err error) {
 
 // Run starts listen and serve messages
 func (h *DefaultHandler) Run() (err error) {
-
 	h.eventHandlers.Trigger(utils.EventConnect)
 
 	for {
@@ -160,15 +162,20 @@ func (h *DefaultHandler) Run() (err error) {
 
 			err = h.serve(msg)
 			if err != nil {
-				h.eventHandlers.Trigger(utils.EventDisconnect)
-
 				return err
 			}
 
 		case <-h.ctx.Done():
 			h.eventHandlers.Trigger(utils.EventStopped)
 
-			return ErrConnClosed
+			return
+
+		case err := <-h.errors:
+			if errors.Is(err, ErrConnClosed) {
+				h.eventHandlers.Trigger(utils.EventDisconnect)
+			}
+
+			return err
 		}
 	}
 }
@@ -179,9 +186,13 @@ func (h *DefaultHandler) Outgoing() <-chan []byte {
 }
 
 // Stop graceful stop
-func (h *DefaultHandler) Stop(err error) {
-	h.lastErr = err
+func (h *DefaultHandler) Stop() {
 	h.cancel()
+}
+
+// Stop graceful stop
+func (h *DefaultHandler) StopWithError(err error) {
+	h.errors <- err
 }
 
 // OnDisconnect handle disconnect event

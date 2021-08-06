@@ -14,7 +14,7 @@ type InitiatorHandler interface {
 	ServeIncoming(msg []byte)
 	Outgoing() <-chan []byte
 	Run() error
-	Stop(err error)
+	StopWithError(err error)
 	Send(message SendingMessage) error
 }
 
@@ -62,10 +62,11 @@ func (c *Initiator) Serve() error {
 			return fmt.Errorf("handler error: %w", err)
 
 		case err := <-connErr:
-			return fmt.Errorf("connection error: %w", err)
+			c.handler.StopWithError(ErrConnClosed)
+			return fmt.Errorf("%w: %s", ErrConnClosed, err)
 
 		case <-c.ctx.Done():
-			return fmt.Errorf("client was closed")
+			return nil
 
 		case msg, ok := <-c.conn.Reader():
 			if !ok {

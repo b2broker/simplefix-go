@@ -2,13 +2,16 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"fmt"
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session"
 	"github.com/b2broker/simplefix-go/session/storages/memory"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
 	"github.com/b2broker/simplefix-go/utils"
+	"net"
 	"sync"
 	"testing"
 	"time"
@@ -106,7 +109,10 @@ func TestTestRequest(t *testing.T) {
 		testRequestMsg := fixgen.TestRequest{}.New()
 		testRequestMsg.SetFieldTestReqID(testReqID)
 
-		initiatorSession.Send(testRequestMsg)
+		err := initiatorSession.Send(testRequestMsg)
+		if err != nil {
+			panic(err)
+		}
 
 		return true
 	})
@@ -177,10 +183,189 @@ func TestResendSequence(t *testing.T) {
 	})
 
 	time.Sleep(beforeResendRequest)
-	initiatorSession.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(resendBegin).SetFieldEndSeqNo(resendEnd))
+	err := initiatorSession.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(resendBegin).SetFieldEndSeqNo(resendEnd))
+	if err != nil {
+		panic(err)
+	}
 
-	err := waitRepeats.WaitWithTimeout(waitingResend)
+	defer acceptor.Close()
+	err = waitRepeats.WaitWithTimeout(waitingResend)
 	if err != nil {
 		t.Fatalf("wait heartbeats: %s", err)
+	}
+}
+
+func TestCloseInitiatorConn(t *testing.T) {
+	const (
+		port = 9993
+	)
+
+	// close acceptor after work
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		t.Fatalf("listen error: %s", err)
+	}
+
+	waitClientClosed := make(chan struct{})
+	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
+	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
+		s := session.NewAcceptorSession(
+			context.Background(),
+			PseudoGeneratedOpts,
+			handler,
+			session.LogonSettings{HeartBtInt: 30, LogonTimeout: time.Second * 30},
+			func(request session.LogonSettings) (err error) { return nil },
+		)
+
+		err := s.Run()
+		if err != nil {
+			t.Fatalf("run s: %s", err)
+		}
+
+		handler.OnDisconnect(func() bool {
+			t.Log("client disconnected")
+			waitClientClosed <- struct{}{}
+			return true
+		})
+	})
+
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		t.Fatalf("could not dial: %s", err)
+	}
+
+	handler := simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
+	client := simplefixgo.NewInitiator(conn, handler, 10)
+
+	s := session.NewInitiatorSession(
+		context.Background(),
+		handler,
+		PseudoGeneratedOpts,
+		session.LogonSettings{
+			TargetCompID:  "Server",
+			SenderCompID:  "Client",
+			HeartBtInt:    1,
+			EncryptMethod: fixgen.EnumEncryptMethodNoneother,
+		},
+	)
+
+	go func() {
+		err := client.Serve()
+		if err != nil {
+			panic(fmt.Errorf("serve client: %s", err))
+		}
+	}()
+
+	err = s.Run()
+	if err != nil {
+		t.Fatalf("run session: %s", err)
+	}
+
+	client.Close()
+
+	select {
+	case <-waitClientClosed:
+	case <-time.After(time.Second * 3):
+		t.Fatalf("too long time waiting close")
+	}
+}
+
+func TestCloseAcceptorConn(t *testing.T) {
+	const (
+		port = 9994
+	)
+
+	// close acceptor after work
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		t.Fatalf("listen error: %s", err)
+	}
+
+	waitServerDisconnect := make(chan struct{})
+	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
+	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
+		s := session.NewAcceptorSession(
+			context.Background(),
+			PseudoGeneratedOpts,
+			handler,
+			session.LogonSettings{HeartBtInt: 30, LogonTimeout: time.Second * 30},
+			func(request session.LogonSettings) (err error) { return nil },
+		)
+
+		err := s.Run()
+		if err != nil {
+			t.Fatalf("run s: %s", err)
+		}
+
+		handler.OnConnect(func() bool {
+			t.Log("server: client connected")
+			return true
+		})
+	})
+
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		t.Fatalf("could not dial: %s", err)
+	}
+
+	initiatorHandler := simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
+	client := simplefixgo.NewInitiator(conn, initiatorHandler, 10)
+
+	s := session.NewInitiatorSession(
+		context.Background(),
+		initiatorHandler,
+		PseudoGeneratedOpts,
+		session.LogonSettings{
+			TargetCompID:  "Server",
+			SenderCompID:  "Client",
+			HeartBtInt:    1,
+			EncryptMethod: fixgen.EnumEncryptMethodNoneother,
+		},
+	)
+
+	initiatorHandler.OnConnect(func() bool {
+		t.Log("client: connected to server")
+		server.Close()
+
+		return true
+	})
+
+	initiatorHandler.OnDisconnect(func() bool {
+		t.Log("server disconnected")
+		waitServerDisconnect <- struct{}{}
+		return true
+	})
+
+	go func() {
+		err := client.Serve()
+		if !errors.Is(err, simplefixgo.ErrConnClosed) {
+			panic(fmt.Errorf("serve client: %s", err))
+		}
+		t.Log("server closed")
+	}()
+
+	err = s.Run()
+	if err != nil {
+		t.Fatalf("run session: %s", err)
+	}
+
+	select {
+	case <-waitServerDisconnect:
+	case <-time.After(time.Second * 3):
+		t.Fatalf("too long time waiting close")
 	}
 }
