@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Group structure for FIX-Group types
+// Group is a structure for FIX-Group types
 type Group struct {
 	noTag    string
 	template Items
@@ -18,7 +18,7 @@ func (g *Group) NoTag() string {
 	return g.noTag
 }
 
-// String convert Group to string
+// String converts Group to string
 func (g *Group) String() string {
 	var items []string
 	for _, item := range g.items {

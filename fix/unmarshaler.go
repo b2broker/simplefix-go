@@ -6,6 +6,7 @@ import (
 	"reflect"
 )
 
+// UnmarshalItems reads data from byte FIX-message and write it in Items
 func UnmarshalItems(data []byte, msg Items, strict bool) error {
 	u := &unmarshaler{data: data, strict: strict}
 

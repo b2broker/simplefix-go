@@ -11,7 +11,7 @@ type Component struct {
 	items []Item
 }
 
-// NewComponent create new Component
+// NewComponent creates new Component
 func NewComponent(items ...Item) *Component {
 	return &Component{items: items}
 }
@@ -84,7 +84,7 @@ func (c *Component) SetComponent(id int, v *Component) {
 	c.items[id] = v
 }
 
-// String convert Component to string
+// String converts Component to string
 func (c *Component) String() string {
 	var items []string
 	for _, item := range c.items {

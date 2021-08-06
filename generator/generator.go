@@ -19,6 +19,7 @@ const (
 	ComponentItem = "component"
 )
 
+// Generator generates structures and methods for FIX-messages from Doc file
 type Generator struct {
 	doc      *Doc
 	config   *Config
@@ -31,6 +32,7 @@ type Generator struct {
 	groups     map[string]*ComponentMember
 }
 
+// NewGenerator creates new Generator
 func NewGenerator(doc *Doc, config *Config, libPkg string) *Generator {
 	return &Generator{
 		doc:    doc,
@@ -100,6 +102,7 @@ func (g *Generator) makeFile(data, pkg string) string {
 	})
 }
 
+// Execute creates messages as separate files
 func (g *Generator) Execute(outputDirPath string) (err error) {
 	// todo split generated code into packages
 	g.prepare()

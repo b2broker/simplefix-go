@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-// InitiatorHandler basic method for handle initiator
+// InitiatorHandler is a basic methods of handling the initiator
 type InitiatorHandler interface {
 	ServeIncoming(msg []byte)
 	Outgoing() <-chan []byte
@@ -15,7 +15,7 @@ type InitiatorHandler interface {
 	Send(message SendingMessage) error
 }
 
-// Initiator client side service
+// Initiator is a client side service
 type Initiator struct {
 	conn    *Conn
 	handler InitiatorHandler
@@ -34,7 +34,7 @@ func NewInitiator(conn net.Conn, handler InitiatorHandler, bufSize int) *Initiat
 	return c
 }
 
-// Close cancel context
+// Close cancels context
 func (c *Initiator) Close() {
 	c.cancel()
 }

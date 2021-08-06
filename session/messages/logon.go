@@ -1,6 +1,6 @@
 package messages
 
-// LogonBuilder interface for generated Logon message builder
+// LogonBuilder is an interface for generated Logon message builder
 type LogonBuilder interface {
 	// Flow Message
 	Parse(data []byte) (LogonBuilder, error)

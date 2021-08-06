@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// KeyValue basic structure of FIX-message
+// KeyValue is a basic structure of FIX-message
 // Contain tag of field and value
 type KeyValue struct {
 	Key   string
@@ -35,7 +35,7 @@ func (kv *KeyValue) AsTemplate() *KeyValue {
 	}
 }
 
-// ToBytes convert KeyValue to bytes
+// ToBytes converts KeyValue to bytes
 func (kv *KeyValue) ToBytes() []byte {
 	if kv.Value.IsNull() {
 		return nil
@@ -51,7 +51,7 @@ func (kv *KeyValue) ToBytes() []byte {
 	}, []byte{61})
 }
 
-// Set replace value
+// Set replaces value
 func (kv *KeyValue) Set(value Value) {
 	kv.Value = value
 }
@@ -74,10 +74,10 @@ func (kv *KeyValue) String() string {
 	return fmt.Sprintf("%s: %s", kv.Key, kv.Value)
 }
 
-// KeyValues list of KeyValue elements
+// KeyValues is a list of KeyValue elements
 type KeyValues []*KeyValue
 
-// ToBytes convert KeyValue list to bytes
+// ToBytes converts KeyValue list to bytes
 func (kvs KeyValues) ToBytes() []byte {
 	var msg [][]byte
 	for _, kv := range kvs {

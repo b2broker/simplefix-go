@@ -9,14 +9,14 @@ import (
 // ErrHandleNotFound will be returned when looking handler not found
 var ErrHandleNotFound = errors.New("handler not found")
 
-// HandlerPool structure for work with pool of message handlers
+// HandlerPool is a structure for work with pool of message handlers
 type HandlerPool struct {
 	mu       sync.RWMutex
 	handlers map[string]map[int64]HandlerFunc
 	counter  *int64
 }
 
-// NewHandlerPool create new HandlerPool
+// NewHandlerPool creates new HandlerPool
 func NewHandlerPool() *HandlerPool {
 	return &HandlerPool{
 		handlers: make(map[string]map[int64]HandlerFunc),
@@ -36,7 +36,7 @@ func (p *HandlerPool) free(msgType string) {
 	delete(p.handlers, msgType)
 }
 
-// Remove remove handler by its id
+// Remove removes handler by its id
 func (p *HandlerPool) Remove(msgType string, id int64) error {
 	if _, ok := p.handlers[msgType]; !ok {
 		return ErrHandleNotFound
@@ -68,7 +68,7 @@ func (p *HandlerPool) handlersByMsgType(msgType string) (result []HandlerFunc) {
 	return result
 }
 
-// Range handlers traversal
+// Range is a handlers traversal
 // it will be stop if one of handlers returns false
 func (p *HandlerPool) Range(msgType string, f func(HandlerFunc) bool) {
 	for _, handle := range p.handlersByMsgType(msgType) {
@@ -78,7 +78,7 @@ func (p *HandlerPool) Range(msgType string, f func(HandlerFunc) bool) {
 	}
 }
 
-// Add add new message handler for message type
+// Add adds new message handler for message type
 // returns id of added message
 func (p *HandlerPool) Add(msgType string, handle HandlerFunc) int64 {
 	p.mu.Lock()

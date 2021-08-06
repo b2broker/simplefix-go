@@ -64,6 +64,8 @@ type Handler interface {
 	Send(message simplefixgo.SendingMessage) error
 }
 
+// Session is a service for working with default pipelines of FIX API
+// logon, logout, heartbeats, rejects and message sequences
 type Session struct {
 	*Opts
 	side  Side
@@ -92,6 +94,7 @@ type Session struct {
 	timeLocation *time.Location
 }
 
+// NewInitiatorSession returns session for an Initiator
 func NewInitiatorSession(ctx context.Context, router Handler, params *Opts,
 	settings *LogonSettings) (s *Session, err error) {
 	s, err = newSession(ctx, params, router, settings)
@@ -105,6 +108,7 @@ func NewInitiatorSession(ctx context.Context, router Handler, params *Opts,
 	return
 }
 
+// NewAcceptorSession returns session for an Acceptor
 func NewAcceptorSession(ctx context.Context, params *Opts, router Handler,
 	settings *LogonSettings, onLogon logonHandler) (s *Session, err error) {
 	s, err = newSession(ctx, params, router, settings)

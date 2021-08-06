@@ -166,7 +166,7 @@ func (msg *Message) calcBodyLength(header, body, msgType []byte) int {
 	return count
 }
 
-// Reu
+// Raw
 func (msg *Message) Raw() ([]byte, error) {
 	if len(msg.raw) > 0 {
 		return msg.raw, nil

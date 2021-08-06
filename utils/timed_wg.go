@@ -9,11 +9,12 @@ import (
 // ErrWGExpired returns when timeout expired before wait group will be done
 var ErrWGExpired = errors.New("wait group timeout expired")
 
+// TimedWaitGroup is a combination of WaitGroup and timeout
 type TimedWaitGroup struct {
 	sync.WaitGroup
 }
 
-// WaitWithTimeout wait for one of two cases:
+// WaitWithTimeout waits for one of two cases:
 // timeout expired (returns error)
 // wait group will be done (returns nil)
 func (wg *TimedWaitGroup) WaitWithTimeout(timeout time.Duration) error {

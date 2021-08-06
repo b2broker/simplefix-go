@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-// ParseXML helper for unmarshal XML into struct
+// ParseXML unmarshal XML into struct
 func ParseXML(path string, data interface{}) error {
 	var err error
 

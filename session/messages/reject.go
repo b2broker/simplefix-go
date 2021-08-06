@@ -1,6 +1,6 @@
 package messages
 
-// RejectBuilder interface for generated Reject message builder
+// RejectBuilder is an interface for generated Reject message builder
 type RejectBuilder interface {
 	// Flow Message
 	Parse(data []byte) (RejectBuilder, error)

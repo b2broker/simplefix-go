@@ -14,10 +14,10 @@ type Sender interface {
 	Send(message SendingMessage) error
 }
 
-// HandlerFunc function for handle message
+// HandlerFunc is a function for handle message
 type HandlerFunc func(msg []byte)
 
-// AcceptorHandler required methods for base work of acceptor (server)
+// AcceptorHandler is a collection of methods requires for the base work of acceptor
 type AcceptorHandler interface {
 	ServeIncoming(msg []byte)
 	Outgoing() <-chan []byte
@@ -39,7 +39,7 @@ type HandlerFactory interface {
 	MakeHandler(ctx context.Context) AcceptorHandler
 }
 
-// Acceptor server side service for handling connections of clients
+// Acceptor is a server side service for handling connections of clients
 type Acceptor struct {
 	listener        net.Listener
 	factory         HandlerFactory
@@ -50,7 +50,7 @@ type Acceptor struct {
 	cancel context.CancelFunc
 }
 
-// NewAcceptor create new Acceptor
+// NewAcceptor creates new Acceptor
 func NewAcceptor(listener net.Listener, factory HandlerFactory, handleNewClient func(handler AcceptorHandler)) *Acceptor {
 	s := &Acceptor{
 		factory:         factory,
@@ -63,12 +63,12 @@ func NewAcceptor(listener net.Listener, factory HandlerFactory, handleNewClient 
 	return s
 }
 
-// Close cancel context of Acceptor to stop working
+// Close cancels context of Acceptor to stop working
 func (s *Acceptor) Close() {
 	s.cancel()
 }
 
-// ListenAndServe run listening and serving for connection
+// ListenAndServe runs listening and serving for connection
 // start accepting connections of new clients
 func (s *Acceptor) ListenAndServe() error {
 	listenErr := make(chan error)
@@ -98,8 +98,8 @@ func (s *Acceptor) ListenAndServe() error {
 	}
 }
 
-// serve run listening and serving connection
-// handle ClientConn's connection
+// serve runs listening and serving connection
+// handles ClientConn's connection
 func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()

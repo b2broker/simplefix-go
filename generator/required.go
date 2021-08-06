@@ -1,6 +1,6 @@
 package generator
 
-// ExcludedFields is a list of tags which not will be at generated messages
+// ExcludedFields is a list of tags which will be omitted at generated messages
 // because they already exists in base structure
 var ExcludedFields = map[string]bool{
 	"BeginString": true,

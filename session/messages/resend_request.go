@@ -1,6 +1,6 @@
 package messages
 
-// ResendRequestBuilder interface for generated ResendRequest message builder
+// ResendRequestBuilder is an interface for generated ResendRequest message builder
 type ResendRequestBuilder interface {
 	// Flow Message
 	Parse(data []byte) (ResendRequestBuilder, error)

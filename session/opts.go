@@ -4,6 +4,7 @@ import (
 	"github.com/b2broker/simplefix-go/session/messages"
 )
 
+// Opts is options for Session from generated code
 type Opts struct {
 	Location string
 

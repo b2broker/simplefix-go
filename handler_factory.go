@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// AcceptorHandlerFactory handler factory for Acceptor
+// AcceptorHandlerFactory is a handler factory for an Acceptor
 type AcceptorHandlerFactory struct {
 	bufferSize int
 	msgTypeTag string
