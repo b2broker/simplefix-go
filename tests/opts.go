@@ -6,7 +6,7 @@ import (
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
 )
 
-var PseudoGeneratedOpts = session.SessionOpts{
+var pseudoGeneratedOpts = session.Opts{
 	LogonBuilder:         fixgen.Logon{}.New(),
 	LogoutBuilder:        fixgen.Logout{}.New(),
 	RejectBuilder:        fixgen.Reject{}.New(),

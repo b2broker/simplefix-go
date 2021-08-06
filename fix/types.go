@@ -6,19 +6,33 @@ import (
 	"time"
 )
 
+// Value basic methods for work with FIX-value
 type Value interface {
+	// ToBytes converts value to bytes
 	ToBytes() []byte
+
+	// FromBytes parse value from bytes
 	FromBytes([]byte) error
+
+	// Value returns value
 	Value() interface{}
+
+	// String convert Value to string
 	String() string
+
+	// IsNull check is empty value
 	IsNull() bool
+
+	// Set replace value with same type
 	Set(d interface{}) error
 }
 
+// Raw data represented by bytes
 type Raw struct {
 	value []byte
 }
 
+// NewRaw
 func NewRaw(v []byte) *Raw {
 	return &Raw{
 		value: v,
@@ -42,6 +56,7 @@ func (v *Raw) Value() interface{} {
 	return v.value
 }
 
+// Set set value from []byte
 func (v *Raw) Set(d interface{}) error {
 	if res, ok := d.([]byte); ok {
 		v.value = res
@@ -55,6 +70,7 @@ func (v *Raw) String() string {
 	return string(v.value)
 }
 
+// String
 type String struct {
 	value string
 	valid bool
@@ -64,6 +80,7 @@ func NewString(v string) *String {
 	return &String{value: v, valid: true}
 }
 
+// Set set value from string
 func (v *String) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false
@@ -123,6 +140,7 @@ func (v *Int) IsNull() bool {
 	return !v.valid
 }
 
+// Set set value from int
 func (v *Int) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false
@@ -164,15 +182,18 @@ func (v *Int) ToBytes() []byte {
 	return []byte(strconv.Itoa(v.value))
 }
 
+// Uint
 type Uint struct {
 	value uint64
 	valid bool
 }
 
+// NewUint
 func NewUint(value uint64) *Uint {
 	return &Uint{value: value}
 }
 
+// Set set value from uint64
 func (v *Uint) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false
@@ -219,11 +240,13 @@ func (v *Uint) ToBytes() []byte {
 	return []byte(strconv.FormatUint(v.value, 10))
 }
 
+// Float
 type Float struct {
 	value float64
 	valid bool
 }
 
+// NewFloat
 func NewFloat(value float64) *Float {
 	return &Float{value: value}
 }
@@ -259,6 +282,7 @@ func (v *Float) String() string {
 	return fmt.Sprintf("%f", v.value)
 }
 
+// Set set value from float64
 func (v *Float) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false
@@ -274,15 +298,18 @@ func (v *Float) Set(d interface{}) error {
 	return fmt.Errorf("could not use %s as type %s", d, "Float")
 }
 
+// Time
 type Time struct {
 	value time.Time
 	valid bool
 }
 
+// NewTime
 func NewTime(value time.Time) *Time {
 	return &Time{value: value, valid: true}
 }
 
+// Set set value from time.Time
 func (v *Time) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false
@@ -334,6 +361,7 @@ const (
 	False = "N"
 )
 
+// Bool
 type Bool struct {
 	value bool
 	valid bool
@@ -381,6 +409,7 @@ func (v *Bool) IsNull() bool {
 	return !v.valid
 }
 
+// Set set value from bool
 func (v *Bool) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false

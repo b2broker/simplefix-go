@@ -1,5 +1,6 @@
 package messages
 
+// TestRequestBuilder is an interface for generated TestRequest message builder
 type TestRequestBuilder interface {
 	// Flow Message
 	Parse(data []byte) (TestRequestBuilder, error)

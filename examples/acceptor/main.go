@@ -25,7 +25,7 @@ func mustConvToInt(s string) int {
 }
 
 // todo move boilerplate to generator
-var PseudoGenerated = session.SessionOpts{
+var pseudoGeneratedOpts = session.Opts{
 	LogonBuilder:         fixgen.Logon{}.New(),
 	LogoutBuilder:        fixgen.Logout{}.New(),
 	RejectBuilder:        fixgen.Reject{}.New(),
@@ -57,11 +57,11 @@ func main() {
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
-		session := session.NewAcceptorSession(
+		session, err := session.NewAcceptorSession(
 			context.Background(),
-			PseudoGenerated,
+			&pseudoGeneratedOpts,
 			handler,
-			session.LogonSettings{
+			&session.LogonSettings{
 				HeartBtInt:   30,
 				LogonTimeout: time.Second * 30,
 				HeartBtLimits: &session.IntLimits{
@@ -69,7 +69,7 @@ func main() {
 					Max: 60,
 				},
 			},
-			func(request session.LogonSettings) (err error) {
+			func(request *session.LogonSettings) (err error) {
 				fmt.Printf(
 					"free logon for '%s' (%s)\n",
 					request.Username,
@@ -77,7 +77,12 @@ func main() {
 				)
 
 				return nil
-			})
+			},
+		)
+		if err != nil {
+			panic(err)
+		}
+
 		_ = session.Run()
 		session.SetMessageStorage(memory.NewStorage(100, 100))
 

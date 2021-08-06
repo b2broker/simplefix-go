@@ -5,14 +5,18 @@ import (
 	"strings"
 )
 
+// Component is a batch of different FIX-items
+// it may contain KeyValue, Group and another Component
 type Component struct {
 	items []Item
 }
 
+// NewComponent creates new Component
 func NewComponent(items ...Item) *Component {
 	return &Component{items: items}
 }
 
+// Items returns items of Component
 func (c *Component) Items() Items {
 	return c.items
 }
@@ -55,10 +59,12 @@ func (c *Component) ToBytes() []byte {
 	return joinBody(msg...)
 }
 
+// Get returns item of component by sequence number
 func (c *Component) Get(id int) Item {
 	return c.items[id].(*KeyValue)
 }
 
+// Set replace item of component by sequence number
 func (c *Component) Set(id int, v Item) {
 	c.items[id] = v
 }
@@ -78,6 +84,7 @@ func (c *Component) SetComponent(id int, v *Component) {
 	c.items[id] = v
 }
 
+// String converts Component to string
 func (c *Component) String() string {
 	var items []string
 	for _, item := range c.items {

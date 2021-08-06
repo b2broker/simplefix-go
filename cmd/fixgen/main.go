@@ -19,12 +19,12 @@ func main() {
 	flag.Parse()
 
 	doc := &generator.Doc{}
-	if err = utils.ParseXml(*sourceXMLPath, doc); err != nil {
+	if err = utils.ParseXML(*sourceXMLPath, doc); err != nil {
 		panic(fmt.Errorf("could not make Doc XML: %s", err))
 	}
 
 	config := &generator.Config{}
-	if err = utils.ParseXml(*typesMappingPath, config); err != nil {
+	if err = utils.ParseXML(*typesMappingPath, config); err != nil {
 		panic(fmt.Errorf("could not make Doc XML: %s", err))
 	}
 

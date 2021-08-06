@@ -58,7 +58,7 @@ func (t *Timer) Refresh() {
 	t.lastUpdate = time.Now()
 }
 
-// TakeTimeout will stop when time will is over or closed
+// TakeTimeout will be end when time will is over or closed
 func (t *Timer) TakeTimeout() {
 	t.Refresh()
 	ticker := time.NewTicker(t.checkingTimeout)

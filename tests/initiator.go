@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func RunNewInitiator(port int, t *testing.T, settings session.LogonSettings) (s *session.Session, handler *simplefixgo.DefaultHandler) {
+func RunNewInitiator(port int, t *testing.T, settings *session.LogonSettings) (s *session.Session, handler *simplefixgo.DefaultHandler) {
 	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		t.Fatalf("could not dial: %s", err)
@@ -23,19 +23,22 @@ func RunNewInitiator(port int, t *testing.T, settings session.LogonSettings) (s 
 	handler = simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
 	client := simplefixgo.NewInitiator(conn, handler, 10)
 
-	s = session.NewInitiatorSession(
+	s, err = session.NewInitiatorSession(
 		context.Background(),
 		handler,
-		PseudoGeneratedOpts,
+		&pseudoGeneratedOpts,
 		settings,
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	// log messages
 	handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
-		fmt.Println("incoming:", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+		fmt.Println("incoming:", string(bytes.ReplaceAll(msg, fix.Delimiter, []byte("|"))))
 	})
 	handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
-		fmt.Println("outgoing:", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+		fmt.Println("outgoing:", string(bytes.ReplaceAll(msg, fix.Delimiter, []byte("|"))))
 	})
 
 	// todo move

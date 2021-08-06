@@ -47,7 +47,7 @@ const (
 	WaitingLogoutAnswer
 )
 
-type logonHandler func(request LogonSettings) (err error)
+type logonHandler func(request *LogonSettings) (err error)
 
 // todo
 type IntLimits struct {
@@ -64,8 +64,10 @@ type Handler interface {
 	Send(message simplefixgo.SendingMessage) error
 }
 
+// Session is a service for working with default pipelines of FIX API
+// logon, logout, heartbeats, rejects and message sequences
 type Session struct {
-	SessionOpts
+	*Opts
 	side  Side
 	state LogonState
 
@@ -80,41 +82,50 @@ type Session struct {
 
 	// params
 	LogonHandler  logonHandler
-	LogonSettings LogonSettings
+	LogonSettings *LogonSettings
 
 	// soon
-	//maxMessageSize  int64  // validation
-	//encryptedMethod string // validation
+	// maxMessageSize  int64  // validation
+	// encryptedMethod string // validation
 
 	ctx          context.Context
 	cancel       context.CancelFunc
 	errorHandler func(error)
+	timeLocation *time.Location
 }
 
-func NewInitiatorSession(ctx context.Context, router Handler, params SessionOpts,
-	settings LogonSettings) *Session {
-	s := newSession(ctx, params, router, settings)
+// NewInitiatorSession returns session for an Initiator
+func NewInitiatorSession(ctx context.Context, router Handler, params *Opts,
+	settings *LogonSettings) (s *Session, err error) {
+	s, err = newSession(ctx, params, router, settings)
+	if err != nil {
+		return
+	}
 
-	s.side = SideInitiator
+	s.side = sideInitiator
 	s.state = WaitingLogonAnswer
 
-	return s
+	return
 }
 
-func NewAcceptorSession(ctx context.Context, params SessionOpts, router Handler,
-	settings LogonSettings, onLogon logonHandler) *Session {
-	s := newSession(ctx, params, router, settings)
+// NewAcceptorSession returns session for an Acceptor
+func NewAcceptorSession(ctx context.Context, params *Opts, router Handler,
+	settings *LogonSettings, onLogon logonHandler) (s *Session, err error) {
+	s, err = newSession(ctx, params, router, settings)
+	if err != nil {
+		return
+	}
 
-	s.side = SideAcceptor
+	s.side = sideAcceptor
 	s.state = WaitingLogon
 	s.LogonHandler = onLogon
 
-	return s
+	return
 }
 
-func newSession(ctx context.Context, params SessionOpts, router Handler, settings LogonSettings) *Session {
-	session := &Session{
-		SessionOpts:  params,
+func newSession(ctx context.Context, params *Opts, router Handler, settings *LogonSettings) (session *Session, err error) {
+	session = &Session{
+		Opts:         params,
 		router:       router,
 		counter:      new(int64),
 		eventHandler: utils.NewEventHandlerPool(),
@@ -122,9 +133,18 @@ func newSession(ctx context.Context, params SessionOpts, router Handler, setting
 		LogonSettings: settings,
 	}
 
+	if params.Location != "" {
+		session.timeLocation, err = time.LoadLocation(params.Location)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		session.timeLocation = time.UTC
+	}
+
 	session.ctx, session.cancel = context.WithCancel(ctx)
 
-	return session
+	return session, nil
 }
 
 func (s *Session) changeState(state LogonState) {
@@ -229,7 +249,7 @@ func (s *Session) OnError(handler func(error)) {
 
 func (s *Session) Run() (err error) {
 	s.state = WaitingLogon
-	if s.side == SideInitiator {
+	if s.side == sideInitiator {
 		err = s.LogonRequest()
 		if err != nil {
 			return fmt.Errorf("sendWithErrorCheck logon request: %w", err)
@@ -254,7 +274,7 @@ func (s *Session) Run() (err error) {
 				s.MakeReject(reasonCode, tag, incomingLogon.HeaderBuilder().MsgSeqNum())
 			}
 
-			s.LogonSettings = LogonSettings{
+			s.LogonSettings = &LogonSettings{
 				HeartBtInt:    incomingLogon.HeartBtInt(),
 				EncryptMethod: incomingLogon.EncryptMethod(),
 				Password:      incomingLogon.Password(),
@@ -308,7 +328,7 @@ func (s *Session) Run() (err error) {
 			s.RejectMessage(msg)
 		}
 
-		if s.side == SideInitiator {
+		if s.side == sideInitiator {
 			s.changeState(WaitingLogonAnswer)
 		} else {
 			s.changeState(WaitingLogon)
@@ -432,8 +452,7 @@ func (s *Session) RejectMessage(msg []byte) {
 }
 
 func (s *Session) currentTime() time.Time {
-	local, _ := time.LoadLocation("UTC") // todo params
-	return time.Now().In(local)
+	return time.Now().In(s.timeLocation)
 }
 
 // Send sends message with preparing header tags:

@@ -20,11 +20,11 @@ func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) *simple
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
-		s := session.NewAcceptorSession(
+		s, err := session.NewAcceptorSession(
 			context.Background(),
-			PseudoGeneratedOpts,
+			&pseudoGeneratedOpts,
 			handler,
-			session.LogonSettings{
+			&session.LogonSettings{
 				HeartBtInt:   30,
 				LogonTimeout: time.Second * 30,
 				HeartBtLimits: &session.IntLimits{
@@ -32,7 +32,7 @@ func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) *simple
 					Max: 60,
 				},
 			},
-			func(request session.LogonSettings) (err error) {
+			func(request *session.LogonSettings) (err error) {
 				t.Logf(
 					"user '%s' connected with password '%s'",
 					request.Username,
@@ -42,6 +42,10 @@ func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) *simple
 				return nil
 			},
 		)
+		if err != nil {
+			panic(err)
+		}
+
 		err = s.Run()
 		if err != nil {
 			t.Fatalf("run s: %s", err)

@@ -8,12 +8,14 @@ import (
 	"net"
 )
 
+// ErrConnClosed connection error
 var ErrConnClosed = fmt.Errorf("reader closed")
 
 const (
-	EndOfMsgTag = "10="
+	endOfMsgTag = "10="
 )
 
+// net.Conn wrapper for working with split messages
 type Conn struct {
 	reader chan []byte
 	writer chan []byte
@@ -23,6 +25,7 @@ type Conn struct {
 	cancel context.CancelFunc
 }
 
+// NewConn creates new Conn
 func NewConn(ctx context.Context, conn net.Conn, msgBuffSize int) *Conn {
 	c := &Conn{
 		reader: make(chan []byte, msgBuffSize),
@@ -36,6 +39,7 @@ func NewConn(ctx context.Context, conn net.Conn, msgBuffSize int) *Conn {
 	return c
 }
 
+// Close cancels Conn context to stop work
 func (c *Conn) Close() {
 	c.cancel()
 }
@@ -73,7 +77,7 @@ func (c *Conn) runReader(errCh chan error) {
 		}
 
 		msg = append(msg, buff...)
-		if len(buff) >= 3 && bytes.Equal(buff[0:3], []byte(EndOfMsgTag)) {
+		if len(buff) >= 3 && bytes.Equal(buff[0:3], []byte(endOfMsgTag)) {
 			c.reader <- msg
 			msg = []byte{}
 		}

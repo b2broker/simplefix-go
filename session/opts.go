@@ -4,7 +4,10 @@ import (
 	"github.com/b2broker/simplefix-go/session/messages"
 )
 
-type SessionOpts struct {
+// Opts is options for Session from generated code
+type Opts struct {
+	Location string
+
 	HeaderBuilder  messages.HeaderBuilder
 	TrailerBuilder messages.TrailerBuilder
 
@@ -19,3 +22,10 @@ type SessionOpts struct {
 	AllowedEncryptedMethods map[string]struct{} // can be only None
 	SessionErrorCodes       messages.SessionErrorCodes
 }
+
+type Side int64
+
+const (
+	sideAcceptor = iota
+	sideInitiator
+)

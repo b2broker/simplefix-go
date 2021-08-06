@@ -6,6 +6,7 @@ import (
 	"sync"
 )
 
+// Storage stores last messages
 type Storage struct {
 	maxSize    int
 	bufferSize int
@@ -14,7 +15,7 @@ type Storage struct {
 	mu         sync.Mutex
 }
 
-// NewStorage constructor of in-memory Storage
+// NewStorage is a constructor of in-memory Storage
 // bufferSize is a size of additional messages at storage
 // the larger the buffer, the less frequent of the flush
 // maxSize is a count of messages in the storage
@@ -70,6 +71,7 @@ func (s *Storage) Save(msg []byte, msgSeqNum int) error {
 	return nil
 }
 
+// Messages returns message list in sequential order from msgSeqNumFrom to msgSeqNumTo
 func (s *Storage) Messages(msgSeqNumFrom, msgSeqNumTo int) ([][]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

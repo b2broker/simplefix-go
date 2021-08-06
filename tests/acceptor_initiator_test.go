@@ -29,12 +29,12 @@ func TestHeartbeat(t *testing.T) {
 	defer acceptor.Close()
 	go func() {
 		err := acceptor.ListenAndServe()
-		if err != nil && !errors.Is(err, simplefixgo.ErrServerClosed) {
+		if err != nil && !errors.Is(err, simplefixgo.ErrConnClosed) {
 			panic(err)
 		}
 	}()
 
-	initiatorSession, initiatorHandler := RunNewInitiator(port, t, session.LogonSettings{
+	initiatorSession, initiatorHandler := RunNewInitiator(port, t, &session.LogonSettings{
 		TargetCompID:  "Server",
 		SenderCompID:  "Client",
 		HeartBtInt:    heartBtInt,
@@ -76,12 +76,12 @@ func TestTestRequest(t *testing.T) {
 	defer acceptor.Close()
 	go func() {
 		err := acceptor.ListenAndServe()
-		if err != nil && !errors.Is(err, simplefixgo.ErrServerClosed) {
+		if err != nil {
 			panic(err)
 		}
 	}()
 
-	initiatorSession, initiatorHandler := RunNewInitiator(port, t, session.LogonSettings{
+	initiatorSession, initiatorHandler := RunNewInitiator(port, t, &session.LogonSettings{
 		TargetCompID:  "Server",
 		SenderCompID:  "Client",
 		HeartBtInt:    heartBtInt,
@@ -139,12 +139,12 @@ func TestResendSequence(t *testing.T) {
 	defer acceptor.Close()
 	go func() {
 		err := acceptor.ListenAndServe()
-		if err != nil && !errors.Is(err, simplefixgo.ErrServerClosed) {
+		if err != nil {
 			panic(err)
 		}
 	}()
 
-	initiatorSession, initiatorHandler := RunNewInitiator(port, t, session.LogonSettings{
+	initiatorSession, initiatorHandler := RunNewInitiator(port, t, &session.LogonSettings{
 		TargetCompID:  "Server",
 		SenderCompID:  "Client",
 		HeartBtInt:    1,
@@ -209,15 +209,18 @@ func TestCloseInitiatorConn(t *testing.T) {
 	waitClientClosed := make(chan struct{})
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
-		s := session.NewAcceptorSession(
+		s, err := session.NewAcceptorSession(
 			context.Background(),
-			PseudoGeneratedOpts,
+			&pseudoGeneratedOpts,
 			handler,
-			session.LogonSettings{HeartBtInt: 30, LogonTimeout: time.Second * 30},
-			func(request session.LogonSettings) (err error) { return nil },
+			&session.LogonSettings{HeartBtInt: 30, LogonTimeout: time.Second * 30},
+			func(request *session.LogonSettings) (err error) { return nil },
 		)
+		if err != nil {
+			panic(err)
+		}
 
-		err := s.Run()
+		err = s.Run()
 		if err != nil {
 			t.Fatalf("run s: %s", err)
 		}
@@ -244,17 +247,20 @@ func TestCloseInitiatorConn(t *testing.T) {
 	handler := simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
 	client := simplefixgo.NewInitiator(conn, handler, 10)
 
-	s := session.NewInitiatorSession(
+	s, err := session.NewInitiatorSession(
 		context.Background(),
 		handler,
-		PseudoGeneratedOpts,
-		session.LogonSettings{
+		&pseudoGeneratedOpts,
+		&session.LogonSettings{
 			TargetCompID:  "Server",
 			SenderCompID:  "Client",
 			HeartBtInt:    1,
 			EncryptMethod: fixgen.EnumEncryptMethodNoneother,
 		},
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	go func() {
 		err := client.Serve()
@@ -291,15 +297,18 @@ func TestCloseAcceptorConn(t *testing.T) {
 	waitServerDisconnect := make(chan struct{})
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
-		s := session.NewAcceptorSession(
+		s, err := session.NewAcceptorSession(
 			context.Background(),
-			PseudoGeneratedOpts,
+			&pseudoGeneratedOpts,
 			handler,
-			session.LogonSettings{HeartBtInt: 30, LogonTimeout: time.Second * 30},
-			func(request session.LogonSettings) (err error) { return nil },
+			&session.LogonSettings{HeartBtInt: 30, LogonTimeout: time.Second * 30},
+			func(request *session.LogonSettings) (err error) { return nil },
 		)
+		if err != nil {
+			panic(err)
+		}
 
-		err := s.Run()
+		err = s.Run()
 		if err != nil {
 			t.Fatalf("run s: %s", err)
 		}
@@ -325,17 +334,20 @@ func TestCloseAcceptorConn(t *testing.T) {
 	initiatorHandler := simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
 	client := simplefixgo.NewInitiator(conn, initiatorHandler, 10)
 
-	s := session.NewInitiatorSession(
+	s, err := session.NewInitiatorSession(
 		context.Background(),
 		initiatorHandler,
-		PseudoGeneratedOpts,
-		session.LogonSettings{
+		&pseudoGeneratedOpts,
+		&session.LogonSettings{
 			TargetCompID:  "Server",
 			SenderCompID:  "Client",
 			HeartBtInt:    1,
 			EncryptMethod: fixgen.EnumEncryptMethodNoneother,
 		},
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	initiatorHandler.OnConnect(func() bool {
 		t.Log("client: connected to server")
