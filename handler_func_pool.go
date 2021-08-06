@@ -60,6 +60,7 @@ func (p *HandlerPool) handlersByMsgType(msgType string) (result []HandlerFunc) {
 		return
 	}
 
+	result = make([]HandlerFunc, 0, len(handlers))
 	for _, handler := range handlers {
 		result = append(result, handler)
 	}
