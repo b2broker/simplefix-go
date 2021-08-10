@@ -34,12 +34,11 @@ func makeMarketDataSnapshotFullRefresh() *MarketDataSnapshotFullRefresh {
 	return msg
 }
 
-func NewMarketDataSnapshotFullRefresh(header *Header, trailer *Trailer, instrument *Instrument, noMDEntries *MDEntriesGrp) *MarketDataSnapshotFullRefresh {
+func NewMarketDataSnapshotFullRefresh(instrument *Instrument, noMDEntries *MDEntriesGrp) *MarketDataSnapshotFullRefresh {
 	msg := makeMarketDataSnapshotFullRefresh().
 		SetInstrument(instrument).
 		SetMDEntriesGrp(noMDEntries)
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+
 	return msg
 }
 

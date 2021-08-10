@@ -1,5 +1,7 @@
 package fix44
 
+import ()
+
 // Enum type EnumCorporateAction
 const (
 	EnumCorporateActionExdividend string = "A"

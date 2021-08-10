@@ -1,5 +1,7 @@
 package fix44
 
+import ()
+
 // Enum type EnumApplQueueResolution
 const (
 	EnumApplQueueResolutionNoactiontaken string = "0"

@@ -31,11 +31,10 @@ func makeReject() *Reject {
 	return msg
 }
 
-func NewReject(header *Header, trailer *Trailer, refSeqNum int) *Reject {
+func NewReject(refSeqNum int) *Reject {
 	msg := makeReject().
 		SetRefSeqNum(refSeqNum)
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+
 	return msg
 }
 

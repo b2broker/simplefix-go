@@ -30,11 +30,10 @@ func makeMarketDataRequestReject() *MarketDataRequestReject {
 	return msg
 }
 
-func NewMarketDataRequestReject(header *Header, trailer *Trailer, mDReqID string) *MarketDataRequestReject {
+func NewMarketDataRequestReject(mDReqID string) *MarketDataRequestReject {
 	msg := makeMarketDataRequestReject().
 		SetMDReqID(mDReqID)
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+
 	return msg
 }
 

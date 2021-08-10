@@ -1,5 +1,7 @@
 package fix44
 
+import ()
+
 // Enum type EnumScope
 const (
 	EnumScopeLocalmarket string = "1"

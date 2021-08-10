@@ -27,10 +27,9 @@ func makeLogout() *Logout {
 	return msg
 }
 
-func NewLogout(header *Header, trailer *Trailer) *Logout {
+func NewLogout() *Logout {
 	msg := makeLogout()
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+
 	return msg
 }
 

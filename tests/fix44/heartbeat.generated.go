@@ -25,10 +25,9 @@ func makeHeartbeat() *Heartbeat {
 	return msg
 }
 
-func NewHeartbeat(header *Header, trailer *Trailer) *Heartbeat {
+func NewHeartbeat() *Heartbeat {
 	msg := makeHeartbeat()
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+
 	return msg
 }
 

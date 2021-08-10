@@ -26,12 +26,11 @@ func makeResendRequest() *ResendRequest {
 	return msg
 }
 
-func NewResendRequest(header *Header, trailer *Trailer, beginSeqNo int, endSeqNo int) *ResendRequest {
+func NewResendRequest(beginSeqNo int, endSeqNo int) *ResendRequest {
 	msg := makeResendRequest().
 		SetBeginSeqNo(beginSeqNo).
 		SetEndSeqNo(endSeqNo)
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+
 	return msg
 }
 

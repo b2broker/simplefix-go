@@ -34,15 +34,14 @@ func makeMarketDataRequest() *MarketDataRequest {
 	return msg
 }
 
-func NewMarketDataRequest(header *Header, trailer *Trailer, mDReqID string, subscriptionRequestType string, marketDepth int, noMDEntryTypes *MDEntryTypesGrp, noRelatedSym *RelatedSymGrp) *MarketDataRequest {
+func NewMarketDataRequest(mDReqID string, subscriptionRequestType string, marketDepth int, noMDEntryTypes *MDEntryTypesGrp, noRelatedSym *RelatedSymGrp) *MarketDataRequest {
 	msg := makeMarketDataRequest().
 		SetMDReqID(mDReqID).
 		SetSubscriptionRequestType(subscriptionRequestType).
 		SetMarketDepth(marketDepth).
 		SetMDEntryTypesGrp(noMDEntryTypes).
 		SetRelatedSymGrp(noRelatedSym)
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+
 	return msg
 }
 

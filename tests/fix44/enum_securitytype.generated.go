@@ -1,5 +1,7 @@
 package fix44
 
+import ()
+
 // Enum type EnumSecurityType
 const (
 	EnumSecurityTypeAssetbackedsecurities                    string = "ABS"

@@ -1,5 +1,7 @@
 package fix44
 
+import ()
+
 // Enum type EnumSecurityIDSource
 const (
 	EnumSecurityIDSourceCusip                         string = "1"

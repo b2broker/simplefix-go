@@ -1,5 +1,7 @@
 package fix44
 
+import ()
+
 // Enum type EnumMDReqRejReason
 const (
 	EnumMDReqRejReasonUnknownsym                     string = "0"

@@ -28,11 +28,10 @@ func makeMarketDataIncrementalRefresh() *MarketDataIncrementalRefresh {
 	return msg
 }
 
-func NewMarketDataIncrementalRefresh(header *Header, trailer *Trailer, noMDEntries *MDEntriesGrp) *MarketDataIncrementalRefresh {
+func NewMarketDataIncrementalRefresh(noMDEntries *MDEntriesGrp) *MarketDataIncrementalRefresh {
 	msg := makeMarketDataIncrementalRefresh().
 		SetMDEntriesGrp(noMDEntries)
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+
 	return msg
 }
 

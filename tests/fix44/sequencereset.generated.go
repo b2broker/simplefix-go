@@ -26,11 +26,10 @@ func makeSequenceReset() *SequenceReset {
 	return msg
 }
 
-func NewSequenceReset(header *Header, trailer *Trailer, newSeqNo int) *SequenceReset {
+func NewSequenceReset(newSeqNo int) *SequenceReset {
 	msg := makeSequenceReset().
 		SetNewSeqNo(newSeqNo)
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+
 	return msg
 }
 

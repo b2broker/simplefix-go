@@ -1,5 +1,7 @@
 package fix44
 
+import ()
+
 // Enum type EnumMsgType
 const (
 	EnumMsgTypeHeartbeat                               string = "0"

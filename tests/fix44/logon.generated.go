@@ -35,12 +35,11 @@ func makeLogon() *Logon {
 	return msg
 }
 
-func NewLogon(header *Header, trailer *Trailer, encryptMethod string, heartBtInt int) *Logon {
+func NewLogon(encryptMethod string, heartBtInt int) *Logon {
 	msg := makeLogon().
 		SetEncryptMethod(encryptMethod).
 		SetHeartBtInt(heartBtInt)
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+
 	return msg
 }
 

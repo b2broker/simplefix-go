@@ -340,18 +340,18 @@ func (Header) New() messages.HeaderBuilder {
 	return makeHeader()
 }
 
-func (header *Header) SetFieldSendingTime(sendingTime string) messages.HeaderBuilder {
-	return header.SetSendingTime(sendingTime)
-}
-
-func (header *Header) SetFieldSenderCompID(senderCompID string) messages.HeaderBuilder {
-	return header.SetSenderCompID(senderCompID)
-}
-
 func (header *Header) SetFieldTargetCompID(targetCompID string) messages.HeaderBuilder {
 	return header.SetTargetCompID(targetCompID)
 }
 
 func (header *Header) SetFieldMsgSeqNum(msgSeqNum int) messages.HeaderBuilder {
 	return header.SetMsgSeqNum(msgSeqNum)
+}
+
+func (header *Header) SetFieldSendingTime(sendingTime string) messages.HeaderBuilder {
+	return header.SetSendingTime(sendingTime)
+}
+
+func (header *Header) SetFieldSenderCompID(senderCompID string) messages.HeaderBuilder {
+	return header.SetSenderCompID(senderCompID)
 }

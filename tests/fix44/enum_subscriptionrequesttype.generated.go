@@ -1,5 +1,7 @@
 package fix44
 
+import ()
+
 // Enum type EnumSubscriptionRequestType
 const (
 	EnumSubscriptionRequestTypeSnapshot       string = "0"

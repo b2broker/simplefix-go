@@ -69,10 +69,9 @@ func make{{.Name}}() *{{.Name}} {
 	return msg
 }
 
-func New{{.Name}}(header *Header, trailer *Trailer, {{.Args}}) *{{.Name}} {
+func New{{.Name}}({{.Args}}) *{{.Name}} {
 	msg := make{{.Name}}(){{.Setters}}
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+	
 	return msg
 }
 

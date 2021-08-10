@@ -25,11 +25,10 @@ func makeTestRequest() *TestRequest {
 	return msg
 }
 
-func NewTestRequest(header *Header, trailer *Trailer, testReqID string) *TestRequest {
+func NewTestRequest(testReqID string) *TestRequest {
 	msg := makeTestRequest().
 		SetTestReqID(testReqID)
-	msg.SetHeader(header.AsComponent())
-	msg.SetTrailer(trailer.AsComponent())
+
 	return msg
 }
 

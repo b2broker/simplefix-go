@@ -1,5 +1,7 @@
 package fix44
 
+import ()
+
 // Enum type EnumTickDirection
 const (
 	EnumTickDirectionPlus      string = "0"
