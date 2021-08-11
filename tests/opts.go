@@ -7,13 +7,17 @@ import (
 )
 
 var pseudoGeneratedOpts = session.Opts{
-	LogonBuilder:         fixgen.Logon{}.New(),
-	LogoutBuilder:        fixgen.Logout{}.New(),
-	RejectBuilder:        fixgen.Reject{}.New(),
-	HeartbeatBuilder:     fixgen.Heartbeat{}.New(),
-	TestRequestBuilder:   fixgen.TestRequest{}.New(),
-	ResendRequestBuilder: fixgen.ResendRequest{}.New(),
-	Tags: messages.Tags{
+	MessageBuilders: session.MessageBuilders{
+		HeaderBuilder:        fixgen.Header{}.New(),
+		TrailerBuilder:       fixgen.Trailer{}.New(),
+		LogonBuilder:         fixgen.Logon{}.New(),
+		LogoutBuilder:        fixgen.Logout{}.New(),
+		RejectBuilder:        fixgen.Reject{}.New(),
+		HeartbeatBuilder:     fixgen.Heartbeat{}.New(),
+		TestRequestBuilder:   fixgen.TestRequest{}.New(),
+		ResendRequestBuilder: fixgen.ResendRequest{}.New(),
+	},
+	Tags: &messages.Tags{
 		MsgType:         mustConvToInt(fixgen.FieldMsgType),
 		MsgSeqNum:       mustConvToInt(fixgen.FieldMsgSeqNum),
 		HeartBtInt:      mustConvToInt(fixgen.FieldHeartBtInt),
@@ -22,7 +26,7 @@ var pseudoGeneratedOpts = session.Opts{
 	AllowedEncryptedMethods: map[string]struct{}{
 		fixgen.EnumEncryptMethodNoneother: {},
 	},
-	SessionErrorCodes: messages.SessionErrorCodes{
+	SessionErrorCodes: &messages.SessionErrorCodes{
 		InvalidTagNumber:            mustConvToInt(fixgen.EnumSessionRejectReasonInvalidtagnumber),
 		RequiredTagMissing:          mustConvToInt(fixgen.EnumSessionRejectReasonRequiredtagmissing),
 		TagNotDefinedForMessageType: mustConvToInt(fixgen.EnumSessionRejectReasonTagnotdefinedforthismessagetype),

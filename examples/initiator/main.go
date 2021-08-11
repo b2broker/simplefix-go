@@ -6,7 +6,7 @@ import (
 	"fmt"
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
-	flow "github.com/b2broker/simplefix-go/session"
+	"github.com/b2broker/simplefix-go/session"
 	"github.com/b2broker/simplefix-go/session/messages"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
 	"net"
@@ -23,14 +23,18 @@ func mustConvToInt(s string) int {
 	return i
 }
 
-var pseudoGeneratedOpts = flow.Opts{
-	LogonBuilder:         fixgen.Logon{}.New(),
-	LogoutBuilder:        fixgen.Logout{}.New(),
-	RejectBuilder:        fixgen.Reject{}.New(),
-	HeartbeatBuilder:     fixgen.Heartbeat{}.New(),
-	TestRequestBuilder:   fixgen.TestRequest{}.New(),
-	ResendRequestBuilder: fixgen.ResendRequest{}.New(),
-	Tags: messages.Tags{
+var pseudoGeneratedOpts = session.Opts{
+	MessageBuilders: session.MessageBuilders{
+		HeaderBuilder:        fixgen.Header{}.New(),
+		TrailerBuilder:       fixgen.Trailer{}.New(),
+		LogonBuilder:         fixgen.Logon{}.New(),
+		LogoutBuilder:        fixgen.Logout{}.New(),
+		RejectBuilder:        fixgen.Reject{}.New(),
+		HeartbeatBuilder:     fixgen.Heartbeat{}.New(),
+		TestRequestBuilder:   fixgen.TestRequest{}.New(),
+		ResendRequestBuilder: fixgen.ResendRequest{}.New(),
+	},
+	Tags: &messages.Tags{
 		MsgType:         mustConvToInt(fixgen.FieldMsgType),
 		MsgSeqNum:       mustConvToInt(fixgen.FieldMsgSeqNum),
 		HeartBtInt:      mustConvToInt(fixgen.FieldHeartBtInt),
@@ -39,7 +43,7 @@ var pseudoGeneratedOpts = flow.Opts{
 	AllowedEncryptedMethods: map[string]struct{}{
 		fixgen.EnumEncryptMethodNoneother: {},
 	},
-	SessionErrorCodes: messages.SessionErrorCodes{
+	SessionErrorCodes: &messages.SessionErrorCodes{
 		InvalidTagNumber:            mustConvToInt(fixgen.EnumSessionRejectReasonInvalidtagnumber),
 		RequiredTagMissing:          mustConvToInt(fixgen.EnumSessionRejectReasonRequiredtagmissing),
 		TagNotDefinedForMessageType: mustConvToInt(fixgen.EnumSessionRejectReasonTagnotdefinedforthismessagetype),
@@ -70,11 +74,11 @@ func main() {
 		return true
 	})
 
-	session, err := flow.NewInitiatorSession(
+	sess, err := session.NewInitiatorSession(
 		context.Background(),
 		handler,
 		&pseudoGeneratedOpts,
-		&flow.LogonSettings{
+		&session.LogonSettings{
 			TargetCompID:  "Server",
 			SenderCompID:  "Client",
 			HeartBtInt:    5,
@@ -102,10 +106,10 @@ func main() {
 	go func() {
 		time.Sleep(time.Second * 10)
 		fmt.Println("resend request after 10 seconds")
-		session.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(2).SetFieldEndSeqNo(3))
+		_ = sess.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(2).SetFieldEndSeqNo(3))
 	}()
 
-	_ = session.Run()
+	_ = sess.Run()
 
 	panic(client.Serve())
 }

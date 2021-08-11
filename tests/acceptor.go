@@ -25,7 +25,6 @@ func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) *simple
 			&pseudoGeneratedOpts,
 			handler,
 			&session.LogonSettings{
-				HeartBtInt:   30,
 				LogonTimeout: time.Second * 30,
 				HeartBtLimits: &session.IntLimits{
 					Min: 5,

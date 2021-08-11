@@ -17,21 +17,18 @@ import (
 type LogonState int64
 
 var (
-	ErrNotLogon       = errors.New("logon message doesnt received")
-	ErrTimeoutExpired = errors.New("logon timeout expired")
+	ErrMissingHandler          = errors.New("missing handler")
+	ErrMissingRequiredTag      = errors.New("missing required tag in tags list")
+	ErrMissingEncryptedMethods = errors.New("missing allowed encrypted methods list")
+	ErrMissingErrorCodes       = errors.New("missing error codes list")
+	ErrMissingMessageBuilder   = errors.New("missing required message builder")
+	ErrInvalidHeartBtLimits    = errors.New("invalid heartbeat limits field")
+	ErrInvalidHeartBtInt       = errors.New("invalid heartbeat int field")
+	ErrInvalidLogonTimeout     = errors.New("too low logon request timeout")
+	ErrMissingEncryptMethod    = errors.New("missing encrypt method") // done
+	ErrMissingLogonSettings    = errors.New("missing logon settings") // done
+	ErrMissingSessionOts       = errors.New("missing session opts")   // done
 )
-
-// todo constructor for acceptor and initiator
-type LogonSettings struct {
-	TargetCompID  string
-	SenderCompID  string
-	HeartBtInt    int
-	EncryptMethod string
-	Password      string
-	Username      string
-	LogonTimeout  time.Duration // todo
-	HeartBtLimits *IntLimits
-}
 
 const (
 	// WaitingLogon connection just started, waiting for Session message or preparing to send it
@@ -45,6 +42,10 @@ const (
 
 	// WaitingLogoutAnswer waiting for answer to Logout
 	WaitingLogoutAnswer
+)
+
+const (
+	MinLogonTimeout = time.Millisecond
 )
 
 type logonHandler func(request *LogonSettings) (err error)
@@ -95,11 +96,19 @@ type Session struct {
 }
 
 // NewInitiatorSession returns session for an Initiator
-func NewInitiatorSession(ctx context.Context, router Handler, params *Opts,
+func NewInitiatorSession(ctx context.Context, handler Handler, opts *Opts,
 	settings *LogonSettings) (s *Session, err error) {
-	s, err = newSession(ctx, params, router, settings)
+	s, err = newSession(ctx, opts, handler, settings)
 	if err != nil {
 		return
+	}
+
+	if settings.HeartBtInt == 0 {
+		return nil, ErrInvalidHeartBtInt
+	}
+
+	if settings.EncryptMethod == "" {
+		return nil, ErrMissingEncryptMethod
 	}
 
 	s.side = sideInitiator
@@ -116,6 +125,19 @@ func NewAcceptorSession(ctx context.Context, params *Opts, router Handler,
 		return
 	}
 
+	if params.AllowedEncryptedMethods == nil || len(params.AllowedEncryptedMethods) == 0 {
+		return nil, ErrMissingEncryptedMethods
+	}
+
+	if settings.HeartBtLimits == nil || settings.HeartBtLimits.Min > settings.HeartBtLimits.Max ||
+		settings.HeartBtLimits.Max == 0 || settings.HeartBtLimits.Min == 0 {
+		return nil, ErrInvalidHeartBtLimits
+	}
+
+	if settings.LogonTimeout < MinLogonTimeout {
+		return nil, ErrInvalidLogonTimeout
+	}
+
 	s.side = sideAcceptor
 	s.state = WaitingLogon
 	s.LogonHandler = onLogon
@@ -123,18 +145,31 @@ func NewAcceptorSession(ctx context.Context, params *Opts, router Handler,
 	return
 }
 
-func newSession(ctx context.Context, params *Opts, router Handler, settings *LogonSettings) (session *Session, err error) {
+func newSession(ctx context.Context, opts *Opts, handler Handler, settings *LogonSettings) (session *Session, err error) {
+	if handler == nil {
+		return nil, ErrMissingHandler
+	}
+
+	if settings == nil {
+		return nil, ErrMissingLogonSettings
+	}
+
+	err = opts.validate()
+	if err != nil {
+		return nil, err
+	}
+
 	session = &Session{
-		Opts:         params,
-		router:       router,
+		Opts:         opts,
+		router:       handler,
 		counter:      new(int64),
 		eventHandler: utils.NewEventHandlerPool(),
 
 		LogonSettings: settings,
 	}
 
-	if params.Location != "" {
-		session.timeLocation, err = time.LoadLocation(params.Location)
+	if opts.Location != "" {
+		session.timeLocation, err = time.LoadLocation(opts.Location)
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +213,7 @@ func (s *Session) checkLogonParams(incoming messages.LogonBuilder) (ok bool, tag
 func (s *Session) SetMessageStorage(storage MessageStorage) {
 	if s.msgStorageAllHandler > 0 || s.msgStorageResendHandler > 0 {
 		_ = s.router.RemoveOutgoingHandler(simplefixgo.AllMsgTypes, s.msgStorageAllHandler)
-		_ = s.router.RemoveIncomingHandler(s.ResendRequestBuilder.MsgType(), s.msgStorageResendHandler)
+		_ = s.router.RemoveIncomingHandler(s.MessageBuilders.ResendRequestBuilder.MsgType(), s.msgStorageResendHandler)
 	}
 
 	s.msgStorageAllHandler = s.router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
@@ -187,8 +222,8 @@ func (s *Session) SetMessageStorage(storage MessageStorage) {
 
 		_ = storage.Save(msg, id)
 	})
-	s.msgStorageResendHandler = s.router.HandleIncoming(s.ResendRequestBuilder.MsgType(), func(msg []byte) {
-		resendMsg, err := s.ResendRequestBuilder.Parse(msg)
+	s.msgStorageResendHandler = s.router.HandleIncoming(s.MessageBuilders.ResendRequestBuilder.MsgType(), func(msg []byte) {
+		resendMsg, err := s.MessageBuilders.ResendRequestBuilder.Parse(msg)
 		if err != nil {
 			s.RejectMessage(msg)
 			return
@@ -209,7 +244,7 @@ func (s *Session) SetMessageStorage(storage MessageStorage) {
 func (s *Session) Logout() error {
 	s.changeState(WaitingLogoutAnswer)
 
-	s.sendWithErrorCheck(s.LogoutBuilder.New())
+	s.sendWithErrorCheck(s.MessageBuilders.LogoutBuilder.New())
 
 	return nil
 }
@@ -225,7 +260,7 @@ func (s *Session) StartWaiting() {
 func (s *Session) LogonRequest() error {
 	s.changeState(WaitingLogonAnswer)
 
-	msg := s.LogonBuilder.New().
+	msg := s.MessageBuilders.LogonBuilder.New().
 		SetFieldEncryptMethod(s.LogonSettings.EncryptMethod).
 		SetFieldHeartBtInt(s.LogonSettings.HeartBtInt).
 		SetFieldPassword(s.LogonSettings.Password).
@@ -261,8 +296,8 @@ func (s *Session) Run() (err error) {
 		}
 	}
 
-	s.router.HandleIncoming(s.LogonBuilder.MsgType(), func(msg []byte) {
-		incomingLogon, err := s.LogonBuilder.Parse(msg)
+	s.router.HandleIncoming(s.MessageBuilders.LogonBuilder.MsgType(), func(msg []byte) {
+		incomingLogon, err := s.MessageBuilders.LogonBuilder.Parse(msg)
 		if err != nil {
 			s.RejectMessage(msg)
 			return
@@ -294,7 +329,7 @@ func (s *Session) Run() (err error) {
 				return
 			}
 
-			answer := s.LogonBuilder.New()
+			answer := s.MessageBuilders.LogonBuilder.New()
 
 			s.state = SuccessfulLogged
 
@@ -308,8 +343,8 @@ func (s *Session) Run() (err error) {
 			s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
 		}
 	})
-	s.router.HandleIncoming(s.LogoutBuilder.MsgType(), func(msg []byte) {
-		_, err := s.LogoutBuilder.Parse(msg)
+	s.router.HandleIncoming(s.MessageBuilders.LogoutBuilder.MsgType(), func(msg []byte) {
+		_, err := s.MessageBuilders.LogoutBuilder.Parse(msg)
 		if err != nil {
 			s.RejectMessage(msg)
 			return
@@ -322,7 +357,7 @@ func (s *Session) Run() (err error) {
 		case SuccessfulLogged:
 			s.changeState(WaitingLogoutAnswer)
 
-			s.sendWithErrorCheck(s.LogoutBuilder.New())
+			s.sendWithErrorCheck(s.MessageBuilders.LogoutBuilder.New())
 
 		default:
 			s.RejectMessage(msg)
@@ -334,8 +369,8 @@ func (s *Session) Run() (err error) {
 			s.changeState(WaitingLogon)
 		}
 	})
-	s.router.HandleIncoming(s.HeartbeatBuilder.MsgType(), func(msg []byte) {
-		_, err := s.HeartbeatBuilder.Parse(msg)
+	s.router.HandleIncoming(s.MessageBuilders.HeartbeatBuilder.MsgType(), func(msg []byte) {
+		_, err := s.MessageBuilders.HeartbeatBuilder.Parse(msg)
 		if err != nil {
 			s.RejectMessage(msg)
 			return
@@ -346,8 +381,8 @@ func (s *Session) Run() (err error) {
 			return
 		}
 	})
-	s.router.HandleIncoming(s.TestRequestBuilder.MsgType(), func(msg []byte) {
-		incomingTestRequest, err := s.TestRequestBuilder.Parse(msg)
+	s.router.HandleIncoming(s.MessageBuilders.TestRequestBuilder.MsgType(), func(msg []byte) {
+		incomingTestRequest, err := s.MessageBuilders.TestRequestBuilder.Parse(msg)
 		if err != nil {
 			s.RejectMessage(msg)
 			return
@@ -358,7 +393,7 @@ func (s *Session) Run() (err error) {
 			return
 		}
 
-		s.sendWithErrorCheck(s.HeartbeatBuilder.New().
+		s.sendWithErrorCheck(s.MessageBuilders.HeartbeatBuilder.New().
 			SetFieldTestReqID(incomingTestRequest.TestReqID()))
 
 	})
@@ -397,7 +432,7 @@ func (s *Session) start() error {
 			}
 
 			incomingMsgTimer.TakeTimeout()
-			testRequest := s.TestRequestBuilder.New()
+			testRequest := s.MessageBuilders.TestRequestBuilder.New()
 
 			testReqCounter++
 			expectedTestReq := strconv.Itoa(testReqCounter)
@@ -419,7 +454,7 @@ func (s *Session) start() error {
 
 			outgoingMsgTimer.TakeTimeout()
 
-			heartbeat := s.HeartbeatBuilder.New()
+			heartbeat := s.MessageBuilders.HeartbeatBuilder.New()
 
 			s.sendWithErrorCheck(heartbeat)
 		}
@@ -483,7 +518,7 @@ func (s *Session) IsLogged() bool {
 }
 
 func (s *Session) MakeReject(reasonCode, tag, seqNum int) messages.RejectBuilder {
-	msg := s.RejectBuilder.New().
+	msg := s.MessageBuilders.RejectBuilder.New().
 		SetFieldRefSeqNum(seqNum).
 		SetFieldSessionRejectReason(strconv.Itoa(reasonCode))
 
