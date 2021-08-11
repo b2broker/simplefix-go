@@ -10,9 +10,17 @@ type Tags struct {
 
 // SessionErrorCodes contains session error codes
 type SessionErrorCodes struct {
-	RequiredTagMissing int
-	IncorrectValue     int
-	Other              int
+	InvalidTagNumber            int
+	RequiredTagMissing          int
+	TagNotDefinedForMessageType int
+	UndefinedTag                int
+	TagSpecialWithoutValue      int
+	IncorrectValue              int
+	IncorrectDataFormatValue    int
+	DecryptionProblem           int
+	SignatureProblem            int
+	CompIDProblem               int
+	Other                       int
 }
 
 // Message is an interface for sending message
