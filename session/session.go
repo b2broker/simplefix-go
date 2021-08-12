@@ -285,12 +285,12 @@ func (s *Session) Run() (err error) {
 
 			err := s.LogonHandler(s.LogonSettings)
 			if err != nil {
-				s.MakeReject(99, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
+				s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
 			}
 
 			err = s.start()
 			if err != nil {
-				s.MakeReject(99, s.Tags.HeartBtInt, incomingLogon.HeaderBuilder().MsgSeqNum())
+				s.MakeReject(s.SessionErrorCodes.IncorrectValue, s.Tags.HeartBtInt, incomingLogon.HeaderBuilder().MsgSeqNum())
 				return
 			}
 
@@ -305,7 +305,7 @@ func (s *Session) Run() (err error) {
 			s.changeState(SuccessfulLogged)
 
 		case SuccessfulLogged:
-			s.MakeReject(99, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
+			s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
 		}
 	})
 	s.router.HandleIncoming(s.LogoutBuilder.MsgType(), func(msg []byte) {
@@ -429,7 +429,7 @@ func (s *Session) start() error {
 }
 
 func (s *Session) RejectMessage(msg []byte) {
-	reject := s.MakeReject(99, 0, 0)
+	reject := s.MakeReject(s.SessionErrorCodes.Other, 0, 0)
 
 	seqNumB, err := fix.ValueByTag(msg, strconv.Itoa(s.Tags.MsgSeqNum))
 	if err != nil {
