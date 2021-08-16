@@ -48,7 +48,7 @@ var pseudoGeneratedOpts = session.Opts{
 	SessionErrorCodes: &messages.SessionErrorCodes{
 		InvalidTagNumber:            mustConvToInt(fixgen.EnumSessionRejectReasonInvalidtagnumber),
 		RequiredTagMissing:          mustConvToInt(fixgen.EnumSessionRejectReasonRequiredtagmissing),
-		TagNotDefinedForMessageType: mustConvToInt(fixgen.EnumSessionRejectReasonTagnotdefinedforthismessagetype),
+		TagNotDefinedForMessageType: mustConvToInt(fixgen.EnumSessionRejectReasonTagNotDefinedForThisMessageType),
 		UndefinedTag:                mustConvToInt(fixgen.EnumSessionRejectReasonUndefinedtag),
 		TagSpecialWithoutValue:      mustConvToInt(fixgen.EnumSessionRejectReasonTagspecifiedwithoutavalue),
 		IncorrectValue:              mustConvToInt(fixgen.EnumSessionRejectReasonValueisincorrectoutofrangeforthistag),
@@ -103,6 +103,17 @@ func main() {
 		})
 		handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
 			fmt.Println("outgoing", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+		})
+
+		handler.HandleIncoming(fixgen.MsgTypeMarketDataRequest, func(msg []byte) {
+			request, err := fixgen.ParseMarketDataRequest(msg)
+			if err != nil {
+				panic(err)
+			}
+
+			for _, relatedSymbolEntry := range request.RelatedSymGrp().Entries() {
+				fmt.Println(relatedSymbolEntry.Instrument().Symbol())
+			}
 		})
 	})
 

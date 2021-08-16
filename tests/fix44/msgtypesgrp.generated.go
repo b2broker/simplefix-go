@@ -23,6 +23,16 @@ func (group *MsgTypesGrp) AddEntry(entry *MsgTypesEntry) *MsgTypesGrp {
 	return group
 }
 
+func (group *MsgTypesGrp) Entries() []*MsgTypesEntry {
+	items := make([]*MsgTypesEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &MsgTypesEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type MsgTypesEntry struct {
 	*fix.Component
 }

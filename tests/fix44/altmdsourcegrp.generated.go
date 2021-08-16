@@ -22,6 +22,16 @@ func (group *AltMDSourceGrp) AddEntry(entry *AltMDSourceEntry) *AltMDSourceGrp {
 	return group
 }
 
+func (group *AltMDSourceGrp) Entries() []*AltMDSourceEntry {
+	items := make([]*AltMDSourceEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &AltMDSourceEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type AltMDSourceEntry struct {
 	*fix.Component
 }

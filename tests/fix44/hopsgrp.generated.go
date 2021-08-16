@@ -24,6 +24,16 @@ func (group *HopsGrp) AddEntry(entry *HopsEntry) *HopsGrp {
 	return group
 }
 
+func (group *HopsGrp) Entries() []*HopsEntry {
+	items := make([]*HopsEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &HopsEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type HopsEntry struct {
 	*fix.Component
 }

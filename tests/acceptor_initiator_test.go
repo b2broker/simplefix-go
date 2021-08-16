@@ -64,6 +64,120 @@ func TestHeartbeat(t *testing.T) {
 	}
 }
 
+func TestGroup(t *testing.T) {
+	const (
+		heartBtInt = 1
+		port       = 9991
+	)
+	var testInstrumentSymbols = map[string]struct{}{
+		"BTC/USD": {},
+		"ETH/GBP": {},
+	}
+	var done = make(chan struct{})
+
+	// close acceptor after work
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		t.Fatalf("listen error: %s", err)
+	}
+
+	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
+
+	acceptor := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
+		s, err := session.NewAcceptorSession(
+			context.Background(),
+			&pseudoGeneratedOpts,
+			handler,
+			&session.LogonSettings{
+				LogonTimeout: time.Second * 30,
+				HeartBtLimits: &session.IntLimits{
+					Min: 5,
+					Max: 60,
+				},
+			},
+			func(request *session.LogonSettings) (err error) { return nil },
+		)
+		if err != nil {
+			panic(err)
+		}
+
+		err = s.Run()
+		if err != nil {
+			t.Fatalf("run s: %s", err)
+		}
+
+		handler.HandleIncoming(fixgen.MsgTypeMarketDataRequest, func(msg []byte) {
+			request, err := fixgen.ParseMarketDataRequest(msg)
+			if err != nil {
+				panic(err)
+			}
+
+			for _, relatedSym := range request.RelatedSymGrp().Entries() {
+				symbol := relatedSym.Instrument().Symbol()
+				if _, ok := testInstrumentSymbols[symbol]; !ok {
+					t.Fatalf("unexpected symbol: %s", symbol)
+				}
+				delete(testInstrumentSymbols, symbol)
+			}
+
+			if len(testInstrumentSymbols) > 0 {
+				t.Fatalf("some instruments remained at map: %v", testInstrumentSymbols)
+			}
+
+			close(done)
+		})
+
+		s.SetMessageStorage(memory.NewStorage(100, 100))
+	})
+
+	defer acceptor.Close()
+	go func() {
+		err := acceptor.ListenAndServe()
+		if err != nil && !errors.Is(err, simplefixgo.ErrConnClosed) {
+			panic(err)
+		}
+	}()
+
+	initiatorSession, _ := RunNewInitiator(port, t, &session.LogonSettings{
+		TargetCompID:  "Server",
+		SenderCompID:  "Client",
+		HeartBtInt:    heartBtInt,
+		EncryptMethod: fixgen.EnumEncryptMethodNoneother,
+	})
+
+	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
+		relatedSymbols := fixgen.NewRelatedSymGrp()
+
+		for symbol := range testInstrumentSymbols {
+			relatedSymbols.AddEntry(fixgen.NewRelatedSymEntry().SetInstrument(fixgen.NewInstrument().SetSymbol(symbol)))
+		}
+
+		err := initiatorSession.Send(fixgen.NewMarketDataRequest(
+			"test",
+			fixgen.EnumSubscriptionRequestTypeSnapshot,
+			20,
+			fixgen.NewMDEntryTypesGrp(),
+			relatedSymbols,
+		))
+		if err != nil {
+			panic(err)
+		}
+
+		return true
+	})
+
+	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
+		t.Log("client connected to server")
+		return true
+	})
+
+	select {
+	case <-time.After(time.Second * 5):
+		t.Fatalf("wait heartbeats: %s", err)
+	case <-done:
+	}
+}
+
 func TestTestRequest(t *testing.T) {
 	const (
 		heartBtInt = 5
@@ -374,7 +488,6 @@ func TestCloseAcceptorConn(t *testing.T) {
 		if !errors.Is(err, simplefixgo.ErrConnClosed) {
 			panic(fmt.Errorf("serve client: %s", err))
 		}
-		t.Log("server closed")
 	}()
 
 	err = s.Run()

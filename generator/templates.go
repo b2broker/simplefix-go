@@ -282,6 +282,16 @@ func (group *{{.Name}}) AddEntry(entry *{{.EntryName}}) *{{.Name}} {
 
 	return group
 }
+
+func (group *{{.Name}}) Entries() []*{{.EntryName}} {
+	items := make([]*{{.EntryName}}, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &{{.EntryName}}{fix.NewComponent(item...)}
+	}
+
+	return items
+}
 `
 
 type fileTemplate struct {

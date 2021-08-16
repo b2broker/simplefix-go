@@ -23,6 +23,16 @@ func (group *UnderlyingStipsGrp) AddEntry(entry *UnderlyingStipsEntry) *Underlyi
 	return group
 }
 
+func (group *UnderlyingStipsGrp) Entries() []*UnderlyingStipsEntry {
+	items := make([]*UnderlyingStipsEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &UnderlyingStipsEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type UnderlyingStipsEntry struct {
 	*fix.Component
 }

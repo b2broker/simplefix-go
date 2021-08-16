@@ -60,8 +60,9 @@ func (c *Component) ToBytes() []byte {
 }
 
 // Get returns item of component by sequence number
+// it may be *KeyValue, *Component or *Group
 func (c *Component) Get(id int) Item {
-	return c.items[id].(*KeyValue)
+	return c.items[id]
 }
 
 // Set replace item of component by sequence number

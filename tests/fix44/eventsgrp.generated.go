@@ -25,6 +25,16 @@ func (group *EventsGrp) AddEntry(entry *EventsEntry) *EventsGrp {
 	return group
 }
 
+func (group *EventsGrp) Entries() []*EventsEntry {
+	items := make([]*EventsEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &EventsEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type EventsEntry struct {
 	*fix.Component
 }

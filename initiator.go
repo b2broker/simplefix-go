@@ -64,8 +64,10 @@ func (c *Initiator) Serve() error {
 			return fmt.Errorf("handler error: %w", err)
 
 		case err := <-connErr:
-			c.handler.StopWithError(ErrConnClosed)
-			return fmt.Errorf("%w: %s", ErrConnClosed, err)
+			if err != nil {
+				c.handler.StopWithError(ErrConnClosed)
+				return fmt.Errorf("%w: %s", ErrConnClosed, err)
+			}
 
 		case <-c.ctx.Done():
 			return nil

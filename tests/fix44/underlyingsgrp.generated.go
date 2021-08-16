@@ -22,6 +22,16 @@ func (group *UnderlyingsGrp) AddEntry(entry *UnderlyingsEntry) *UnderlyingsGrp {
 	return group
 }
 
+func (group *UnderlyingsGrp) Entries() []*UnderlyingsEntry {
+	items := make([]*UnderlyingsEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &UnderlyingsEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type UnderlyingsEntry struct {
 	*fix.Component
 }
