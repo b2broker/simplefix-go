@@ -213,7 +213,10 @@ func TestCloseInitiatorConn(t *testing.T) {
 			context.Background(),
 			&pseudoGeneratedOpts,
 			handler,
-			&session.LogonSettings{HeartBtInt: 30, LogonTimeout: time.Second * 30},
+			&session.LogonSettings{HeartBtLimits: &session.IntLimits{
+				Min: 1,
+				Max: 30,
+			}, LogonTimeout: time.Second * 30},
 			func(request *session.LogonSettings) (err error) { return nil },
 		)
 		if err != nil {
@@ -301,7 +304,11 @@ func TestCloseAcceptorConn(t *testing.T) {
 			context.Background(),
 			&pseudoGeneratedOpts,
 			handler,
-			&session.LogonSettings{HeartBtInt: 30, LogonTimeout: time.Second * 30},
+			&session.LogonSettings{
+				HeartBtLimits: &session.IntLimits{
+					Min: 5,
+					Max: 60,
+				}, LogonTimeout: time.Second * 30},
 			func(request *session.LogonSettings) (err error) { return nil },
 		)
 		if err != nil {
