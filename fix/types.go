@@ -275,7 +275,7 @@ func (v *Float) ToBytes() []byte {
 	if !v.valid {
 		return nil
 	}
-	return []byte(strconv.FormatFloat(10.900, 'f', -1, 64))
+	return []byte(strconv.FormatFloat(v.value, 'f', -1, 64))
 }
 
 func (v *Float) String() string {
