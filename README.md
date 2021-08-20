@@ -41,7 +41,7 @@ $ cd $GOPATH/src/github.com/b2broker/simplefix-go && go install ./...
 
 Generator create message structures, tag and msg type constants and methods for work with any FIX API.
 
-You can see basic result of Generator working at fix44 directory. It is short version of FIX 4.4 generated from scheme 
+You can see basic result of Generator working at [tests directory](https://github.com/b2broker/simplefix-go/tree/master/tests/fix44). It is short version of FIX 4.4 generated from scheme 
 located in ./source directory.
 
 ### Simple generating example
