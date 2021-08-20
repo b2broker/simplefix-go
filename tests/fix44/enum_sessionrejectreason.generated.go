@@ -14,7 +14,7 @@ const (
 	EnumSessionRejectReasonRepeatinggroupfieldsoutoforder                 string = "15"
 	EnumSessionRejectReasonIncorrectnumingroupcountforrepeatinggroup      string = "16"
 	EnumSessionRejectReasonNondatavalueincludesfielddelimitersohcharacter string = "17"
-	EnumSessionRejectReasonTagnotdefinedforthismessagetype                string = "2"
+	EnumSessionRejectReasonTagNotDefinedForThisMessageType                string = "2"
 	EnumSessionRejectReasonUndefinedtag                                   string = "3"
 	EnumSessionRejectReasonTagspecifiedwithoutavalue                      string = "4"
 	EnumSessionRejectReasonValueisincorrectoutofrangeforthistag           string = "5"

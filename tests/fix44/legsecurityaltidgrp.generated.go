@@ -23,6 +23,16 @@ func (group *LegSecurityAltIDGrp) AddEntry(entry *LegSecurityAltIDEntry) *LegSec
 	return group
 }
 
+func (group *LegSecurityAltIDGrp) Entries() []*LegSecurityAltIDEntry {
+	items := make([]*LegSecurityAltIDEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &LegSecurityAltIDEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type LegSecurityAltIDEntry struct {
 	*fix.Component
 }

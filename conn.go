@@ -55,7 +55,7 @@ func (c *Conn) serve() error {
 	case err := <-errCh:
 		return err
 	case <-c.ctx.Done():
-		return ErrConnClosed
+		return nil
 	}
 }
 

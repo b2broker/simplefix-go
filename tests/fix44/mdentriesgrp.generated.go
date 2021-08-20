@@ -64,6 +64,16 @@ func (group *MDEntriesGrp) AddEntry(entry *MDEntriesEntry) *MDEntriesGrp {
 	return group
 }
 
+func (group *MDEntriesGrp) Entries() []*MDEntriesEntry {
+	items := make([]*MDEntriesEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &MDEntriesEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type MDEntriesEntry struct {
 	*fix.Component
 }

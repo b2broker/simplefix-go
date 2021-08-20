@@ -42,31 +42,31 @@ func (opts *Opts) validate() error {
 	}
 
 	if opts.MessageBuilders.TrailerBuilder == nil {
-		return fmt.Errorf("%w: header", ErrMissingMessageBuilder)
+		return fmt.Errorf("%w: trailer", ErrMissingMessageBuilder)
 	}
 
 	if opts.MessageBuilders.HeartbeatBuilder == nil {
-		return fmt.Errorf("%w: header", ErrMissingMessageBuilder)
+		return fmt.Errorf("%w: heartbeat", ErrMissingMessageBuilder)
 	}
 
 	if opts.MessageBuilders.ResendRequestBuilder == nil {
-		return fmt.Errorf("%w: header", ErrMissingMessageBuilder)
+		return fmt.Errorf("%w: resend request", ErrMissingMessageBuilder)
 	}
 
 	if opts.MessageBuilders.TestRequestBuilder == nil {
-		return fmt.Errorf("%w: header", ErrMissingMessageBuilder)
+		return fmt.Errorf("%w: test request", ErrMissingMessageBuilder)
 	}
 
 	if opts.MessageBuilders.LogoutBuilder == nil {
-		return fmt.Errorf("%w: header", ErrMissingMessageBuilder)
+		return fmt.Errorf("%w: logout", ErrMissingMessageBuilder)
 	}
 
 	if opts.MessageBuilders.LogonBuilder == nil {
-		return fmt.Errorf("%w: header", ErrMissingMessageBuilder)
+		return fmt.Errorf("%w: logon", ErrMissingMessageBuilder)
 	}
 
 	if opts.MessageBuilders.RejectBuilder == nil {
-		return fmt.Errorf("%w: header", ErrMissingMessageBuilder)
+		return fmt.Errorf("%w: reject", ErrMissingMessageBuilder)
 	}
 
 	if opts.Tags == nil {

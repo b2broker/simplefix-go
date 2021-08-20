@@ -9,6 +9,7 @@ import (
 	"github.com/b2broker/simplefix-go/session"
 	"github.com/b2broker/simplefix-go/session/messages"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
+	"github.com/b2broker/simplefix-go/utils"
 	"net"
 	"strconv"
 	"time"
@@ -46,7 +47,7 @@ var pseudoGeneratedOpts = session.Opts{
 	SessionErrorCodes: &messages.SessionErrorCodes{
 		InvalidTagNumber:            mustConvToInt(fixgen.EnumSessionRejectReasonInvalidtagnumber),
 		RequiredTagMissing:          mustConvToInt(fixgen.EnumSessionRejectReasonRequiredtagmissing),
-		TagNotDefinedForMessageType: mustConvToInt(fixgen.EnumSessionRejectReasonTagnotdefinedforthismessagetype),
+		TagNotDefinedForMessageType: mustConvToInt(fixgen.EnumSessionRejectReasonTagNotDefinedForThisMessageType),
 		UndefinedTag:                mustConvToInt(fixgen.EnumSessionRejectReasonUndefinedtag),
 		TagSpecialWithoutValue:      mustConvToInt(fixgen.EnumSessionRejectReasonTagspecifiedwithoutavalue),
 		IncorrectValue:              mustConvToInt(fixgen.EnumSessionRejectReasonValueisincorrectoutofrangeforthistag),
@@ -101,6 +102,23 @@ func main() {
 	})
 	handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
 		fmt.Println("outgoing", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+	})
+
+	sess.OnChangeState(utils.EventLogon, func() bool {
+		err := sess.Send(fixgen.NewMarketDataRequest(
+			"test",
+			fixgen.EnumSubscriptionRequestTypeSnapshot,
+			20,
+			fixgen.NewMDEntryTypesGrp(),
+			fixgen.NewRelatedSymGrp().
+				AddEntry(fixgen.NewRelatedSymEntry().SetInstrument(fixgen.NewInstrument().SetSymbol("BTC/USDT"))).
+				AddEntry(fixgen.NewRelatedSymEntry().SetInstrument(fixgen.NewInstrument().SetSymbol("ETH/USDT"))),
+		))
+		if err != nil {
+			panic(err)
+		}
+
+		return true
 	})
 
 	go func() {

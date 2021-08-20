@@ -29,7 +29,7 @@ var pseudoGeneratedOpts = session.Opts{
 	SessionErrorCodes: &messages.SessionErrorCodes{
 		InvalidTagNumber:            mustConvToInt(fixgen.EnumSessionRejectReasonInvalidtagnumber),
 		RequiredTagMissing:          mustConvToInt(fixgen.EnumSessionRejectReasonRequiredtagmissing),
-		TagNotDefinedForMessageType: mustConvToInt(fixgen.EnumSessionRejectReasonTagnotdefinedforthismessagetype),
+		TagNotDefinedForMessageType: mustConvToInt(fixgen.EnumSessionRejectReasonTagNotDefinedForThisMessageType),
 		UndefinedTag:                mustConvToInt(fixgen.EnumSessionRejectReasonUndefinedtag),
 		TagSpecialWithoutValue:      mustConvToInt(fixgen.EnumSessionRejectReasonTagspecifiedwithoutavalue),
 		IncorrectValue:              mustConvToInt(fixgen.EnumSessionRejectReasonValueisincorrectoutofrangeforthistag),

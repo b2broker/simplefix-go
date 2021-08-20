@@ -27,6 +27,16 @@ func (group *RelatedSymGrp) AddEntry(entry *RelatedSymEntry) *RelatedSymGrp {
 	return group
 }
 
+func (group *RelatedSymGrp) Entries() []*RelatedSymEntry {
+	items := make([]*RelatedSymEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &RelatedSymEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type RelatedSymEntry struct {
 	*fix.Component
 }

@@ -23,6 +23,16 @@ func (group *UnderlyingSecurityAltIDGrp) AddEntry(entry *UnderlyingSecurityAltID
 	return group
 }
 
+func (group *UnderlyingSecurityAltIDGrp) Entries() []*UnderlyingSecurityAltIDEntry {
+	items := make([]*UnderlyingSecurityAltIDEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &UnderlyingSecurityAltIDEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type UnderlyingSecurityAltIDEntry struct {
 	*fix.Component
 }

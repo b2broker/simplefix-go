@@ -22,6 +22,16 @@ func (group *LegsGrp) AddEntry(entry *LegsEntry) *LegsGrp {
 	return group
 }
 
+func (group *LegsGrp) Entries() []*LegsEntry {
+	items := make([]*LegsEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &LegsEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type LegsEntry struct {
 	*fix.Component
 }

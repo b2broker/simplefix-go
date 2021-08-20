@@ -23,6 +23,16 @@ func (group *TradingSessionsGrp) AddEntry(entry *TradingSessionsEntry) *TradingS
 	return group
 }
 
+func (group *TradingSessionsGrp) Entries() []*TradingSessionsEntry {
+	items := make([]*TradingSessionsEntry, len(group.Group.Entries()))
+
+	for i, item := range group.Group.Entries() {
+		items[i] = &TradingSessionsEntry{fix.NewComponent(item...)}
+	}
+
+	return items
+}
+
 type TradingSessionsEntry struct {
 	*fix.Component
 }

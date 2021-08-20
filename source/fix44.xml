@@ -914,7 +914,7 @@
             <value enum="15" description="REPEATINGGROUPFIELDSOUTOFORDER" />
             <value enum="16" description="INCORRECTNUMINGROUPCOUNTFORREPEATINGGROUP" />
             <value enum="17" description="NONDATAVALUEINCLUDESFIELDDELIMITERSOHCHARACTER" />
-            <value enum="2" description="TAGNOTDEFINEDFORTHISMESSAGETYPE" />
+            <value enum="2" description="TAG_NOT_DEFINED_FOR_THIS_MESSAGE_TYPE" />
             <value enum="3" description="UNDEFINEDTAG" />
             <value enum="4" description="TAGSPECIFIEDWITHOUTAVALUE" />
             <value enum="5" description="VALUEISINCORRECTOUTOFRANGEFORTHISTAG" />

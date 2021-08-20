@@ -8,6 +8,8 @@
 <details>
 <summary>Table of content</summary>
 
+:warning: This is beta-version. It may contain errors.
+
 ## Table of contents
 - [What is FIX](#what-is-fix-api)
 - [Installation](#installation)
@@ -39,7 +41,7 @@ $ cd $GOPATH/src/github.com/b2broker/simplefix-go && go install ./...
 
 Generator create message structures, tag and msg type constants and methods for work with any FIX API.
 
-You can see basic result of Generator working at fix44 directory. It is short version of FIX 4.4 generated from scheme 
+You can see basic result of Generator working at [tests directory](https://github.com/b2broker/simplefix-go/tree/master/tests/fix44). It is short version of FIX 4.4 generated from scheme 
 located in ./source directory.
 
 ### Simple generating example
@@ -72,14 +74,18 @@ command very soon.
 ```go
 // fixgen is your generated fix package
 
-var MySessionOpts = session.SessionOpts{
-	LogonBuilder:         fixgen.Logon{}.New(),
-	LogoutBuilder:        fixgen.Logout{}.New(),
-	RejectBuilder:        fixgen.Reject{}.New(),
-	HeartbeatBuilder:     fixgen.Heartbeat{}.New(),
-	TestRequestBuilder:   fixgen.TestRequest{}.New(),
-	ResendRequestBuilder: fixgen.ResendRequest{}.New(),
-	Tags: messages.Tags{
+var sessionOpts = session.Opts{
+	MessageBuilders: session.MessageBuilders{
+		HeaderBuilder:        fixgen.Header{}.New(),
+		TrailerBuilder:       fixgen.Trailer{}.New(),
+		LogonBuilder:         fixgen.Logon{}.New(),
+		LogoutBuilder:        fixgen.Logout{}.New(),
+		RejectBuilder:        fixgen.Reject{}.New(),
+		HeartbeatBuilder:     fixgen.Heartbeat{}.New(),
+		TestRequestBuilder:   fixgen.TestRequest{}.New(),
+		ResendRequestBuilder: fixgen.ResendRequest{}.New(),
+	},
+	Tags: &messages.Tags{
 		MsgType:         mustConvToInt(fixgen.FieldMsgType),
 		MsgSeqNum:       mustConvToInt(fixgen.FieldMsgSeqNum),
 		HeartBtInt:      mustConvToInt(fixgen.FieldHeartBtInt),
@@ -88,10 +94,18 @@ var MySessionOpts = session.SessionOpts{
 	AllowedEncryptedMethods: map[string]struct{}{
 		fixgen.EnumEncryptMethodNoneother: {},
 	},
-	SessionErrorCodes: messages.SessionErrorCodes{
-		RequiredTagMissing: 1,
-		IncorrectValue:     5,
-		Other:              99,
+	SessionErrorCodes: &messages.SessionErrorCodes{
+		InvalidTagNumber:            mustConvToInt(fixgen.EnumSessionRejectReasonInvalidtagnumber),
+		RequiredTagMissing:          mustConvToInt(fixgen.EnumSessionRejectReasonRequiredtagmissing),
+		TagNotDefinedForMessageType: mustConvToInt(fixgen.EnumSessionRejectReasonTagNotDefinedForThisMessageType),
+		UndefinedTag:                mustConvToInt(fixgen.EnumSessionRejectReasonUndefinedtag),
+		TagSpecialWithoutValue:      mustConvToInt(fixgen.EnumSessionRejectReasonTagspecifiedwithoutavalue),
+		IncorrectValue:              mustConvToInt(fixgen.EnumSessionRejectReasonValueisincorrectoutofrangeforthistag),
+		IncorrectDataFormatValue:    mustConvToInt(fixgen.EnumSessionRejectReasonIncorrectdataformatforvalue),
+		DecryptionProblem:           mustConvToInt(fixgen.EnumSessionRejectReasonDecryptionproblem),
+		SignatureProblem:            mustConvToInt(fixgen.EnumSessionRejectReasonSignatureproblem),
+		CompIDProblem:               mustConvToInt(fixgen.EnumSessionRejectReasonCompidproblem),
+		Other:                       mustConvToInt(fixgen.EnumSessionRejectReasonOther),
 	},
 }
 ```
@@ -100,57 +114,7 @@ var MySessionOpts = session.SessionOpts{
 
 *Initiator* is a FIX API client, which connect to an existing server by.
 
-```go
-
-// dial to server by tcp
-conn, err := net.Dial("tcp", ":9091")
-if err != nil {
-    panic(fmt.Errorf("could not dial: %s", err))
-}
-
-ctx, cancel := context.WithCancel(context.Background())
-defer cancel()
-
-handler := simplefixgo.NewInitiatorHandler(ctx, fixgen.FieldMsgType, 10)
-client := simplefixgo.NewInitiator(conn, handler, 10)
-
-handler.OnConnect(func() bool {
-    return true
-})
-
-session := flow.NewInitiatorSession(
-    context.Background(),
-    handler,
-    MySessionOpts,
-    flow.LogonSettings{
-        TargetCompID:  "Server",
-        SenderCompID:  "Client",
-        HeartBtInt:    5,
-        EncryptMethod: fixgen.EnumEncryptMethodNoneother,
-        Password:      "password",
-        Username:      "login",
-    },
-)
-
-// subscribe to all messages for printing incoming and outgoing messages
-// you can remove existing handlers by DeleteIncoming and DeleteOutgoing method
-handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
-    fmt.Println("incoming", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
-})
-handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
-    fmt.Println("outgoing", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
-})
-
-// run session
-_ = session.Run()
-
-// sending message example
-// if you dont want to fill required header every time you can send messages by session
-session.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(2).SetFieldEndSeqNo(3))
-
-// run serving client and 'handle' errors
-panic(client.Serve())
-```
+You can see [example here](https://github.com/b2broker/simplefix-go/blob/master/examples/initiator/main.go).
 
 ### Starting as server
 
@@ -158,52 +122,7 @@ panic(client.Serve())
 According to the FIX protocol acceptor could be provider or receiver of data.
 It means acceptor can send requests to the clients and read data streams of them. 
 
-```go
-listener, err := net.Listen("tcp", fmt.Sprintf(":%d", 9091))
-if err != nil {
-    panic(err)
-}
-
-// handler factory uses for createing handler for each new client
-handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
-
-// handlerFunc will be applied for the new handlers
-// it is the place where you can bind handlers to messages 
-server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
-    session := session.NewAcceptorSession(
-        context.Background(),
-        PseudoGenerated,
-        handler,
-        session.LogonSettings{
-            HeartBtInt:   30,
-            LogonTimeout: time.Second * 30,
-            HeartBtLimits: &session.IntLimits{
-                Min: 5,
-                Max: 60,
-            },
-        },
-        func(request session.LogonSettings) (err error) {
-            fmt.Printf(
-                "free logon for '%s' (%s)\n",
-                request.Username,
-                request.Password,
-            )
-
-            return nil
-        })
-    _ = session.Run()
-    session.SetMessageStorage(memory.NewStorage(100, 100))
-
-    handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
-        fmt.Println("incoming", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
-    })
-    handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
-        fmt.Println("outgoing", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
-    })
-})
-
-panic(fmt.Errorf("server was stopped: %s", server.ListenAndServe()))
-```
+You can see [example here](https://github.com/b2broker/simplefix-go/blob/master/examples/acceptor/main.go).
 
 ## Features
 
