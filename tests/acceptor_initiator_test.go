@@ -311,7 +311,7 @@ func TestResendSequence(t *testing.T) {
 
 func TestCloseInitiatorConn(t *testing.T) {
 	const (
-		port = 9993
+		port = 9995
 	)
 
 	// close acceptor after work
