@@ -517,6 +517,10 @@ func (s *Session) IsLogged() bool {
 	return s.state == SuccessfulLogged
 }
 
+func (s *Session) Context() context.Context {
+	return s.ctx
+}
+
 func (s *Session) MakeReject(reasonCode, tag, seqNum int) messages.RejectBuilder {
 	msg := s.MessageBuilders.RejectBuilder.New().
 		SetFieldRefSeqNum(seqNum).
