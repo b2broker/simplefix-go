@@ -27,18 +27,28 @@ type unmarshaler struct {
 
 // scanKeyValue reads data from message part to special KeyValue
 func (u *unmarshaler) scanKeyValue(data []byte, el *KeyValue) error {
-	from := bytes.Index(data, append([]byte(el.Key), '='))
-	if from == -1 {
-		return nil
+	q := bytes.Join([][]byte{[]byte(el.Key), {'='}}, nil)
+	var keyIndex int
+	if bytes.Equal(data[:len(q)], q) {
+		keyIndex = 0
+	} else {
+		ks := bytes.Join([][]byte{Delimiter, []byte(el.Key), {'='}}, nil)
+		keyIndex = bytes.Index(data, ks)
+		if keyIndex == -1 {
+			return nil
+		}
+		keyIndex += 1 // SOH
 	}
+
+	from := keyIndex + len(q)
 
 	d := data[from:]
 
-	soh := bytes.Index(d, []byte{1})
-	if soh == -1 {
-		soh = len(d)
+	end := bytes.Index(d, []byte{1})
+	if end == -1 {
+		end = len(d)
 	}
-	v := d[len(el.Key)+1 : soh]
+	v := d[:end]
 	err := el.FromBytes(v)
 	if err != nil {
 		return fmt.Errorf("could not unmarshal el %s into %s: %s", el.Key, string(v), err)
