@@ -34,7 +34,7 @@ func NewSequenceReset(newSeqNo int) *SequenceReset {
 }
 
 func ParseSequenceReset(data []byte) (*SequenceReset, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, FieldBeginString, beginString).
+	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeSequenceReset).
 		SetBody(makeSequenceReset().Body()...).
 		SetHeader(makeHeader().AsComponent()).
 		SetTrailer(makeTrailer().AsComponent())

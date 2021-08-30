@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 // Enum type EnumExecInst
 const (
 	EnumExecInstStayoffer            string = "0"

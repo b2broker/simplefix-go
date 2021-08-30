@@ -35,7 +35,7 @@ func NewResendRequest(beginSeqNo int, endSeqNo int) *ResendRequest {
 }
 
 func ParseResendRequest(data []byte) (*ResendRequest, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, FieldBeginString, beginString).
+	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeResendRequest).
 		SetBody(makeResendRequest().Body()...).
 		SetHeader(makeHeader().AsComponent()).
 		SetTrailer(makeTrailer().AsComponent())

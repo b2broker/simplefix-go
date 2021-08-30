@@ -63,6 +63,7 @@ type Handler interface {
 	RemoveOutgoingHandler(msgType string, id int64) (err error)
 	SendRaw(msgType string, message []byte) error
 	Send(message simplefixgo.SendingMessage) error
+	Context() context.Context
 }
 
 // Session is a service for working with default pipelines of FIX API
@@ -96,9 +97,8 @@ type Session struct {
 }
 
 // NewInitiatorSession returns session for an Initiator
-func NewInitiatorSession(ctx context.Context, handler Handler, opts *Opts,
-	settings *LogonSettings) (s *Session, err error) {
-	s, err = newSession(ctx, opts, handler, settings)
+func NewInitiatorSession(handler Handler, opts *Opts, settings *LogonSettings) (s *Session, err error) {
+	s, err = newSession(opts, handler, settings)
 	if err != nil {
 		return
 	}
@@ -118,9 +118,8 @@ func NewInitiatorSession(ctx context.Context, handler Handler, opts *Opts,
 }
 
 // NewAcceptorSession returns session for an Acceptor
-func NewAcceptorSession(ctx context.Context, params *Opts, router Handler,
-	settings *LogonSettings, onLogon logonHandler) (s *Session, err error) {
-	s, err = newSession(ctx, params, router, settings)
+func NewAcceptorSession(params *Opts, handler Handler, settings *LogonSettings, onLogon logonHandler) (s *Session, err error) {
+	s, err = newSession(params, handler, settings)
 	if err != nil {
 		return
 	}
@@ -145,7 +144,7 @@ func NewAcceptorSession(ctx context.Context, params *Opts, router Handler,
 	return
 }
 
-func newSession(ctx context.Context, opts *Opts, handler Handler, settings *LogonSettings) (session *Session, err error) {
+func newSession(opts *Opts, handler Handler, settings *LogonSettings) (session *Session, err error) {
 	if handler == nil {
 		return nil, ErrMissingHandler
 	}
@@ -177,7 +176,7 @@ func newSession(ctx context.Context, opts *Opts, handler Handler, settings *Logo
 		session.timeLocation = time.UTC
 	}
 
-	session.ctx, session.cancel = context.WithCancel(ctx)
+	session.ctx, session.cancel = context.WithCancel(handler.Context())
 
 	return session, nil
 }
@@ -321,6 +320,7 @@ func (s *Session) Run() (err error) {
 			err := s.LogonHandler(s.LogonSettings)
 			if err != nil {
 				s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
+				return
 			}
 
 			err = s.start()

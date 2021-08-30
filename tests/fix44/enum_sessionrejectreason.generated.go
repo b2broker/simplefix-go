@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 // Enum type EnumSessionRejectReason
 const (
 	EnumSessionRejectReasonInvalidtagnumber                               string = "0"

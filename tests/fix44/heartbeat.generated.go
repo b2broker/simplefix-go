@@ -32,7 +32,7 @@ func NewHeartbeat() *Heartbeat {
 }
 
 func ParseHeartbeat(data []byte) (*Heartbeat, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, FieldBeginString, beginString).
+	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
 		SetBody(makeHeartbeat().Body()...).
 		SetHeader(makeHeader().AsComponent()).
 		SetTrailer(makeTrailer().AsComponent())

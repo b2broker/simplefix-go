@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
@@ -70,7 +69,6 @@ func main() {
 
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
 		sess, err := session.NewAcceptorSession(
-			context.Background(),
 			&pseudoGeneratedOpts,
 			handler,
 			&session.LogonSettings{

@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 // Enum type EnumQuoteCondition
 const (
 	EnumQuoteConditionOpen       string = "A"

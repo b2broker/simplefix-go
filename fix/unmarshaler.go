@@ -37,7 +37,7 @@ func (u *unmarshaler) scanKeyValue(data []byte, el *KeyValue) error {
 		if keyIndex == -1 {
 			return nil
 		}
-		keyIndex += 1 // SOH
+		keyIndex++ // SOH
 	}
 
 	from := keyIndex + len(q)

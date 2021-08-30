@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 // Enum type EnumMDEntryType
 const (
 	EnumMDEntryTypeBid          string = "0"

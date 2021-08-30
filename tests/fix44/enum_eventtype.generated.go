@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 // Enum type EnumEventType
 const (
 	EnumEventTypePut             string = "1"

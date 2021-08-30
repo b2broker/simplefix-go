@@ -38,7 +38,7 @@ func NewMarketDataRequestReject(mDReqID string) *MarketDataRequestReject {
 }
 
 func ParseMarketDataRequestReject(data []byte) (*MarketDataRequestReject, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, FieldBeginString, beginString).
+	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeMarketDataRequestReject).
 		SetBody(makeMarketDataRequestReject().Body()...).
 		SetHeader(makeHeader().AsComponent()).
 		SetTrailer(makeTrailer().AsComponent())

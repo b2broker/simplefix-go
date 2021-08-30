@@ -34,7 +34,7 @@ func NewLogout() *Logout {
 }
 
 func ParseLogout(data []byte) (*Logout, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, FieldBeginString, beginString).
+	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeLogout).
 		SetBody(makeLogout().Body()...).
 		SetHeader(makeHeader().AsComponent()).
 		SetTrailer(makeTrailer().AsComponent())

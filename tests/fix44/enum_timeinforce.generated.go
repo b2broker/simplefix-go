@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 // Enum type EnumTimeInForce
 const (
 	EnumTimeInForceDay               string = "0"

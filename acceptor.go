@@ -32,6 +32,7 @@ type AcceptorHandler interface {
 	OnDisconnect(handlerFunc utils.EventHandlerFunc)
 	OnConnect(handlerFunc utils.EventHandlerFunc)
 	OnStopped(handlerFunc utils.EventHandlerFunc)
+	Context() context.Context
 }
 
 // HandlerFactory makes handlers for an acceptor
