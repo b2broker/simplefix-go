@@ -76,7 +76,7 @@ func New{{.Name}}({{.Args}}) *{{.Name}} {
 }
 
 func Parse{{.Name}}(data []byte) (*{{.Name}}, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, FieldBeginString, beginString).
+	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgType{{.Name}}).
 		SetBody(make{{.Name}}().Body()...).
 		SetHeader(makeHeader().AsComponent()).
 		SetTrailer(makeTrailer().AsComponent())

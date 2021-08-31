@@ -33,7 +33,7 @@ func NewTestRequest(testReqID string) *TestRequest {
 }
 
 func ParseTestRequest(data []byte) (*TestRequest, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, FieldBeginString, beginString).
+	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeTestRequest).
 		SetBody(makeTestRequest().Body()...).
 		SetHeader(makeHeader().AsComponent()).
 		SetTrailer(makeTrailer().AsComponent())

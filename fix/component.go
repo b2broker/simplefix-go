@@ -56,6 +56,11 @@ func (c *Component) ToBytes() []byte {
 			msg = append(msg, itemB)
 		}
 	}
+
+	if len(msg) == 0 {
+		return nil
+	}
+
 	return joinBody(msg...)
 }
 

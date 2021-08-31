@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 // Enum type EnumMDUpdateAction
 const (
 	EnumMDUpdateActionNew    string = "0"

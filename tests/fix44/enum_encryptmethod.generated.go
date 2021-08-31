@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 // Enum type EnumEncryptMethod
 const (
 	EnumEncryptMethodNoneother                                        string = "0"

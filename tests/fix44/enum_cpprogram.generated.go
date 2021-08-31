@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 // Enum type EnumCPProgram
 const (
 	EnumCPProgram3a3   string = "1"

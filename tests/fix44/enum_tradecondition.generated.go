@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 // Enum type EnumTradeCondition
 const (
 	EnumTradeConditionCashmkt              string = "A"

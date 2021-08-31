@@ -36,7 +36,7 @@ func NewMarketDataIncrementalRefresh(noMDEntries *MDEntriesGrp) *MarketDataIncre
 }
 
 func ParseMarketDataIncrementalRefresh(data []byte) (*MarketDataIncrementalRefresh, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, FieldBeginString, beginString).
+	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeMarketDataIncrementalRefresh).
 		SetBody(makeMarketDataIncrementalRefresh().Body()...).
 		SetHeader(makeHeader().AsComponent()).
 		SetTrailer(makeTrailer().AsComponent())
