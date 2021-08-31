@@ -34,11 +34,13 @@ func RunNewInitiator(port int, t *testing.T, settings *session.LogonSettings) (s
 	}
 
 	// log messages
-	handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
+	handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		fmt.Println("incoming:", string(bytes.ReplaceAll(msg, fix.Delimiter, []byte("|"))))
+		return true
 	})
-	handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
+	handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		fmt.Println("outgoing:", string(bytes.ReplaceAll(msg, fix.Delimiter, []byte("|"))))
+		return true
 	})
 
 	// todo move

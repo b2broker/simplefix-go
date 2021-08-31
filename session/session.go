@@ -216,28 +216,32 @@ func (s *Session) SetMessageStorage(storage MessageStorage) {
 		_ = s.router.RemoveIncomingHandler(s.MessageBuilders.ResendRequestBuilder.MsgType(), s.msgStorageResendHandler)
 	}
 
-	s.msgStorageAllHandler = s.router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
+	s.msgStorageAllHandler = s.router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		value, _ := fix.ValueByTag(msg, strconv.Itoa(s.Tags.MsgSeqNum))
 		id, _ := strconv.Atoi(string(value))
 
 		_ = storage.Save(msg, id)
+
+		return true
 	})
-	s.msgStorageResendHandler = s.router.HandleIncoming(s.MessageBuilders.ResendRequestBuilder.MsgType(), func(msg []byte) {
+	s.msgStorageResendHandler = s.router.HandleIncoming(s.MessageBuilders.ResendRequestBuilder.MsgType(), func(msg []byte) bool {
 		resendMsg, err := s.MessageBuilders.ResendRequestBuilder.Parse(msg)
 		if err != nil {
 			s.RejectMessage(msg)
-			return
+			return true
 		}
 
 		resendMessages, err := storage.Messages(resendMsg.BeginSeqNo(), resendMsg.EndSeqNo())
 		if err != nil {
-			return
+			return true
 		}
 
 		for _, message := range resendMessages {
 			msgType, _ := fix.ValueByTag(message, strconv.Itoa(s.Tags.MsgType))
 			_ = s.router.SendRaw(string(msgType), message)
 		}
+
+		return true
 	})
 }
 
@@ -296,11 +300,11 @@ func (s *Session) Run() (err error) {
 		}
 	}
 
-	s.router.HandleIncoming(s.MessageBuilders.LogonBuilder.MsgType(), func(msg []byte) {
+	s.router.HandleIncoming(s.MessageBuilders.LogonBuilder.MsgType(), func(msg []byte) bool {
 		incomingLogon, err := s.MessageBuilders.LogonBuilder.Parse(msg)
 		if err != nil {
 			s.RejectMessage(msg)
-			return
+			return true
 		}
 
 		switch s.state {
@@ -321,12 +325,13 @@ func (s *Session) Run() (err error) {
 			err := s.LogonHandler(s.LogonSettings)
 			if err != nil {
 				s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
+				return true
 			}
 
 			err = s.start()
 			if err != nil {
 				s.MakeReject(s.SessionErrorCodes.IncorrectValue, s.Tags.HeartBtInt, incomingLogon.HeaderBuilder().MsgSeqNum())
-				return
+				return true
 			}
 
 			answer := s.MessageBuilders.LogonBuilder.New()
@@ -334,7 +339,7 @@ func (s *Session) Run() (err error) {
 			s.state = SuccessfulLogged
 
 			s.sendWithErrorCheck(answer)
-			return
+			return true
 
 		case WaitingLogonAnswer:
 			s.changeState(SuccessfulLogged)
@@ -342,12 +347,14 @@ func (s *Session) Run() (err error) {
 		case SuccessfulLogged:
 			s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
 		}
+
+		return true
 	})
-	s.router.HandleIncoming(s.MessageBuilders.LogoutBuilder.MsgType(), func(msg []byte) {
+	s.router.HandleIncoming(s.MessageBuilders.LogoutBuilder.MsgType(), func(msg []byte) bool {
 		_, err := s.MessageBuilders.LogoutBuilder.Parse(msg)
 		if err != nil {
 			s.RejectMessage(msg)
-			return
+			return true
 		}
 
 		switch s.state {
@@ -368,34 +375,39 @@ func (s *Session) Run() (err error) {
 		} else {
 			s.changeState(WaitingLogon)
 		}
+
+		return true
 	})
-	s.router.HandleIncoming(s.MessageBuilders.HeartbeatBuilder.MsgType(), func(msg []byte) {
+	s.router.HandleIncoming(s.MessageBuilders.HeartbeatBuilder.MsgType(), func(msg []byte) bool {
 		_, err := s.MessageBuilders.HeartbeatBuilder.Parse(msg)
 		if err != nil {
 			s.RejectMessage(msg)
-			return
+			return true
 		}
 
 		if !s.IsLogged() {
 			s.RejectMessage(msg)
-			return
+			return true
 		}
+
+		return true
 	})
-	s.router.HandleIncoming(s.MessageBuilders.TestRequestBuilder.MsgType(), func(msg []byte) {
+	s.router.HandleIncoming(s.MessageBuilders.TestRequestBuilder.MsgType(), func(msg []byte) bool {
 		incomingTestRequest, err := s.MessageBuilders.TestRequestBuilder.Parse(msg)
 		if err != nil {
 			s.RejectMessage(msg)
-			return
+			return true
 		}
 
 		if !s.IsLogged() {
 			s.RejectMessage(msg)
-			return
+			return true
 		}
 
 		s.sendWithErrorCheck(s.MessageBuilders.HeartbeatBuilder.New().
 			SetFieldTestReqID(incomingTestRequest.TestReqID()))
 
+		return true
 	})
 
 	return nil
@@ -413,11 +425,15 @@ func (s *Session) start() error {
 		return err
 	}
 
-	s.router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
+	s.router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		incomingMsgTimer.Refresh()
+
+		return true
 	})
-	s.router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
+	s.router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		outgoingMsgTimer.Refresh()
+
+		return true
 	})
 
 	go func() {

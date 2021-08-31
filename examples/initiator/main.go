@@ -92,16 +92,19 @@ func main() {
 		panic(err)
 	}
 
-	handler.HandleIncoming(fixgen.MsgTypeLogon, func(msg []byte) {
+	handler.HandleIncoming(fixgen.MsgTypeLogon, func(msg []byte) bool {
 		incomingLogon, err := fixgen.ParseLogon(msg)
 		_, _ = incomingLogon, err
+		return true
 	})
 
-	handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
+	handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		fmt.Println("incoming", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+		return true
 	})
-	handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
+	handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		fmt.Println("outgoing", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+		return true
 	})
 
 	sess.OnChangeState(utils.EventLogon, func() bool {

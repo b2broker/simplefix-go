@@ -73,15 +73,11 @@ func NewInitiatorHandler(ctx context.Context, msgTypeTag string, bufferSize int)
 
 func (h *DefaultHandler) send(msgType string, data []byte) error {
 	h.outgoingHandlers.Range(AllMsgTypes, func(handle HandlerFunc) bool {
-		handle(data)
-
-		return true
+		return handle(data)
 	})
 
 	h.outgoingHandlers.Range(msgType, func(handle HandlerFunc) bool {
-		handle(data)
-
-		return true
+		return handle(data)
 	})
 
 	h.out <- data
@@ -142,15 +138,11 @@ func (h *DefaultHandler) serve(msg []byte) (err error) {
 	msgType := string(msgTypeB)
 
 	h.incomingHandlers.Range(AllMsgTypes, func(handle HandlerFunc) bool {
-		handle(msg)
-
-		return true
+		return handle(msg)
 	})
 
 	h.incomingHandlers.Range(msgType, func(handle HandlerFunc) bool {
-		handle(msg)
-
-		return true
+		return handle(msg)
 	})
 
 	return nil

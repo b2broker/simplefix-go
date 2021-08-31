@@ -98,14 +98,16 @@ func main() {
 		_ = sess.Run()
 		sess.SetMessageStorage(memory.NewStorage(100, 100))
 
-		handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
+		handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 			fmt.Println("incoming", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+			return true
 		})
-		handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
+		handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 			fmt.Println("outgoing", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+			return true
 		})
 
-		handler.HandleIncoming(fixgen.MsgTypeMarketDataRequest, func(msg []byte) {
+		handler.HandleIncoming(fixgen.MsgTypeMarketDataRequest, func(msg []byte) bool {
 			request, err := fixgen.ParseMarketDataRequest(msg)
 			if err != nil {
 				panic(err)
@@ -114,6 +116,8 @@ func main() {
 			for _, relatedSymbolEntry := range request.RelatedSymGrp().Entries() {
 				fmt.Println(relatedSymbolEntry.Instrument().Symbol())
 			}
+
+			return true
 		})
 	})
 

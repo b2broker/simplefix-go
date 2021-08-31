@@ -15,7 +15,7 @@ type Sender interface {
 }
 
 // HandlerFunc is a function for handle message
-type HandlerFunc func(msg []byte)
+type HandlerFunc func(msg []byte) bool
 
 // AcceptorHandler is a collection of methods requires for the base work of acceptor
 type AcceptorHandler interface {

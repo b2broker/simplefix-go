@@ -45,12 +45,13 @@ func TestHeartbeat(t *testing.T) {
 	waitHeartbeats.Add(countOfHeartbeats)
 	heartbeats := 4
 
-	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) {
+	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) bool {
 		if heartbeats <= 0 {
-			return
+			return true
 		}
 		heartbeats--
 		waitHeartbeats.Done()
+		return true
 	})
 
 	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
@@ -106,7 +107,7 @@ func TestGroup(t *testing.T) {
 			t.Fatalf("run s: %s", err)
 		}
 
-		handler.HandleIncoming(fixgen.MsgTypeMarketDataRequest, func(msg []byte) {
+		handler.HandleIncoming(fixgen.MsgTypeMarketDataRequest, func(msg []byte) bool {
 			request, err := fixgen.ParseMarketDataRequest(msg)
 			if err != nil {
 				panic(err)
@@ -125,6 +126,7 @@ func TestGroup(t *testing.T) {
 			}
 
 			close(done)
+			return true
 		})
 
 		s.SetMessageStorage(memory.NewStorage(100, 100))
@@ -205,7 +207,7 @@ func TestTestRequest(t *testing.T) {
 	waitHeartbeats := utils.TimedWaitGroup{}
 	waitHeartbeats.Add(1)
 
-	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) {
+	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) bool {
 		heartbeatMsg, err := fixgen.ParseHeartbeat(msg)
 		if err != nil {
 			t.Fatalf("parse heartbeat: %s", err)
@@ -214,6 +216,8 @@ func TestTestRequest(t *testing.T) {
 		if heartbeatMsg.TestReqID() == testReqID {
 			waitHeartbeats.Done()
 		}
+
+		return true
 	})
 
 	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
@@ -269,7 +273,7 @@ func TestResendSequence(t *testing.T) {
 	waitRepeats.Add(countOfResending)
 	messages := new(sync.Map)
 
-	initiatorHandler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
+	initiatorHandler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		msgSeqNumB, err := fix.ValueByTag(msg, fixgen.FieldMsgSeqNum)
 		if err != nil {
 			t.Fatalf("message sequence num parsing: %s", err)
@@ -289,6 +293,8 @@ func TestResendSequence(t *testing.T) {
 		} else {
 			messages.Store(msgSeqNum, msg)
 		}
+
+		return true
 	})
 
 	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
