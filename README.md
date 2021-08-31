@@ -5,10 +5,10 @@
 [![Generic badge](https://img.shields.io/badge/Go->=1.16-blue.svg?style=for-the-badge&logo=go)](https://golang.org/doc/go1.16)
 [![Generic badge](https://img.shields.io/badge/semver-semantic_release-blue.svg?style=for-the-badge&logo=semantic-release)](https://github.com/go-semantic-release/semantic-release)
 
+:warning: This is beta-version. It may contain errors.
+
 <details>
 <summary>Table of content</summary>
-
-:warning: This is beta-version. It may contain errors.
 
 ## Table of contents
 - [What is FIX](#what-is-fix-api)
