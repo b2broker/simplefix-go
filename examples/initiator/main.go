@@ -76,7 +76,6 @@ func main() {
 	})
 
 	sess, err := session.NewInitiatorSession(
-		context.Background(),
 		handler,
 		&pseudoGeneratedOpts,
 		&session.LogonSettings{

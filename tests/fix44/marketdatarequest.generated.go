@@ -46,7 +46,7 @@ func NewMarketDataRequest(mDReqID string, subscriptionRequestType string, market
 }
 
 func ParseMarketDataRequest(data []byte) (*MarketDataRequest, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, FieldBeginString, beginString).
+	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeMarketDataRequest).
 		SetBody(makeMarketDataRequest().Body()...).
 		SetHeader(makeHeader().AsComponent()).
 		SetTrailer(makeTrailer().AsComponent())

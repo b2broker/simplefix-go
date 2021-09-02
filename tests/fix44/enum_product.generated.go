@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 // Enum type EnumProduct
 const (
 	EnumProductAgency      string = "1"

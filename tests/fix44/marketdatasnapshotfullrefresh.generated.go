@@ -43,7 +43,7 @@ func NewMarketDataSnapshotFullRefresh(instrument *Instrument, noMDEntries *MDEnt
 }
 
 func ParseMarketDataSnapshotFullRefresh(data []byte) (*MarketDataSnapshotFullRefresh, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, FieldBeginString, beginString).
+	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeMarketDataSnapshotFullRefresh).
 		SetBody(makeMarketDataSnapshotFullRefresh().Body()...).
 		SetHeader(makeHeader().AsComponent()).
 		SetTrailer(makeTrailer().AsComponent())

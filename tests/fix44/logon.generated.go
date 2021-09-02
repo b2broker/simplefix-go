@@ -44,7 +44,7 @@ func NewLogon(encryptMethod string, heartBtInt int) *Logon {
 }
 
 func ParseLogon(data []byte) (*Logon, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, FieldBeginString, beginString).
+	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeLogon).
 		SetBody(makeLogon().Body()...).
 		SetHeader(makeHeader().AsComponent()).
 		SetTrailer(makeTrailer().AsComponent())

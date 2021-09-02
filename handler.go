@@ -179,6 +179,10 @@ func (h *DefaultHandler) Run() (err error) {
 	}
 }
 
+func (h *DefaultHandler) Context() context.Context {
+	return h.ctx
+}
+
 // Outgoing is service method for returning outgoing chan to server or client connection manager
 func (h *DefaultHandler) Outgoing() <-chan []byte {
 	return h.out

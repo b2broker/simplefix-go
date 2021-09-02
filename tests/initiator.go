@@ -24,7 +24,6 @@ func RunNewInitiator(port int, t *testing.T, settings *session.LogonSettings) (s
 	client := simplefixgo.NewInitiator(conn, handler, 10)
 
 	s, err = session.NewInitiatorSession(
-		context.Background(),
 		handler,
 		&pseudoGeneratedOpts,
 		settings,

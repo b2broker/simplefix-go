@@ -1,7 +1,5 @@
 package fix44
 
-import ()
-
 const (
 	FieldBeginSeqNo                           = "7"
 	FieldBeginString                          = "8"

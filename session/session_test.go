@@ -122,7 +122,7 @@ var (
 func TestNewAcceptorSession(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := NewAcceptorSession(ctx, &Opts{
+	_, err := NewAcceptorSession(&Opts{
 		Location:                validLocations[0],
 		MessageBuilders:         validMessageBuilders,
 		Tags:                    validTags,
@@ -140,7 +140,7 @@ func TestNewAcceptorSession(t *testing.T) {
 func TestNewInitiatorSession(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := NewInitiatorSession(ctx, simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
+	_, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
 		Location:                validLocations[0],
 		MessageBuilders:         validMessageBuilders,
 		Tags:                    validTags,
@@ -155,7 +155,7 @@ func TestNewInitiatorSession(t *testing.T) {
 func TestNewInitiatorSessionOpts(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := NewInitiatorSession(ctx, simplefixgo.NewInitiatorHandler(ctx, "35", 100), nil,
+	_, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), nil,
 		&validLogonSettings)
 	if !errors.Is(err, ErrMissingSessionOts) {
 		t.Fatalf("unexpected error, expect: %s, got: %v", ErrMissingSessionOts, err)
@@ -166,7 +166,7 @@ func TestNewAcceptorSessionMessageBuilders(t *testing.T) {
 	ctx := context.Background()
 
 	for _, invalidMessageBuilders := range invalidMessageBuildersList {
-		_, err := NewInitiatorSession(ctx, simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
+		_, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
 			Location:                validLocations[0],
 			MessageBuilders:         invalidMessageBuilders,
 			Tags:                    validTags,
@@ -180,9 +180,7 @@ func TestNewAcceptorSessionMessageBuilders(t *testing.T) {
 }
 
 func TestNewInitiatorSessionHandler(t *testing.T) {
-	ctx := context.Background()
-
-	_, err := NewInitiatorSession(ctx, nil, &Opts{
+	_, err := NewInitiatorSession(nil, &Opts{
 		Location:                validLocations[0],
 		MessageBuilders:         validMessageBuilders,
 		Tags:                    validTags,
@@ -197,7 +195,7 @@ func TestNewInitiatorSessionHandler(t *testing.T) {
 func TestNewInitiatorSessionTags(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := NewInitiatorSession(ctx, simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
+	_, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
 		Location:                validLocations[0],
 		MessageBuilders:         validMessageBuilders,
 		Tags:                    nil,
@@ -212,7 +210,7 @@ func TestNewInitiatorSessionTags(t *testing.T) {
 func TestNewInitiatorSessionEncryptedMethod(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := NewAcceptorSession(ctx, &Opts{
+	_, err := NewAcceptorSession(&Opts{
 		Location:                validLocations[0],
 		MessageBuilders:         validMessageBuilders,
 		Tags:                    validTags,
@@ -231,7 +229,7 @@ func TestNewInitiatorSessionEncryptedMethod(t *testing.T) {
 func TestNewInitiatorSessionErrorCodes(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := NewInitiatorSession(ctx, simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
+	_, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
 		Location:                validLocations[0],
 		MessageBuilders:         validMessageBuilders,
 		Tags:                    validTags,
@@ -260,7 +258,7 @@ func TestNewInitiatorSessionLogonSettings(t *testing.T) {
 		"zero heartbeat int":   {settings: invalid2, err: ErrInvalidHeartBtInt},
 	}
 
-	_, err := NewInitiatorSession(ctx, simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
+	_, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
 		Location:                validLocations[0],
 		MessageBuilders:         validMessageBuilders,
 		Tags:                    validTags,
@@ -272,7 +270,7 @@ func TestNewInitiatorSessionLogonSettings(t *testing.T) {
 	}
 
 	for name, c := range cases {
-		_, err := NewInitiatorSession(ctx, simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
+		_, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
 			Location:                validLocations[0],
 			MessageBuilders:         validMessageBuilders,
 			Tags:                    validTags,
@@ -305,7 +303,7 @@ func TestNewAcceptorSessionLogonSettings(t *testing.T) {
 		"logon request timeout":    {settings: invalid2, err: ErrInvalidLogonTimeout},
 	}
 
-	_, err := NewAcceptorSession(ctx, &Opts{
+	_, err := NewAcceptorSession(&Opts{
 		Location:                validLocations[0],
 		MessageBuilders:         validMessageBuilders,
 		Tags:                    validTags,
@@ -319,7 +317,7 @@ func TestNewAcceptorSessionLogonSettings(t *testing.T) {
 	}
 
 	for name, c := range cases {
-		_, err := NewAcceptorSession(ctx, &Opts{
+		_, err := NewAcceptorSession(&Opts{
 			Location:                validLocations[0],
 			MessageBuilders:         validMessageBuilders,
 			Tags:                    validTags,
