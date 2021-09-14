@@ -14,8 +14,11 @@ type Sender interface {
 	Send(message SendingMessage) error
 }
 
-// HandlerFunc is a function for handle message
-type HandlerFunc func(msg []byte) bool
+// OutgoingHandlerFunc is a function for handle message
+type OutgoingHandlerFunc func(msg SendingMessage) bool
+
+// OutgoingHandlerFunc is a function for handle message
+type IncomingHandlerFunc func(data []byte) bool
 
 // AcceptorHandler is a collection of methods requires for the base work of acceptor
 type AcceptorHandler interface {
@@ -24,11 +27,11 @@ type AcceptorHandler interface {
 	Run() error
 	StopWithError(err error)
 	Send(message SendingMessage) error
-	SendRaw(msgType string, message []byte) error
+	SendRaw(data []byte)
 	RemoveIncomingHandler(msgType string, id int64) (err error)
 	RemoveOutgoingHandler(msgType string, id int64) (err error)
-	HandleIncoming(msgType string, handle HandlerFunc) (id int64)
-	HandleOutgoing(msgType string, handle HandlerFunc) (id int64)
+	HandleIncoming(msgType string, handle IncomingHandlerFunc) (id int64)
+	HandleOutgoing(msgType string, handle OutgoingHandlerFunc) (id int64)
 	OnDisconnect(handlerFunc utils.EventHandlerFunc)
 	OnConnect(handlerFunc utils.EventHandlerFunc)
 	OnStopped(handlerFunc utils.EventHandlerFunc)

@@ -2,6 +2,7 @@ package memory
 
 import (
 	"fmt"
+	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/session"
 	"sync"
 )
@@ -11,7 +12,7 @@ type Storage struct {
 	maxSize    int
 	bufferSize int
 	start      int
-	messages   map[int][]byte
+	messages   map[int]simplefixgo.SendingMessage
 	mu         sync.Mutex
 }
 
@@ -24,7 +25,7 @@ func NewStorage(maxSize int, bufferSize int) *Storage {
 		maxSize:    maxSize,
 		bufferSize: bufferSize,
 		start:      1,
-		messages:   make(map[int][]byte, maxSize+bufferSize),
+		messages:   make(map[int]simplefixgo.SendingMessage, maxSize+bufferSize),
 		mu:         sync.Mutex{},
 	}
 }
@@ -49,7 +50,7 @@ func (s *Storage) flush() error {
 	return nil
 }
 
-func (s *Storage) Save(msg []byte, msgSeqNum int) error {
+func (s *Storage) Save(msg simplefixgo.SendingMessage, msgSeqNum int) error {
 	if err := s.flush(); err != nil {
 		return err
 	}
@@ -72,7 +73,7 @@ func (s *Storage) Save(msg []byte, msgSeqNum int) error {
 }
 
 // Messages returns message list in sequential order from msgSeqNumFrom to msgSeqNumTo
-func (s *Storage) Messages(msgSeqNumFrom, msgSeqNumTo int) ([][]byte, error) {
+func (s *Storage) Messages(msgSeqNumFrom, msgSeqNumTo int) ([]simplefixgo.SendingMessage, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -84,7 +85,7 @@ func (s *Storage) Messages(msgSeqNumFrom, msgSeqNumTo int) ([][]byte, error) {
 		return nil, session.ErrNotEnoughMessages
 	}
 
-	var messages [][]byte
+	var messages []simplefixgo.SendingMessage
 	for i := msgSeqNumFrom; i <= msgSeqNumTo; i++ {
 		messages = append(messages, s.messages[i])
 	}

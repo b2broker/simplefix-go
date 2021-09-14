@@ -60,10 +60,11 @@ var pseudoGeneratedOpts = session.Opts{
 }
 
 func main() {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", 9091))
+	listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", 9991))
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("connected")
 
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 
@@ -97,11 +98,15 @@ func main() {
 		sess.SetMessageStorage(memory.NewStorage(100, 100))
 
 		handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
-			fmt.Println("incoming", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+			fmt.Println("incoming", string(bytes.ReplaceAll(msg, fix.Delimiter, []byte("|"))))
 			return true
 		})
-		handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) bool {
-			fmt.Println("outgoing", string(bytes.Replace(msg, fix.Delimiter, []byte("|"), -1)))
+		handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
+			data, err := msg.ToBytes()
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println("outgoing", string(bytes.ReplaceAll(data, fix.Delimiter, []byte("|"))))
 			return true
 		})
 

@@ -110,7 +110,7 @@ func (g *Generator) Execute(outputDirPath string) (err error) {
 
 	dpkg := filepath.SplitList(od)[0]
 
-	pkg := strings.Replace(dpkg, "-", "_", 10)
+	pkg := strings.ReplaceAll(dpkg, "-", "_")
 	if err = g.checkName(pkg); err != nil {
 		return fmt.Errorf("can not use package name %s: %w", pkg, err)
 	}

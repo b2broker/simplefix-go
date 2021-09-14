@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/b2broker/simplefix-go/fix"
+	"github.com/b2broker/simplefix-go/session/messages"
 	"github.com/b2broker/simplefix-go/utils"
 )
 
@@ -12,6 +13,7 @@ const AllMsgTypes = "ALL"
 
 // SendingMessage basic method for sending message
 type SendingMessage interface {
+	HeaderBuilder() messages.HeaderBuilder
 	MsgType() string
 	ToBytes() ([]byte, error)
 }
@@ -21,8 +23,8 @@ type DefaultHandler struct {
 	out      chan []byte
 	incoming chan []byte
 
-	incomingHandlers *HandlerPool
-	outgoingHandlers *HandlerPool
+	incomingHandlers IncomingHandlerPool
+	outgoingHandlers OutgoingHandlerPool
 
 	eventHandlers *utils.EventHandlerPool
 
@@ -43,8 +45,8 @@ func NewAcceptorHandler(ctx context.Context, msgTypeTag string, bufferSize int) 
 		incoming: make(chan []byte, bufferSize),
 		errors:   make(chan error),
 
-		incomingHandlers: NewHandlerPool(),
-		outgoingHandlers: NewHandlerPool(),
+		incomingHandlers: NewIncomingHandlerPool(),
+		outgoingHandlers: NewOutgoingHandlerPool(),
 	}
 
 	sh.ctx, sh.cancel = context.WithCancel(ctx)
@@ -62,8 +64,8 @@ func NewInitiatorHandler(ctx context.Context, msgTypeTag string, bufferSize int)
 		incoming: make(chan []byte, bufferSize),
 		errors:   make(chan error),
 
-		incomingHandlers: NewHandlerPool(),
-		outgoingHandlers: NewHandlerPool(),
+		incomingHandlers: NewIncomingHandlerPool(),
+		outgoingHandlers: NewOutgoingHandlerPool(),
 	}
 
 	sh.ctx, sh.cancel = context.WithCancel(ctx)
@@ -71,33 +73,37 @@ func NewInitiatorHandler(ctx context.Context, msgTypeTag string, bufferSize int)
 	return sh
 }
 
-func (h *DefaultHandler) send(msgType string, data []byte) error {
-	h.outgoingHandlers.Range(AllMsgTypes, func(handle HandlerFunc) bool {
-		return handle(data)
-	})
-
-	h.outgoingHandlers.Range(msgType, func(handle HandlerFunc) bool {
-		return handle(data)
-	})
-
+func (h *DefaultHandler) sendRaw(data []byte) {
 	h.out <- data
+}
+
+func (h *DefaultHandler) send(msg SendingMessage) error {
+	h.outgoingHandlers.Range(AllMsgTypes, func(handle OutgoingHandlerFunc) bool {
+		return handle(msg)
+	})
+
+	h.outgoingHandlers.Range(msg.MsgType(), func(handle OutgoingHandlerFunc) bool {
+		return handle(msg)
+	})
+
+	data, err := msg.ToBytes()
+	if err != nil {
+		return err
+	}
+
+	h.sendRaw(data)
 
 	return nil
 }
 
-// SendRaw sends raw message
-func (h *DefaultHandler) SendRaw(msgType string, message []byte) error {
-	return h.send(msgType, message)
+// SendRaw sends raw message without any additional handlers
+func (h *DefaultHandler) SendRaw(data []byte) {
+	h.sendRaw(data)
 }
 
 // Send sends prepared message
 func (h *DefaultHandler) Send(message SendingMessage) error {
-	data, err := message.ToBytes()
-	if err != nil {
-		return fmt.Errorf("converting to bytes: %s", err)
-	}
-
-	return h.send(message.MsgType(), data)
+	return h.send(message)
 }
 
 // RemoveOutgoingHandler removes existing incoming handler
@@ -113,7 +119,7 @@ func (h *DefaultHandler) RemoveOutgoingHandler(msgType string, id int64) (err er
 // HandleIncoming subscribes handler function to incoming messages with specific msgType
 // For subscription to all messages use AllMsgTypes constant for field msgType
 // in this case your messages will have high priority
-func (h *DefaultHandler) HandleIncoming(msgType string, handle HandlerFunc) (id int64) {
+func (h *DefaultHandler) HandleIncoming(msgType string, handle IncomingHandlerFunc) (id int64) {
 	return h.incomingHandlers.Add(msgType, handle)
 }
 
@@ -121,7 +127,7 @@ func (h *DefaultHandler) HandleIncoming(msgType string, handle HandlerFunc) (id 
 // for modification before sending
 // For subscription to all messages use AllMsgTypes constant for field msgType
 // in this case your messages will have high priority
-func (h *DefaultHandler) HandleOutgoing(msgType string, handle HandlerFunc) (id int64) {
+func (h *DefaultHandler) HandleOutgoing(msgType string, handle OutgoingHandlerFunc) (id int64) {
 	return h.outgoingHandlers.Add(msgType, handle)
 }
 
@@ -137,11 +143,11 @@ func (h *DefaultHandler) serve(msg []byte) (err error) {
 	}
 	msgType := string(msgTypeB)
 
-	h.incomingHandlers.Range(AllMsgTypes, func(handle HandlerFunc) bool {
+	h.incomingHandlers.Range(AllMsgTypes, func(handle IncomingHandlerFunc) bool {
 		return handle(msg)
 	})
 
-	h.incomingHandlers.Range(msgType, func(handle HandlerFunc) bool {
+	h.incomingHandlers.Range(msgType, func(handle IncomingHandlerFunc) bool {
 		return handle(msg)
 	})
 

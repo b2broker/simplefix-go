@@ -104,5 +104,5 @@ func TestUnmarshalItems(t *testing.T) {
 }
 
 func showDelimiter(in []byte) []byte {
-	return bytes.Replace(in, Delimiter, []byte(visibleDelimiter), -1)
+	return bytes.ReplaceAll(in, Delimiter, []byte(visibleDelimiter))
 }

@@ -1,15 +1,19 @@
 package memory
 
 import (
-	"bytes"
 	"errors"
+	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/session"
+	"github.com/b2broker/simplefix-go/session/messages"
 	"testing"
 )
 
 func TestStorage_Save(t *testing.T) {
-	data := [][]byte{
-		{}, {}, {}, {},
+	data := []simplefixgo.SendingMessage{
+		messages.NewMockMessage("12", []byte{}, nil),
+		messages.NewMockMessage("12", []byte{}, nil),
+		messages.NewMockMessage("12", []byte{}, nil),
+		messages.NewMockMessage("12", []byte{}, nil),
 	}
 
 	st := NewStorage(10, 5)
@@ -20,18 +24,33 @@ func TestStorage_Save(t *testing.T) {
 		}
 	}
 
-	err := st.Save([]byte{}, 10)
+	err := st.Save(nil, 10)
 	if !errors.Is(err, session.ErrInvalidSequence) {
 		t.Fatalf("expect error '%s', got '%s'", session.ErrInvalidSequence, err)
 	}
 }
 
 func TestStorage_Messages(t *testing.T) {
-	data := [][]byte{
-		{}, {}, {}, {}, {}, {}, {}, {}, {}, {},
-		[]byte("test_me_11"),
-		[]byte("test_me_12"),
-		{}, {}, {}, {}, {}, {}, {}, {}, {},
+	data := []simplefixgo.SendingMessage{
+		messages.NewMockMessage("01", []byte{}, nil),
+		messages.NewMockMessage("02", []byte{}, nil),
+		messages.NewMockMessage("03", []byte{}, nil),
+		messages.NewMockMessage("04", []byte{}, nil),
+		messages.NewMockMessage("05", []byte{}, nil),
+		messages.NewMockMessage("06", []byte{}, nil),
+		messages.NewMockMessage("07", []byte{}, nil),
+		messages.NewMockMessage("08", []byte{}, nil),
+		messages.NewMockMessage("09", []byte{}, nil),
+		messages.NewMockMessage("10", []byte{}, nil),
+		messages.NewMockMessage("11", []byte{}, nil),
+		messages.NewMockMessage("12", []byte{}, nil),
+		messages.NewMockMessage("13", []byte{}, nil),
+		messages.NewMockMessage("14", []byte{}, nil),
+		messages.NewMockMessage("15", []byte{}, nil),
+		messages.NewMockMessage("16", []byte{}, nil),
+		messages.NewMockMessage("17", []byte{}, nil),
+		messages.NewMockMessage("18", []byte{}, nil),
+		messages.NewMockMessage("19", []byte{}, nil),
 	}
 
 	st := NewStorage(10, 5)
@@ -42,20 +61,21 @@ func TestStorage_Messages(t *testing.T) {
 		}
 	}
 
-	messages, err := st.Messages(11, 12)
+	storageMessages, err := st.Messages(11, 12)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
 
-	if len(messages) != 2 {
-		t.Fatalf("unexpected size of messages: got %d, expect: %d", len(messages), 2)
+	if len(storageMessages) != 2 {
+		t.Fatalf("unexpected size of storageMessages: got %d, expect: %d", len(storageMessages), 2)
 	}
 
-	if !bytes.Equal(messages[0], data[10]) {
-		t.Fatalf("unexpected message: got %s, expect: %s", messages[0], data[10])
+	if storageMessages[0].MsgType() == "" || storageMessages[0].MsgType() != data[10].MsgType() {
+		t.Fatalf("unexpected message: got %s, expect: %s", storageMessages[0], data[10])
 	}
-	if !bytes.Equal(messages[1], data[11]) {
-		t.Fatalf("unexpected message: got %s, expect: %s", messages[0], data[11])
+
+	if storageMessages[1].MsgType() == "" || storageMessages[1].MsgType() != data[11].MsgType() {
+		t.Fatalf("unexpected message: got %s, expect: %s", storageMessages[0], data[11])
 	}
 
 	_, err = st.Messages(100, 10)
