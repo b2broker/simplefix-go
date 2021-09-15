@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) *simplefixgo.Acceptor {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) (acceptor *simplefixgo.Acceptor, addr string) {
+	listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
 		t.Fatalf("listen error: %s", err)
 	}
@@ -51,5 +51,5 @@ func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) *simple
 		s.SetMessageStorage(storage)
 	})
 
-	return server
+	return server, listener.Addr().String()
 }

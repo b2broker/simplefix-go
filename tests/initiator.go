@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-func RunNewInitiator(port int, t *testing.T, settings *session.LogonSettings) (s *session.Session, handler *simplefixgo.DefaultHandler) {
-	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", port))
+func RunNewInitiator(addr string, t *testing.T, settings *session.LogonSettings) (s *session.Session, handler *simplefixgo.DefaultHandler) {
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		t.Fatalf("could not dial: %s", err)
 	}
@@ -33,11 +33,17 @@ func RunNewInitiator(port int, t *testing.T, settings *session.LogonSettings) (s
 	}
 
 	// log messages
-	handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
+	handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		fmt.Println("incoming:", string(bytes.ReplaceAll(msg, fix.Delimiter, []byte("|"))))
+		return true
 	})
-	handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg []byte) {
-		fmt.Println("outgoing:", string(bytes.ReplaceAll(msg, fix.Delimiter, []byte("|"))))
+	handler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
+		data, err := msg.ToBytes()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("outgoing:", string(bytes.ReplaceAll(data, fix.Delimiter, []byte("|"))))
+		return true
 	})
 
 	// todo move

@@ -21,11 +21,10 @@ func TestHeartbeat(t *testing.T) {
 	const (
 		countOfHeartbeats = 4
 		heartBtInt        = 1
-		port              = 9991
 	)
 
 	// close acceptor after work
-	acceptor := RunAcceptor(port, t, memory.NewStorage(100, 100))
+	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
 	defer acceptor.Close()
 	go func() {
 		err := acceptor.ListenAndServe()
@@ -34,7 +33,7 @@ func TestHeartbeat(t *testing.T) {
 		}
 	}()
 
-	initiatorSession, initiatorHandler := RunNewInitiator(port, t, &session.LogonSettings{
+	initiatorSession, initiatorHandler := RunNewInitiator(addr, t, &session.LogonSettings{
 		TargetCompID:  "Server",
 		SenderCompID:  "Client",
 		HeartBtInt:    heartBtInt,
@@ -45,12 +44,13 @@ func TestHeartbeat(t *testing.T) {
 	waitHeartbeats.Add(countOfHeartbeats)
 	heartbeats := 4
 
-	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) {
+	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) bool {
 		if heartbeats <= 0 {
-			return
+			return true
 		}
 		heartbeats--
 		waitHeartbeats.Done()
+		return true
 	})
 
 	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
@@ -67,7 +67,6 @@ func TestHeartbeat(t *testing.T) {
 func TestGroup(t *testing.T) {
 	const (
 		heartBtInt = 1
-		port       = 9991
 	)
 	var testInstrumentSymbols = map[string]struct{}{
 		"BTC/USD": {},
@@ -76,7 +75,7 @@ func TestGroup(t *testing.T) {
 	var done = make(chan struct{})
 
 	// close acceptor after work
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("listen error: %s", err)
 	}
@@ -105,7 +104,7 @@ func TestGroup(t *testing.T) {
 			t.Fatalf("run s: %s", err)
 		}
 
-		handler.HandleIncoming(fixgen.MsgTypeMarketDataRequest, func(msg []byte) {
+		handler.HandleIncoming(fixgen.MsgTypeMarketDataRequest, func(msg []byte) bool {
 			request, err := fixgen.ParseMarketDataRequest(msg)
 			if err != nil {
 				panic(err)
@@ -124,6 +123,7 @@ func TestGroup(t *testing.T) {
 			}
 
 			close(done)
+			return true
 		})
 
 		s.SetMessageStorage(memory.NewStorage(100, 100))
@@ -137,7 +137,7 @@ func TestGroup(t *testing.T) {
 		}
 	}()
 
-	initiatorSession, _ := RunNewInitiator(port, t, &session.LogonSettings{
+	initiatorSession, _ := RunNewInitiator(listener.Addr().String(), t, &session.LogonSettings{
 		TargetCompID:  "Server",
 		SenderCompID:  "Client",
 		HeartBtInt:    heartBtInt,
@@ -181,11 +181,10 @@ func TestTestRequest(t *testing.T) {
 	const (
 		heartBtInt = 5
 		testReqID  = "aloha"
-		port       = 9992
 	)
 
 	// close acceptor after work
-	acceptor := RunAcceptor(port, t, memory.NewStorage(100, 100))
+	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
 	defer acceptor.Close()
 	go func() {
 		err := acceptor.ListenAndServe()
@@ -194,7 +193,7 @@ func TestTestRequest(t *testing.T) {
 		}
 	}()
 
-	initiatorSession, initiatorHandler := RunNewInitiator(port, t, &session.LogonSettings{
+	initiatorSession, initiatorHandler := RunNewInitiator(addr, t, &session.LogonSettings{
 		TargetCompID:  "Server",
 		SenderCompID:  "Client",
 		HeartBtInt:    heartBtInt,
@@ -204,7 +203,7 @@ func TestTestRequest(t *testing.T) {
 	waitHeartbeats := utils.TimedWaitGroup{}
 	waitHeartbeats.Add(1)
 
-	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) {
+	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) bool {
 		heartbeatMsg, err := fixgen.ParseHeartbeat(msg)
 		if err != nil {
 			t.Fatalf("parse heartbeat: %s", err)
@@ -213,6 +212,8 @@ func TestTestRequest(t *testing.T) {
 		if heartbeatMsg.TestReqID() == testReqID {
 			waitHeartbeats.Done()
 		}
+
+		return true
 	})
 
 	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
@@ -240,7 +241,6 @@ func TestResendSequence(t *testing.T) {
 	const (
 		waitingResend       = time.Second * 6
 		beforeResendRequest = time.Second * 3
-		port                = 9993
 		resendBegin         = 1
 		resendEnd           = 3
 	)
@@ -248,7 +248,7 @@ func TestResendSequence(t *testing.T) {
 	var countOfResending = resendEnd - resendBegin + 1 // including
 
 	// close acceptor after work
-	acceptor := RunAcceptor(port, t, memory.NewStorage(100, 100))
+	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
 	defer acceptor.Close()
 	go func() {
 		err := acceptor.ListenAndServe()
@@ -257,7 +257,7 @@ func TestResendSequence(t *testing.T) {
 		}
 	}()
 
-	initiatorSession, initiatorHandler := RunNewInitiator(port, t, &session.LogonSettings{
+	initiatorSession, initiatorHandler := RunNewInitiator(addr, t, &session.LogonSettings{
 		TargetCompID:  "Server",
 		SenderCompID:  "Client",
 		HeartBtInt:    1,
@@ -268,7 +268,7 @@ func TestResendSequence(t *testing.T) {
 	waitRepeats.Add(countOfResending)
 	messages := new(sync.Map)
 
-	initiatorHandler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) {
+	initiatorHandler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		msgSeqNumB, err := fix.ValueByTag(msg, fixgen.FieldMsgSeqNum)
 		if err != nil {
 			t.Fatalf("message sequence num parsing: %s", err)
@@ -288,6 +288,8 @@ func TestResendSequence(t *testing.T) {
 		} else {
 			messages.Store(msgSeqNum, msg)
 		}
+
+		return true
 	})
 
 	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
@@ -309,12 +311,8 @@ func TestResendSequence(t *testing.T) {
 }
 
 func TestCloseInitiatorConn(t *testing.T) {
-	const (
-		port = 9994
-	)
-
 	// close acceptor after work
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("listen error: %s", err)
 	}
@@ -354,7 +352,7 @@ func TestCloseInitiatorConn(t *testing.T) {
 		}
 	}()
 
-	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", port))
+	conn, err := net.Dial("tcp", listener.Addr().String())
 	if err != nil {
 		t.Fatalf("could not dial: %s", err)
 	}
@@ -398,12 +396,8 @@ func TestCloseInitiatorConn(t *testing.T) {
 }
 
 func TestCloseAcceptorConn(t *testing.T) {
-	const (
-		port = 9995
-	)
-
 	// close acceptor after work
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("listen error: %s", err)
 	}
@@ -443,7 +437,7 @@ func TestCloseAcceptorConn(t *testing.T) {
 		}
 	}()
 
-	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", port))
+	conn, err := net.Dial("tcp", listener.Addr().String())
 	if err != nil {
 		t.Fatalf("could not dial: %s", err)
 	}
@@ -498,11 +492,7 @@ func TestCloseAcceptorConn(t *testing.T) {
 }
 
 func TestLookAtClosingOfInitiator(t *testing.T) {
-	const (
-		port = 9996
-	)
-
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("listen error: %s", err)
 	}
@@ -557,7 +547,111 @@ func TestLookAtClosingOfInitiator(t *testing.T) {
 		}
 	}()
 
-	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", port))
+	conn, err := net.Dial("tcp", listener.Addr().String())
+	if err != nil {
+		t.Fatalf("could not dial: %s", err)
+	}
+
+	initiatorHandler := simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
+	client := simplefixgo.NewInitiator(conn, initiatorHandler, 10)
+
+	initiatorSession, err := session.NewInitiatorSession(
+		initiatorHandler,
+		&pseudoGeneratedOpts,
+		&session.LogonSettings{
+			TargetCompID:  "Server",
+			SenderCompID:  "Client",
+			HeartBtInt:    1,
+			EncryptMethod: fixgen.EnumEncryptMethodNoneother,
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	initiatorHandler.OnConnect(func() bool {
+		t.Log("client: connected to server")
+		client.Close()
+
+		return true
+	})
+
+	go func() {
+		err := client.Serve()
+		if err != nil {
+			panic(fmt.Errorf("serve client: %s", err))
+		}
+	}()
+
+	err = initiatorSession.Run()
+	if err != nil {
+		t.Fatalf("run session: %s", err)
+	}
+
+	select {
+	case <-waitClientDisconnect:
+	case <-time.After(time.Second * 3):
+		t.Fatalf("too long time waiting close")
+	}
+}
+
+func TestInterruptHandling(t *testing.T) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("listen error: %s", err)
+	}
+
+	waitClientDisconnect := make(chan struct{})
+	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
+	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
+		acceptorSession, err := session.NewAcceptorSession(
+			&pseudoGeneratedOpts,
+			handler,
+			&session.LogonSettings{
+				HeartBtLimits: &session.IntLimits{
+					Min: 5,
+					Max: 60,
+				}, LogonTimeout: time.Second * 30},
+			func(request *session.LogonSettings) (err error) { return nil },
+		)
+		if err != nil {
+			panic(err)
+		}
+
+		err = acceptorSession.Run()
+		if err != nil {
+			t.Fatalf("run s: %s", err)
+		}
+
+		handler.OnConnect(func() bool {
+			t.Log("start some message stream")
+			go func() {
+				for {
+					select {
+					case <-acceptorSession.Context().Done():
+						waitClientDisconnect <- struct{}{}
+						return
+					case <-time.After(time.Second):
+						err := acceptorSession.Send(fixgen.NewMarketDataIncrementalRefresh(fixgen.NewMDEntriesGrp()))
+						if err != nil {
+							panic(err)
+						}
+					}
+				}
+			}()
+
+			return true
+		})
+	})
+
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	conn, err := net.Dial("tcp", listener.Addr().String())
 	if err != nil {
 		t.Fatalf("could not dial: %s", err)
 	}
