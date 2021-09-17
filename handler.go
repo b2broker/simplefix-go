@@ -78,13 +78,19 @@ func (h *DefaultHandler) sendRaw(data []byte) {
 }
 
 func (h *DefaultHandler) send(msg SendingMessage) error {
-	h.outgoingHandlers.Range(AllMsgTypes, func(handle OutgoingHandlerFunc) bool {
+	ok := h.outgoingHandlers.Range(AllMsgTypes, func(handle OutgoingHandlerFunc) bool {
 		return handle(msg)
 	})
+	if !ok {
+		return errors.New("some general handler refused message")
+	}
 
-	h.outgoingHandlers.Range(msg.MsgType(), func(handle OutgoingHandlerFunc) bool {
+	ok = h.outgoingHandlers.Range(msg.MsgType(), func(handle OutgoingHandlerFunc) bool {
 		return handle(msg)
 	})
+	if !ok {
+		return errors.New("some typical handler refused message")
+	}
 
 	data, err := msg.ToBytes()
 	if err != nil {
