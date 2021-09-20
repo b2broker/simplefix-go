@@ -82,14 +82,14 @@ func (h *DefaultHandler) send(msg SendingMessage) error {
 		return handle(msg)
 	})
 	if !ok {
-		return errors.New("some general handler refused message")
+		return errors.New("all message types handler refused message by returning false")
 	}
 
 	ok = h.outgoingHandlers.Range(msg.MsgType(), func(handle OutgoingHandlerFunc) bool {
 		return handle(msg)
 	})
 	if !ok {
-		return errors.New("some typical handler refused message")
+		return errors.New("current type handler refused message by returning false")
 	}
 
 	data, err := msg.ToBytes()
