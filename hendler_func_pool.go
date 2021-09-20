@@ -120,12 +120,14 @@ func NewOutgoingHandlerPool() OutgoingHandlerPool {
 
 // Range is a handlers traversal
 // it will be stop if one of handlers returns false
-func (p OutgoingHandlerPool) Range(msgType string, f func(OutgoingHandlerFunc) bool) {
+func (p OutgoingHandlerPool) Range(msgType string, f func(OutgoingHandlerFunc) bool) (res bool) {
 	for _, handle := range p.handlersByMsgType(msgType) {
 		if !f(handle.(OutgoingHandlerFunc)) {
-			break
+			return false
 		}
 	}
+
+	return true
 }
 
 // Add adds new message handler for message type
