@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/b2broker/simplefix-go/utils"
 	"io"
 	"net"
+
+	"github.com/b2broker/simplefix-go/utils"
 )
 
 // Sender interface for any structure which can send SendingMessage
@@ -128,6 +129,21 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 		s.handleNewClient(handler)
 	}
 
+	go func() {
+		for {
+			select {
+			case <-s.ctx.Done():
+				return
+
+			case msg, ok := <-handler.Outgoing():
+				if !ok {
+					return
+				}
+				conn.Write(msg)
+			}
+		}
+	}()
+
 	for {
 		select {
 		case <-handlerErr:
@@ -149,12 +165,6 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 				return
 			}
 			handler.ServeIncoming(msg)
-
-		case msg, ok := <-handler.Outgoing():
-			if !ok {
-				return
-			}
-			conn.Write(msg)
 		}
 	}
 }

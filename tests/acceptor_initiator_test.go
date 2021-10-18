@@ -5,16 +5,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"sync"
+	"testing"
+	"time"
+
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session"
 	"github.com/b2broker/simplefix-go/session/storages/memory"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
 	"github.com/b2broker/simplefix-go/utils"
-	"net"
-	"sync"
-	"testing"
-	"time"
 )
 
 func TestHeartbeat(t *testing.T) {
@@ -696,5 +697,69 @@ func TestInterruptHandling(t *testing.T) {
 	case <-waitClientDisconnect:
 	case <-time.After(time.Second * 3):
 		t.Fatalf("too long time waiting close")
+	}
+}
+
+func TestHighload(t *testing.T) {
+	const (
+		heartBtInt = 5
+		testReqID  = "aloha"
+	)
+
+	// close acceptor after work
+	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
+	defer acceptor.Close()
+	go func() {
+		err := acceptor.ListenAndServe()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	initiatorSession, initiatorHandler := RunNewInitiator(addr, t, &session.LogonSettings{
+		TargetCompID:  "Server",
+		SenderCompID:  "Client",
+		HeartBtInt:    heartBtInt,
+		EncryptMethod: fixgen.EnumEncryptMethodNoneother,
+	})
+
+	triesNum := 100
+
+	waitHeartbeats := utils.TimedWaitGroup{}
+	waitHeartbeats.Add(triesNum)
+
+	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) bool {
+		heartbeatMsg, err := fixgen.ParseHeartbeat(msg)
+		if err != nil {
+			t.Fatalf("parse heartbeat: %s", err)
+		}
+
+		if heartbeatMsg.TestReqID() == testReqID {
+			waitHeartbeats.Done()
+		}
+
+		return true
+	})
+
+	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
+		t.Log("client connected to server")
+		t.Log("send test request")
+
+		testRequestMsg := fixgen.TestRequest{}.New()
+		testRequestMsg.SetFieldTestReqID(testReqID)
+
+		for i := 0; i < triesNum; i++ {
+			err := initiatorSession.Send(testRequestMsg)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		return true
+	})
+
+	err := waitHeartbeats.WaitWithTimeout(time.Second * heartBtInt)
+	if err != nil {
+		t.Fatalf("wait heartbeats: %s", err)
 	}
 }
