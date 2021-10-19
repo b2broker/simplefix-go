@@ -58,6 +58,21 @@ func (c *Initiator) Serve() error {
 
 	defer c.conn.Close()
 
+	go func() {
+		for {
+			select {
+			case <-c.ctx.Done():
+				return
+
+			case msg, ok := <-c.handler.Outgoing():
+				if !ok {
+					return
+				}
+				c.conn.Write(msg)
+			}
+		}
+	}()
+
 	for {
 		select {
 		case err := <-handlerErr:
@@ -77,12 +92,6 @@ func (c *Initiator) Serve() error {
 				return fmt.Errorf("conn reader chan was closed")
 			}
 			c.handler.ServeIncoming(msg)
-
-		case msg, ok := <-c.handler.Outgoing():
-			if !ok {
-				return fmt.Errorf("handler chan was closed")
-			}
-			c.conn.Write(msg)
 		}
 	}
 }
