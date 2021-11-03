@@ -3,11 +3,12 @@ package session
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/session/messages"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
-	"testing"
-	"time"
 )
 
 var (
@@ -24,6 +25,7 @@ var (
 			Min: 1,
 			Max: 30,
 		},
+		CloseTimeout: time.Millisecond,
 	}
 	validTags = &messages.Tags{
 		MsgType:         35,
@@ -122,7 +124,7 @@ var (
 func TestNewAcceptorSession(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := NewAcceptorSession(&Opts{
+	session, err := NewAcceptorSession(&Opts{
 		Location:                validLocations[0],
 		MessageBuilders:         validMessageBuilders,
 		Tags:                    validTags,
@@ -135,12 +137,19 @@ func TestNewAcceptorSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected behaviour, got error: %v", err)
 	}
+
+	if err := session.Stop(); err != nil {
+		t.Fatalf("unexpected behaviour, got error: %v", err)
+	}
+
+	session.changeState(WaitingLogoutAnswer)
+	session.changeState(ReceivedLogoutAnswer)
 }
 
 func TestNewInitiatorSession(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
+	session, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
 		Location:                validLocations[0],
 		MessageBuilders:         validMessageBuilders,
 		Tags:                    validTags,
@@ -150,6 +159,13 @@ func TestNewInitiatorSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected behaviour, got error: %v", err)
 	}
+
+	if err := session.Stop(); err != nil {
+		t.Fatalf("unexpected behaviour, got error: %v", err)
+	}
+
+	session.changeState(WaitingLogoutAnswer)
+	session.changeState(ReceivedLogoutAnswer)
 }
 
 func TestNewInitiatorSessionOpts(t *testing.T) {
