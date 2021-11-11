@@ -763,3 +763,78 @@ func TestHighload(t *testing.T) {
 		t.Fatalf("wait heartbeats: %s", err)
 	}
 }
+
+func TestSessionClosing(t *testing.T) {
+	const (
+		heartBtInt = 5
+		testReqID  = "aloha"
+	)
+
+	// close acceptor after work
+	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
+	defer acceptor.Close()
+	go func() {
+		err := acceptor.ListenAndServe()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	initiatorSession, initiatorHandler := RunNewInitiator(addr, t, &session.LogonSettings{
+		TargetCompID:  "Server",
+		SenderCompID:  "Client",
+		HeartBtInt:    heartBtInt,
+		EncryptMethod: fixgen.EnumEncryptMethodNoneother,
+	})
+
+	triesNum := 5
+
+	waitHeartbeats := utils.TimedWaitGroup{}
+	waitHeartbeats.Add(triesNum)
+
+	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) bool {
+		heartbeatMsg, err := fixgen.ParseHeartbeat(msg)
+		if err != nil {
+			t.Fatalf("parse heartbeat: %s", err)
+		}
+
+		if heartbeatMsg.TestReqID() == testReqID {
+			waitHeartbeats.Done()
+		}
+
+		return true
+	})
+
+	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
+		t.Log("client connected to server")
+		t.Log("send test request")
+
+		testRequestMsg := fixgen.TestRequest{}.New()
+		testRequestMsg.SetFieldTestReqID(testReqID)
+
+		for i := 0; i < triesNum; i++ {
+			err := initiatorSession.Send(testRequestMsg)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		return true
+	})
+
+	err := waitHeartbeats.WaitWithTimeout(time.Second * heartBtInt)
+	if err != nil {
+		t.Fatalf("wait heartbeats: %s", err)
+	}
+
+	if err := initiatorSession.Stop(); err != nil {
+		t.Fatalf("unexpected behaviour, got error: %v", err)
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	if ctxErr := initiatorSession.Context().Err(); ctxErr == nil {
+		t.Fatalf("context should be already cancelled")
+	}
+
+}

@@ -12,4 +12,5 @@ type LogonSettings struct {
 	Username      string
 	LogonTimeout  time.Duration // todo
 	HeartBtLimits *IntLimits
+	CloseTimeout  time.Duration
 }
