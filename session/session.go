@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	simplefixgo "github.com/b2broker/simplefix-go"
-	"github.com/b2broker/simplefix-go/fix"
-	"github.com/b2broker/simplefix-go/session/messages"
-	"github.com/b2broker/simplefix-go/utils"
 	"math"
 	"strconv"
 	"sync/atomic"
 	"time"
+
+	simplefixgo "github.com/b2broker/simplefix-go"
+	"github.com/b2broker/simplefix-go/fix"
+	"github.com/b2broker/simplefix-go/session/messages"
+	"github.com/b2broker/simplefix-go/utils"
 )
 
 type LogonState int64
@@ -42,6 +43,9 @@ const (
 
 	// WaitingLogoutAnswer waiting for answer to Logout
 	WaitingLogoutAnswer
+
+	// ReceivedLogoutAnswer answer to Logout were received
+	ReceivedLogoutAnswer
 )
 
 const (
@@ -189,6 +193,8 @@ func (s *Session) changeState(state LogonState) {
 		s.eventHandler.Trigger(utils.EventLogon)
 	case WaitingLogoutAnswer:
 		s.eventHandler.Trigger(utils.EventRequest)
+	case ReceivedLogoutAnswer:
+		s.eventHandler.Trigger(utils.EventLogout)
 	}
 }
 
@@ -355,6 +361,7 @@ func (s *Session) Run() (err error) {
 
 		switch s.state {
 		case WaitingLogoutAnswer:
+			s.changeState(ReceivedLogoutAnswer)
 			s.changeState(WaitingLogon)
 
 		case SuccessfulLogged:
@@ -543,4 +550,29 @@ func (s *Session) MakeReject(reasonCode, tag, seqNum int) messages.RejectBuilder
 	}
 
 	return msg
+}
+
+func (s *Session) Stop() (err error) {
+	defer func() {
+		s.eventHandler.Clean()
+		s.router = nil
+	}()
+
+	err = s.Logout()
+	if err != nil {
+		return fmt.Errorf("sendWithErrorCheck logout request: %w", err)
+	}
+
+	delayTimer := time.AfterFunc(s.LogonSettings.CloseTimeout, func() {
+		s.cancel()
+	})
+
+	s.OnChangeState(utils.EventLogout, func() bool {
+		delayTimer.Stop()
+		s.cancel()
+
+		return true
+	})
+
+	return nil
 }

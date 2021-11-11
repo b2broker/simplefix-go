@@ -19,6 +19,9 @@ const (
 
 	// EventRequest calls when logon sent and Session waiting for answer from other side
 	EventRequest
+
+	// EventLogout calls when logout message received
+	EventLogout
 )
 
 // EventHandlerFunc is a function for calling when event happened
@@ -62,4 +65,11 @@ func (evp *EventHandlerPool) Trigger(e Event) {
 			return
 		}
 	}
+}
+
+func (evp *EventHandlerPool) Clean() {
+	evp.mu.Lock()
+	defer evp.mu.Unlock()
+
+	evp.pool = nil
 }
