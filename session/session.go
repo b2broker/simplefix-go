@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -98,6 +99,7 @@ type Session struct {
 	cancel       context.CancelFunc
 	errorHandler func(error)
 	timeLocation *time.Location
+	mu           sync.Mutex
 }
 
 // NewInitiatorSession returns session for an Initiator
@@ -519,6 +521,9 @@ func (s *Session) Send(msg messages.Message) error {
 }
 
 func (s *Session) send(msg messages.Message) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	msg.HeaderBuilder().
 		SetFieldMsgSeqNum(int(atomic.AddInt64(s.counter, 1))).
 		SetFieldTargetCompID(s.LogonSettings.TargetCompID).

@@ -6,7 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -701,10 +704,10 @@ func TestInterruptHandling(t *testing.T) {
 }
 
 func TestHighload(t *testing.T) {
-	const (
-		heartBtInt = 5
-		testReqID  = "aloha"
-	)
+	const heartBtInt = 5
+
+	triesNum := 100
+	threadsNum := 5
 
 	// close acceptor after work
 	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
@@ -723,19 +726,32 @@ func TestHighload(t *testing.T) {
 		EncryptMethod: fixgen.EnumEncryptMethodNoneother,
 	})
 
-	triesNum := 100
+	waitSnapshots := utils.TimedWaitGroup{}
+	waitSnapshots.Add(triesNum * threadsNum)
 
-	waitHeartbeats := utils.TimedWaitGroup{}
-	waitHeartbeats.Add(triesNum)
+	seqCount := int64(2)
+	seqRegexp := regexp.MustCompile(`34=(\d+)`)
 
-	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) bool {
-		heartbeatMsg, err := fixgen.ParseHeartbeat(msg)
+	initiatorHandler.HandleOutgoing(fixgen.MsgTypeMarketDataSnapshotFullRefresh, func(msg simplefixgo.SendingMessage) bool {
+		waitSnapshots.Done()
+		return true
+	})
+
+	initiatorHandler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
+		data, err := msg.ToBytes()
 		if err != nil {
-			t.Fatalf("parse heartbeat: %s", err)
+			t.Fatalf("parse snapshot: %s", err)
 		}
 
-		if heartbeatMsg.TestReqID() == testReqID {
-			waitHeartbeats.Done()
+		str := string(bytes.ReplaceAll(data, fix.Delimiter, []byte("|")))
+
+		seq := seqRegexp.FindStringSubmatch(str)
+		if len(seq) > 0 {
+			seqInt, _ := strconv.Atoi(seq[1])
+			if int64(seqInt) != seqCount {
+				t.Fatalf("broken sequence: %d, reference %d", seqInt, seqCount)
+			}
+			atomic.AddInt64(&seqCount, 1)
 		}
 
 		return true
@@ -745,22 +761,36 @@ func TestHighload(t *testing.T) {
 		t.Log("client connected to server")
 		t.Log("send test request")
 
-		testRequestMsg := fixgen.TestRequest{}.New()
-		testRequestMsg.SetFieldTestReqID(testReqID)
+		symbol := fixgen.NewInstrument().SetSymbol("XXX/YYY")
+		group := fixgen.NewMDEntriesGrp()
+		for i := 0; i < 30; i++ {
+			entry := fixgen.NewMDEntriesEntry().
+				SetQuoteEntryID("73b7bb2e-2cf2-445f-ad54-c3ba5e443eda").SetMDEntryTime(time.Now().Format(time.RFC3339)).
+				SetMDEntryType(fixgen.EnumMDEntryTypeBid).
+				SetMDEntryPx(1234.5).
+				SetMDEntrySize(0.98)
+			group.AddEntry(entry)
+		}
 
-		for i := 0; i < triesNum; i++ {
-			err := initiatorSession.Send(testRequestMsg)
-			if err != nil {
-				panic(err)
-			}
+		testMsg := fixgen.NewMarketDataSnapshotFullRefresh(symbol, group)
+
+		for j := 0; j < threadsNum; j++ {
+			go func() {
+				for i := 0; i < triesNum; i++ {
+					err := initiatorSession.Send(testMsg)
+					if err != nil {
+						panic(err)
+					}
+				}
+			}()
 		}
 
 		return true
 	})
 
-	err := waitHeartbeats.WaitWithTimeout(time.Second * heartBtInt)
+	err := waitSnapshots.WaitWithTimeout(time.Second * heartBtInt)
 	if err != nil {
-		t.Fatalf("wait heartbeats: %s", err)
+		t.Fatalf("wait snapshots: %s", err)
 	}
 }
 
