@@ -50,7 +50,7 @@ func RunNewInitiator(addr string, t *testing.T, settings *session.LogonSettings)
 	go func() {
 		time.Sleep(time.Second * 10)
 		fmt.Println("resend request after 10 seconds")
-		err = s.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(2).SetFieldEndSeqNo(3))
+		err := s.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(2).SetFieldEndSeqNo(3))
 		if err != nil {
 			panic(err)
 		}
@@ -62,7 +62,7 @@ func RunNewInitiator(addr string, t *testing.T, settings *session.LogonSettings)
 	}
 
 	go func() {
-		err = client.Serve()
+		err := client.Serve()
 		if err != nil && !errors.Is(err, simplefixgo.ErrConnClosed) {
 			panic(fmt.Errorf("serve client: %s", err))
 		}

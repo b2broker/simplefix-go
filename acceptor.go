@@ -119,15 +119,16 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 	}()
 
 	handlerErr := make(chan error)
-	go func() {
-		handlerErr <- handler.Run()
-	}()
 
 	defer conn.Close()
 
 	if s.handleNewClient != nil {
 		s.handleNewClient(handler)
 	}
+
+	go func() {
+		handlerErr <- handler.Run()
+	}()
 
 	go func() {
 		for {
