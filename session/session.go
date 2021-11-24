@@ -194,7 +194,7 @@ func (s *Session) changeState(state LogonState) {
 	s.state = state
 	s.stateMu.Unlock()
 
-	switch s.state {
+	switch state {
 	case SuccessfulLogged:
 		s.eventHandler.Trigger(utils.EventLogon)
 	case WaitingLogoutAnswer:
