@@ -380,7 +380,7 @@ func TestCloseInitiatorConn(t *testing.T) {
 
 	go func() {
 		err := client.Serve()
-		if err != nil {
+		if err != nil && !errors.Is(err, simplefixgo.ErrConnClosed) {
 			panic(fmt.Errorf("serve client: %s", err))
 		}
 	}()
@@ -582,7 +582,7 @@ func TestLookAtClosingOfInitiator(t *testing.T) {
 
 	go func() {
 		err := client.Serve()
-		if err != nil {
+		if err != nil && !errors.Is(err, simplefixgo.ErrConnClosed) {
 			panic(fmt.Errorf("serve client: %s", err))
 		}
 	}()
@@ -619,27 +619,25 @@ func TestInterruptHandling(t *testing.T) {
 			func(request *session.LogonSettings) (err error) { return nil },
 		)
 		if err != nil {
-			panic(err)
+			t.Fatalf("new session: %s", err)
 		}
 
 		err = acceptorSession.Run()
 		if err != nil {
-			t.Fatalf("run s: %s", err)
+			t.Fatalf("run acceptor session: %s", err)
 		}
 
 		handler.OnConnect(func() bool {
 			t.Log("start some message stream")
 			go func() {
-				for {
-					select {
-					case <-acceptorSession.Context().Done():
-						waitClientDisconnect <- struct{}{}
-						return
-					case <-time.After(time.Second):
-						err := acceptorSession.Send(fixgen.NewMarketDataIncrementalRefresh(fixgen.NewMDEntriesGrp()))
-						if err != nil {
-							panic(err)
-						}
+				select {
+				case <-acceptorSession.Context().Done():
+					waitClientDisconnect <- struct{}{}
+					return
+				case <-time.After(time.Second):
+					err := acceptorSession.Send(fixgen.NewMarketDataIncrementalRefresh(fixgen.NewMDEntriesGrp()))
+					if err != nil {
+						panic(err)
 					}
 				}
 			}()
@@ -686,7 +684,7 @@ func TestInterruptHandling(t *testing.T) {
 
 	go func() {
 		err := client.Serve()
-		if err != nil {
+		if err != nil && errors.Is(err, simplefixgo.ErrConnClosed) {
 			panic(fmt.Errorf("serve client: %s", err))
 		}
 	}()

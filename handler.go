@@ -7,6 +7,7 @@ import (
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session/messages"
 	"github.com/b2broker/simplefix-go/utils"
+	"sync"
 )
 
 const AllMsgTypes = "ALL"
@@ -20,6 +21,8 @@ type SendingMessage interface {
 
 // DefaultHandler is a standard handler for
 type DefaultHandler struct {
+	mu sync.Mutex
+
 	out      chan []byte
 	incoming chan []byte
 
@@ -109,6 +112,9 @@ func (h *DefaultHandler) SendRaw(data []byte) {
 
 // Send sends prepared message
 func (h *DefaultHandler) Send(message SendingMessage) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	return h.send(message)
 }
 

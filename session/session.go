@@ -75,8 +75,10 @@ type Handler interface {
 // logon, logout, heartbeats, rejects and message sequences
 type Session struct {
 	*Opts
-	side  Side
-	state LogonState
+	side Side
+
+	state   LogonState
+	stateMu sync.RWMutex
 
 	// services
 	router Handler
@@ -118,7 +120,7 @@ func NewInitiatorSession(handler Handler, opts *Opts, settings *LogonSettings) (
 	}
 
 	s.side = sideInitiator
-	s.state = WaitingLogonAnswer
+	s.changeState(WaitingLogonAnswer)
 
 	return
 }
@@ -144,7 +146,7 @@ func NewAcceptorSession(params *Opts, handler Handler, settings *LogonSettings, 
 	}
 
 	s.side = sideAcceptor
-	s.state = WaitingLogon
+	s.changeState(WaitingLogon)
 	s.LogonHandler = onLogon
 
 	return
@@ -188,9 +190,11 @@ func newSession(opts *Opts, handler Handler, settings *LogonSettings) (session *
 }
 
 func (s *Session) changeState(state LogonState) {
+	s.stateMu.Lock()
 	s.state = state
+	s.stateMu.Unlock()
 
-	switch s.state {
+	switch state {
 	case SuccessfulLogged:
 		s.eventHandler.Trigger(utils.EventLogon)
 	case WaitingLogoutAnswer:
@@ -290,7 +294,7 @@ func (s *Session) OnError(handler func(error)) {
 }
 
 func (s *Session) Run() (err error) {
-	s.state = WaitingLogon
+	s.changeState(WaitingLogon)
 	if s.side == sideInitiator {
 		err = s.LogonRequest()
 		if err != nil {
@@ -340,7 +344,7 @@ func (s *Session) Run() (err error) {
 
 			answer := s.MessageBuilders.LogonBuilder.New()
 
-			s.state = SuccessfulLogged
+			s.changeState(SuccessfulLogged)
 
 			s.sendWithErrorCheck(answer)
 			return true
@@ -538,6 +542,9 @@ func (s *Session) sendWithErrorCheck(msg messages.Message) {
 }
 
 func (s *Session) IsLogged() bool {
+	s.stateMu.RLock()
+	defer s.stateMu.RUnlock()
+
 	return s.state == SuccessfulLogged
 }
 
@@ -560,7 +567,6 @@ func (s *Session) MakeReject(reasonCode, tag, seqNum int) messages.RejectBuilder
 func (s *Session) Stop() (err error) {
 	defer func() {
 		s.eventHandler.Clean()
-		s.router = nil
 	}()
 
 	err = s.Logout()
