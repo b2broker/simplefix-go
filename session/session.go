@@ -66,7 +66,7 @@ type Handler interface {
 	HandleOutgoing(msgType string, handle simplefixgo.OutgoingHandlerFunc) (id int64)
 	RemoveIncomingHandler(msgType string, id int64) (err error)
 	RemoveOutgoingHandler(msgType string, id int64) (err error)
-	SendRaw(data []byte)
+	SendRaw(data []byte) error
 	Send(message simplefixgo.SendingMessage) error
 	Context() context.Context
 }

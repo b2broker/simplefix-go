@@ -28,7 +28,7 @@ type AcceptorHandler interface {
 	Run() error
 	StopWithError(err error)
 	Send(message SendingMessage) error
-	SendRaw(data []byte)
+	SendRaw(data []byte) error
 	RemoveIncomingHandler(msgType string, id int64) (err error)
 	RemoveOutgoingHandler(msgType string, id int64) (err error)
 	HandleIncoming(msgType string, handle IncomingHandlerFunc) (id int64)

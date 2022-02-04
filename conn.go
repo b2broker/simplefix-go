@@ -61,6 +61,7 @@ func (c *Conn) serve() error {
 
 func (c *Conn) runReader(errCh chan error) {
 	r := bufio.NewReader(c.conn)
+	defer c.cancel()
 
 	var msg []byte
 	for {
@@ -85,12 +86,15 @@ func (c *Conn) runReader(errCh chan error) {
 }
 
 func (c *Conn) runWriter(errCh chan error) {
+	defer c.cancel()
+
 	for {
 		select {
 		case msg := <-c.writer:
 			_, err := c.conn.Write(msg)
 			if err != nil {
 				errCh <- err
+				return
 			}
 
 		case <-c.ctx.Done():

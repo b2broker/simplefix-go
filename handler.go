@@ -76,8 +76,13 @@ func NewInitiatorHandler(ctx context.Context, msgTypeTag string, bufferSize int)
 	return sh
 }
 
-func (h *DefaultHandler) sendRaw(data []byte) {
-	h.out <- data
+func (h *DefaultHandler) sendRaw(data []byte) error {
+	select {
+	case h.out <- data:
+	case <-h.ctx.Done():
+		return fmt.Errorf("handler is stopped")
+	}
+	return nil
 }
 
 func (h *DefaultHandler) send(msg SendingMessage) error {
@@ -100,14 +105,12 @@ func (h *DefaultHandler) send(msg SendingMessage) error {
 		return err
 	}
 
-	h.sendRaw(data)
-
-	return nil
+	return h.sendRaw(data)
 }
 
 // SendRaw sends raw message without any additional handlers
-func (h *DefaultHandler) SendRaw(data []byte) {
-	h.sendRaw(data)
+func (h *DefaultHandler) SendRaw(data []byte) error {
+	return h.sendRaw(data)
 }
 
 // Send sends prepared message
