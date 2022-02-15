@@ -49,11 +49,13 @@ func (c *Initiator) Serve() error {
 	connErr := make(chan error)
 	go func() {
 		connErr <- c.conn.serve()
+		close(connErr)
 	}()
 
-	handlerErr := make(chan error)
+	handlerErr := make(chan error, 1)
 	go func() {
 		handlerErr <- c.handler.Run()
+		close(handlerErr)
 	}()
 
 	defer c.conn.Close()
@@ -76,9 +78,11 @@ func (c *Initiator) Serve() error {
 	for {
 		select {
 		case err := <-handlerErr:
+			c.cancel()
 			return fmt.Errorf("handler error: %w", err)
 
 		case err := <-connErr:
+			c.cancel()
 			if err != nil {
 				c.handler.StopWithError(ErrConnClosed)
 				return fmt.Errorf("%w: %s", ErrConnClosed, err)
