@@ -111,7 +111,7 @@ func (c *Conn) Reader() <-chan []byte {
 
 // Write sends messages to outgoing socket
 func (c *Conn) Write(msg []byte) {
-	if len(c.writer) == cap(c.writer) {
+	if len(c.writer) > 1 && len(c.writer) == cap(c.writer) {
 		return
 	}
 	c.writer <- msg
