@@ -58,7 +58,10 @@ func (c *Initiator) Serve() error {
 		close(handlerErr)
 	}()
 
-	defer c.conn.Close()
+	defer func() {
+		c.cancel()
+		c.conn.Close()
+	}()
 
 	go func() {
 		for {
@@ -78,11 +81,9 @@ func (c *Initiator) Serve() error {
 	for {
 		select {
 		case err := <-handlerErr:
-			c.cancel()
 			return fmt.Errorf("handler error: %w", err)
 
 		case err := <-connErr:
-			c.cancel()
 			if err != nil {
 				c.handler.StopWithError(ErrConnClosed)
 				return fmt.Errorf("%w: %s", ErrConnClosed, err)
