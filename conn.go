@@ -47,7 +47,7 @@ func (c *Conn) Close() {
 func (c *Conn) serve() error {
 	defer c.conn.Close()
 
-	errCh := make(chan error)
+	errCh := make(chan error, 2)
 	go c.runWriter(errCh)
 	go c.runReader(errCh)
 
@@ -99,6 +99,7 @@ func (c *Conn) runWriter(errCh chan error) {
 
 		case <-c.ctx.Done():
 			errCh <- ErrConnClosed
+			return
 		}
 	}
 }
@@ -110,5 +111,8 @@ func (c *Conn) Reader() <-chan []byte {
 
 // Write sends messages to outgoing socket
 func (c *Conn) Write(msg []byte) {
+	if len(c.writer) > 1 && len(c.writer) == cap(c.writer) {
+		return
+	}
 	c.writer <- msg
 }

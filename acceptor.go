@@ -76,7 +76,7 @@ func (s *Acceptor) Close() {
 // ListenAndServe runs listening and serving for connection
 // start accepting connections of new clients
 func (s *Acceptor) ListenAndServe() error {
-	listenErr := make(chan error)
+	listenErr := make(chan error, 1)
 	defer s.Close()
 	defer s.listener.Close()
 
@@ -113,12 +113,12 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 
 	handler := s.factory.MakeHandler(ctx)
 
-	connErr := make(chan error)
+	connErr := make(chan error, 1)
 	go func() {
 		connErr <- conn.serve()
 	}()
 
-	handlerErr := make(chan error)
+	handlerErr := make(chan error, 1)
 
 	defer conn.Close()
 

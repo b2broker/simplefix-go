@@ -49,14 +49,19 @@ func (c *Initiator) Serve() error {
 	connErr := make(chan error)
 	go func() {
 		connErr <- c.conn.serve()
+		close(connErr)
 	}()
 
-	handlerErr := make(chan error)
+	handlerErr := make(chan error, 1)
 	go func() {
 		handlerErr <- c.handler.Run()
+		close(handlerErr)
 	}()
 
-	defer c.conn.Close()
+	defer func() {
+		c.cancel()
+		c.conn.Close()
+	}()
 
 	go func() {
 		for {
