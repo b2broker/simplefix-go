@@ -109,7 +109,8 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
-	conn := NewConn(parentCtx, netConn, s.size)
+	writer := make(chan []byte, s.size)
+	conn := NewConn(parentCtx, netConn, writer, s.size)
 
 	handler := s.factory.MakeHandler(ctx)
 
@@ -134,13 +135,14 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 		for {
 			select {
 			case <-s.ctx.Done():
+				close(writer)
 				return
 
 			case msg, ok := <-handler.Outgoing():
 				if !ok {
 					return
 				}
-				conn.Write(msg)
+				writer <- msg
 			}
 		}
 	}()

@@ -26,10 +26,10 @@ type Conn struct {
 }
 
 // NewConn creates new Conn
-func NewConn(ctx context.Context, conn net.Conn, msgBuffSize int) *Conn {
+func NewConn(ctx context.Context, conn net.Conn, writer chan []byte, msgBuffSize int) *Conn {
 	c := &Conn{
 		reader: make(chan []byte, msgBuffSize),
-		writer: make(chan []byte, msgBuffSize),
+		writer: writer,
 
 		conn: conn,
 	}
@@ -86,20 +86,17 @@ func (c *Conn) runReader(errCh chan error) {
 }
 
 func (c *Conn) runWriter(errCh chan error) {
-	defer c.cancel()
+	var idle bool
 
-	for {
-		select {
-		case msg := <-c.writer:
-			_, err := c.conn.Write(msg)
-			if err != nil {
-				errCh <- err
-				return
-			}
+	for msg := range c.writer {
+		if idle {
+			continue
+		}
 
-		case <-c.ctx.Done():
-			errCh <- ErrConnClosed
-			return
+		_, err := c.conn.Write(msg)
+		if err != nil {
+			errCh <- err
+			idle = true
 		}
 	}
 }
@@ -107,12 +104,4 @@ func (c *Conn) runWriter(errCh chan error) {
 // Reader returns sole chan incoming with messages
 func (c *Conn) Reader() <-chan []byte {
 	return c.reader
-}
-
-// Write sends messages to outgoing socket
-func (c *Conn) Write(msg []byte) {
-	if len(c.writer) > 1 && len(c.writer) == cap(c.writer) {
-		return
-	}
-	c.writer <- msg
 }

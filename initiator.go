@@ -20,6 +20,8 @@ type Initiator struct {
 	conn    *Conn
 	handler InitiatorHandler
 
+	writer chan []byte
+
 	ctx    context.Context
 	cancel context.CancelFunc
 }
@@ -29,7 +31,10 @@ func NewInitiator(conn net.Conn, handler InitiatorHandler, bufSize int) *Initiat
 	c := &Initiator{handler: handler}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
 
-	c.conn = NewConn(c.ctx, conn, bufSize)
+	writer := make(chan []byte, bufSize)
+	c.writer = writer
+
+	c.conn = NewConn(c.ctx, conn, writer, bufSize)
 
 	return c
 }
@@ -67,13 +72,14 @@ func (c *Initiator) Serve() error {
 		for {
 			select {
 			case <-c.ctx.Done():
+				close(c.writer)
 				return
 
 			case msg, ok := <-c.handler.Outgoing():
 				if !ok {
 					return
 				}
-				c.conn.Write(msg)
+				c.writer <- msg
 			}
 		}
 	}()
@@ -81,7 +87,10 @@ func (c *Initiator) Serve() error {
 	for {
 		select {
 		case err := <-handlerErr:
-			return fmt.Errorf("handler error: %w", err)
+			if err != nil {
+				return fmt.Errorf("handler error: %w", err)
+			}
+			return fmt.Errorf("handler has been stopped")
 
 		case err := <-connErr:
 			if err != nil {
