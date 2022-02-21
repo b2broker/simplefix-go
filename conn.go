@@ -5,17 +5,18 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"net"
 )
 
 // ErrConnClosed connection error
-var ErrConnClosed = fmt.Errorf("reader closed")
+var ErrConnClosed = fmt.Errorf("connection closed")
 
 const (
 	endOfMsgTag = "10="
 )
 
-// net.Conn wrapper for working with split messages
+// Conn is net.Conn wrapper for working with split messages
 type Conn struct {
 	reader chan []byte
 	writer chan []byte
@@ -41,40 +42,38 @@ func NewConn(ctx context.Context, conn net.Conn, msgBuffSize int) *Conn {
 
 // Close cancels Conn context to stop work
 func (c *Conn) Close() {
+	c.conn.Close()
 	c.cancel()
 }
 
 func (c *Conn) serve() error {
-	defer c.conn.Close()
+	defer close(c.writer)
+	defer close(c.reader)
 
-	errCh := make(chan error, 2)
-	go c.runWriter(errCh)
-	go c.runReader(errCh)
+	eg := errgroup.Group{}
 
-	select {
-	case err := <-errCh:
-		return err
-	case <-c.ctx.Done():
-		return nil
-	}
+	eg.Go(c.runWriter)
+	eg.Go(c.runReader)
+
+	return eg.Wait()
 }
 
-func (c *Conn) runReader(errCh chan error) {
-	r := bufio.NewReader(c.conn)
+func (c *Conn) runReader() error {
 	defer c.cancel()
+	r := bufio.NewReader(c.conn)
 
 	var msg []byte
 	for {
 		select {
 		case <-c.ctx.Done():
-			return
+			return nil
+
 		default:
 		}
 
 		buff, err := r.ReadBytes(byte(1))
 		if err != nil {
-			errCh <- err
-			return
+			return fmt.Errorf("read error: %w", err)
 		}
 
 		msg = append(msg, buff...)
@@ -85,7 +84,7 @@ func (c *Conn) runReader(errCh chan error) {
 	}
 }
 
-func (c *Conn) runWriter(errCh chan error) {
+func (c *Conn) runWriter() error {
 	defer c.cancel()
 
 	for {
@@ -93,13 +92,11 @@ func (c *Conn) runWriter(errCh chan error) {
 		case msg := <-c.writer:
 			_, err := c.conn.Write(msg)
 			if err != nil {
-				errCh <- err
-				return
+				return fmt.Errorf("write error: %w", err)
 			}
 
 		case <-c.ctx.Done():
-			errCh <- ErrConnClosed
-			return
+			return nil
 		}
 	}
 }
@@ -111,8 +108,10 @@ func (c *Conn) Reader() <-chan []byte {
 
 // Write sends messages to outgoing socket
 func (c *Conn) Write(msg []byte) {
-	if len(c.writer) > 1 && len(c.writer) == cap(c.writer) {
+	select {
+	case <-c.ctx.Done():
 		return
+	default:
 	}
 	c.writer <- msg
 }

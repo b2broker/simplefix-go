@@ -163,7 +163,7 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 
 		case msg, ok := <-conn.Reader():
 			if !ok {
-				return
+				continue
 			}
 			handler.ServeIncoming(msg)
 		}
