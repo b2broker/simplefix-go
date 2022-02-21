@@ -46,7 +46,7 @@ func NewAcceptorHandler(ctx context.Context, msgTypeTag string, bufferSize int) 
 
 		out:      make(chan []byte, bufferSize),
 		incoming: make(chan []byte, bufferSize),
-		errors:   make(chan error),
+		errors:   make(chan error, 5),
 
 		incomingHandlers: NewIncomingHandlerPool(),
 		outgoingHandlers: NewOutgoingHandlerPool(),
@@ -65,7 +65,7 @@ func NewInitiatorHandler(ctx context.Context, msgTypeTag string, bufferSize int)
 
 		out:      make(chan []byte, bufferSize),
 		incoming: make(chan []byte, bufferSize),
-		errors:   make(chan error),
+		errors:   make(chan error, 5),
 
 		incomingHandlers: NewIncomingHandlerPool(),
 		outgoingHandlers: NewOutgoingHandlerPool(),
