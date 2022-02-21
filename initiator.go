@@ -51,13 +51,16 @@ func (c *Initiator) Serve() error {
 		connErr <- c.conn.serve()
 	}()
 
-	handlerErr := make(chan error)
+	handlerErr := make(chan error, 1)
 	go func() {
 		handlerErr <- c.handler.Run()
 	}()
 
-	defer c.handler.StopWithError(fmt.Errorf("initiator closed"))
-	defer c.conn.Close()
+	defer func() {
+		c.handler.StopWithError(fmt.Errorf("initiator closed"))
+		c.conn.Close()
+		c.cancel()
+	}()
 
 	go func() {
 		for {
