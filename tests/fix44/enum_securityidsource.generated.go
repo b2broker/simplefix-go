@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type EnumSecurityIDSource
+// Enum type: EnumSecurityIDSource
 const (
 	EnumSecurityIDSourceCusip                         string = "1"
 	EnumSecurityIDSourceSedol                         string = "2"

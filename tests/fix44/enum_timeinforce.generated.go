@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type EnumTimeInForce
+// Enum type: EnumTimeInForce
 const (
 	EnumTimeInForceDay               string = "0"
 	EnumTimeInForceGoodtillcancel    string = "1"

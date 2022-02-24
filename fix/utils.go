@@ -5,14 +5,14 @@ import (
 	"fmt"
 )
 
-// ValueByTag finds value by tag in raw fix-message
+// ValueByTag locates a value by its tag in a FIX message stored as a byte array.
 func ValueByTag(msg []byte, tag string) ([]byte, error) {
 	start := bytes.Index(msg, bytes.Join([][]byte{{1}, []byte(tag), {61}}, nil))
 	if len(msg) <= len(tag) {
-		return nil, fmt.Errorf("could not found tag %s, too short message: %s", tag, msg)
+		return nil, fmt.Errorf("Could not found the tag: %s, the message is too short: %s", tag, msg)
 	}
 	if start == -1 && !bytes.Equal(bytes.Join([][]byte{[]byte(tag)}, nil), msg[:len(tag)]) {
-		return nil, fmt.Errorf("tag %s not found", tag)
+		return nil, fmt.Errorf("The tag is not found: %s", tag)
 	}
 	start += len(tag) + 2
 	end := bytes.Index(msg[start:], []byte{1})

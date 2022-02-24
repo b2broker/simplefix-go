@@ -6,33 +6,33 @@ import (
 	"time"
 )
 
-// Value basic methods for work with FIX-value
+// Value is an interface implementing all basic methods required to process field values of FIX messages.
 type Value interface {
-	// ToBytes converts value to bytes
+	// ToBytes returns a byte representation of a field value.
 	ToBytes() []byte
 
-	// FromBytes parse value from bytes
+	// FromBytes parses values stored in a byte array.
 	FromBytes([]byte) error
 
-	// Value returns value
+	// Value returns a field value.
 	Value() interface{}
 
-	// String convert Value to string
+	// String returns a string representation of a value.
 	String() string
 
-	// IsNull check is empty value
+	// IsNull is used to check whether a field value is empty.
 	IsNull() bool
 
-	// Set replace value with same type
+	// Set replaces a specified field value with a value of a corresponding type.
 	Set(d interface{}) error
 }
 
-// Raw data represented by bytes
+// Raw is a structure that is used to convert the message data to a byte array.
 type Raw struct {
 	value []byte
 }
 
-// NewRaw
+// NewRaw creates a new instance of a Raw object.
 func NewRaw(v []byte) *Raw {
 	return &Raw{
 		value: v,
@@ -56,21 +56,21 @@ func (v *Raw) Value() interface{} {
 	return v.value
 }
 
-// Set set value from []byte
+// Set parses and assigns the field value stored as a byte array.
 func (v *Raw) Set(d interface{}) error {
 	if res, ok := d.([]byte); ok {
 		v.value = res
 		return nil
 	}
 
-	return fmt.Errorf("could not use %s as type %s", d, "Raw")
+	return fmt.Errorf("Could not convert %s to %s", d, "Byte Array")
 }
 
 func (v *Raw) String() string {
 	return string(v.value)
 }
 
-// String
+// String is a structure used for converting string values.
 type String struct {
 	value string
 	valid bool
@@ -80,7 +80,7 @@ func NewString(v string) *String {
 	return &String{value: v, valid: true}
 }
 
-// Set set value from string
+// Set parses and assigns the field value stored as a string.
 func (v *String) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false
@@ -93,7 +93,7 @@ func (v *String) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not use %s as type %s", d, "String")
+	return fmt.Errorf("Could not convert %s to %s", d, "String")
 }
 
 func (v *String) ToBytes() []byte {
@@ -127,6 +127,7 @@ func (v *String) String() string {
 	return v.value
 }
 
+// Int is a structure used for converting integer values.
 type Int struct {
 	value int
 	valid bool
@@ -140,7 +141,7 @@ func (v *Int) IsNull() bool {
 	return !v.valid
 }
 
-// Set set value from int
+// Set parses and assigns the field value stored as an integer number.
 func (v *Int) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false
@@ -153,7 +154,7 @@ func (v *Int) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not use %s as type %s", d, "Int")
+	return fmt.Errorf("Could not convert %s to %s", d, "Int")
 }
 
 func (v *Int) Value() interface{} {
@@ -182,18 +183,17 @@ func (v *Int) ToBytes() []byte {
 	return []byte(strconv.Itoa(v.value))
 }
 
-// Uint
+// Uint is a structure used for converting values to the uint64 type.
 type Uint struct {
 	value uint64
 	valid bool
 }
 
-// NewUint
 func NewUint(value uint64) *Uint {
 	return &Uint{value: value}
 }
 
-// Set set value from uint64
+// Set parses and assigns the field value stored as a uint64 number.
 func (v *Uint) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false
@@ -206,7 +206,7 @@ func (v *Uint) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not use %s as type %s", d, "Uint")
+	return fmt.Errorf("Could not convert %s to %s", d, "Uint")
 }
 
 func (v *Uint) IsNull() bool {
@@ -240,13 +240,12 @@ func (v *Uint) ToBytes() []byte {
 	return []byte(strconv.FormatUint(v.value, 10))
 }
 
-// Float
+// Float is a structure used for converting values to the float64 type.
 type Float struct {
 	value float64
 	valid bool
 }
 
-// NewFloat
 func NewFloat(value float64) *Float {
 	return &Float{value: value}
 }
@@ -282,7 +281,7 @@ func (v *Float) String() string {
 	return fmt.Sprintf("%f", v.value)
 }
 
-// Set set value from float64
+// Set parses and assigns the field value stored as a float64 number.
 func (v *Float) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false
@@ -295,21 +294,20 @@ func (v *Float) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not use %s as type %s", d, "Float")
+	return fmt.Errorf("Could not convert %s to %s", d, "Float")
 }
 
-// Time
+// Time is a structure used for converting date-time values.
 type Time struct {
 	value time.Time
 	valid bool
 }
 
-// NewTime
 func NewTime(value time.Time) *Time {
 	return &Time{value: value, valid: true}
 }
 
-// Set set value from time.Time
+// Set parses and assigns the field value stored in the date-time format.
 func (v *Time) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false
@@ -322,7 +320,7 @@ func (v *Time) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not use %s as type %s", d, "Time")
+	return fmt.Errorf("Could not convert %s to %s", d, "Date-Time")
 }
 
 func (v *Time) IsNull() bool {
@@ -337,7 +335,7 @@ func (v *Time) ToBytes() []byte {
 	if !v.valid {
 		return nil
 	}
-	return []byte(v.value.Format(TimeLayout)) // TODO set layout outside
+	return []byte(v.value.Format(TimeLayout)) // TODO: set layout outside.
 }
 
 func (v *Time) FromBytes(d []byte) (err error) {
@@ -361,7 +359,7 @@ const (
 	False = "N"
 )
 
-// Bool
+// Bool is a structure used for converting Boolean values.
 type Bool struct {
 	value bool
 	valid bool
@@ -409,7 +407,7 @@ func (v *Bool) IsNull() bool {
 	return !v.valid
 }
 
-// Set set value from bool
+// Set parses and assigns the field value stored in the Boolean format.
 func (v *Bool) Set(d interface{}) error {
 	if d == nil {
 		v.valid = false
@@ -422,5 +420,5 @@ func (v *Bool) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not use %s as type %s", d, "Bool")
+	return fmt.Errorf("Could not convert %s to %s", d, "Boolean")
 }

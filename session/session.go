@@ -19,33 +19,33 @@ import (
 type LogonState int64
 
 var (
-	ErrMissingHandler          = errors.New("missing handler")
-	ErrMissingRequiredTag      = errors.New("missing required tag in tags list")
-	ErrMissingEncryptedMethods = errors.New("missing allowed encrypted methods list")
-	ErrMissingErrorCodes       = errors.New("missing error codes list")
-	ErrMissingMessageBuilder   = errors.New("missing required message builder")
-	ErrInvalidHeartBtLimits    = errors.New("invalid heartbeat limits field")
-	ErrInvalidHeartBtInt       = errors.New("invalid heartbeat int field")
-	ErrInvalidLogonTimeout     = errors.New("too low logon request timeout")
-	ErrMissingEncryptMethod    = errors.New("missing encrypt method") // done
-	ErrMissingLogonSettings    = errors.New("missing logon settings") // done
-	ErrMissingSessionOts       = errors.New("missing session opts")   // done
+	ErrMissingHandler          = errors.New("A handler is missing")
+	ErrMissingRequiredTag      = errors.New("A required tag is missing in the tags list")
+	ErrMissingEncryptedMethods = errors.New("A list of supported encryption methods is missing")
+	ErrMissingErrorCodes       = errors.New("A list of error codes is missing")
+	ErrMissingMessageBuilder   = errors.New("A required message builder is missing")
+	ErrInvalidHeartBtLimits    = errors.New("An invalid heartbeat value exceeding the allowed limit")
+	ErrInvalidHeartBtInt       = errors.New("An invalid integer value assigned to the heartbeat field")
+	ErrInvalidLogonTimeout     = errors.New("The logon request timeout is too small")
+	ErrMissingEncryptMethod    = errors.New("The encryption method is missing") // done
+	ErrMissingLogonSettings    = errors.New("Logon settings are missing") // done
+	ErrMissingSessionOts       = errors.New("Session options are missing")   // done
 )
 
 const (
-	// WaitingLogon connection just started, waiting for Session message or preparing to send it
+	// WaitingLogon: the connection has just started, waiting for a Session message or preparing to send it.
 	WaitingLogon LogonState = iota
 
-	// SuccessfulLogged participants are authenticated, ready to work
+	// SuccessfulLogged: session participants are authenticated, ready to work.
 	SuccessfulLogged
 
-	// WaitingLogonAnswer waiting for answer to Session
+	// WaitingLogonAnswer: waiting for a response to a Logon message before starting the session.
 	WaitingLogonAnswer
 
-	// WaitingLogoutAnswer waiting for answer to Logout
+	// WaitingLogoutAnswer: waiting for a response to a Logout message before terminating the session.
 	WaitingLogoutAnswer
 
-	// ReceivedLogoutAnswer answer to Logout were received
+	// ReceivedLogoutAnswer: a response to a Logout message was received.
 	ReceivedLogoutAnswer
 )
 
@@ -71,8 +71,8 @@ type Handler interface {
 	Context() context.Context
 }
 
-// Session is a service for working with default pipelines of FIX API
-// logon, logout, heartbeats, rejects and message sequences
+// Session is a service that is used to maintain the default FIX API pipelines,
+// which include the logon, logout and heartbeat messages, as well as rejects and message sequences.
 type Session struct {
 	*Opts
 	side Side
@@ -80,7 +80,7 @@ type Session struct {
 	state   LogonState
 	stateMu sync.RWMutex
 
-	// services
+	// Services:
 	router Handler
 
 	msgStorageAllHandler    int64
@@ -89,7 +89,7 @@ type Session struct {
 	counter      *int64
 	eventHandler *utils.EventHandlerPool
 
-	// params
+	// Parameters:
 	LogonHandler  logonHandler
 	LogonSettings *LogonSettings
 
@@ -104,7 +104,7 @@ type Session struct {
 	mu           sync.Mutex
 }
 
-// NewInitiatorSession returns session for an Initiator
+// NewInitiatorSession returns a session for an Initiator object.
 func NewInitiatorSession(handler Handler, opts *Opts, settings *LogonSettings) (s *Session, err error) {
 	s, err = newSession(opts, handler, settings)
 	if err != nil {
@@ -125,7 +125,7 @@ func NewInitiatorSession(handler Handler, opts *Opts, settings *LogonSettings) (
 	return
 }
 
-// NewAcceptorSession returns session for an Acceptor
+// NewAcceptorSession returns a session for an Acceptor object.
 func NewAcceptorSession(params *Opts, handler Handler, settings *LogonSettings, onLogon logonHandler) (s *Session, err error) {
 	s, err = newSession(params, handler, settings)
 	if err != nil {
@@ -287,8 +287,8 @@ func (s *Session) handlerError(err error) {
 	}
 }
 
-// OnError calls when something wrong, but connection is still working
-// you can use it if you want to handler errors in standard process
+// OnError is called when something goes wrong but the connection is still working.
+// You can use it for handling errors that might occur as part of standard session procedures.
 func (s *Session) OnError(handler func(error)) {
 	s.errorHandler = handler
 }
@@ -500,7 +500,7 @@ func (s *Session) RejectMessage(msg []byte) {
 
 	seqNum, err := strconv.Atoi(string(seqNumB))
 	if err != nil {
-		reject.SetFieldSessionRejectReason(strconv.Itoa(5)) // Value is incorrect (out of range) for this tag
+		reject.SetFieldSessionRejectReason(strconv.Itoa(5)) // An incorrect (out of range) value for this tag.
 		reject.SetFieldRefTagID(s.Tags.MsgSeqNum)
 		s.sendWithErrorCheck(reject)
 		return
@@ -515,11 +515,11 @@ func (s *Session) currentTime() time.Time {
 	return time.Now().In(s.timeLocation)
 }
 
-// Send sends message with preparing header tags:
-// - sequence number with counter
-// - targetCompIDm senderCompID
-// - sending time with current time zone
-// if you want to send message with custom fields please use Send method at Handler
+// Send is used to send a message after preparing its header tags:
+// - the sequence number with a counter
+// - the targetCompID and senderCompID fields
+// - the sending time, with the current time zone indicated
+// To send a message with custom fields, call the Send method for a Handler instead.
 func (s *Session) Send(msg messages.Message) error {
 	return s.send(msg)
 }

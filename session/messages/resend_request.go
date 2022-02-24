@@ -1,21 +1,21 @@
 package messages
 
-// ResendRequestBuilder is an interface for generated ResendRequest message builder
+// ResendRequestBuilder is an interface providing functionality to a builder of auto-generated ResendRequest messages.
 type ResendRequestBuilder interface {
-	// Flow Message
+	// This message is required as a part of standard pipelines.
 	Parse(data []byte) (ResendRequestBuilder, error)
 	New() ResendRequestBuilder
 
-	// Generated ResendRequest Message
+	// An auto-generated ResendRequest message.
 	BeginSeqNo() int
 	SetFieldBeginSeqNo(int) ResendRequestBuilder
 	EndSeqNo() int
 	SetFieldEndSeqNo(int) ResendRequestBuilder
 
-	// HeaderBuilder
+	// The builder of message headers.
 	HeaderBuilder() HeaderBuilder
 
-	// SendingMessage
+	// The code initiating sending of a message.
 	MsgType() string
 	ToBytes() ([]byte, error)
 }

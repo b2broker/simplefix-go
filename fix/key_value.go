@@ -5,19 +5,19 @@ import (
 	"fmt"
 )
 
-// KeyValue is a basic structure of FIX-message
-// Contain tag of field and value
+// KeyValue is a basic structure used for FIX message implementation.
+// It is used to specify the tag and value for each field.
 type KeyValue struct {
 	Key   string
 	Value Value
 }
 
-// NewKeyValue returns new KeyValue
+// NewKeyValue returns a new KeyValue object.
 func NewKeyValue(key string, value Value) *KeyValue {
 	return &KeyValue{Key: key, Value: value}
 }
 
-// AsTemplate returns copy with empty value
+// AsTemplate returns a copy of a KeyValue object with an empty value assigned to it.
 func (kv *KeyValue) AsTemplate() *KeyValue {
 	switch kv.Value.(type) {
 	case *String:
@@ -35,7 +35,7 @@ func (kv *KeyValue) AsTemplate() *KeyValue {
 	}
 }
 
-// ToBytes converts KeyValue to bytes
+// ToBytes returns a byte representation of a KeyValue.
 func (kv *KeyValue) ToBytes() []byte {
 	if kv.Value.IsNull() {
 		return nil
@@ -51,22 +51,22 @@ func (kv *KeyValue) ToBytes() []byte {
 	}, []byte{61})
 }
 
-// Set replaces value
+// Set replaces a specified value.
 func (kv *KeyValue) Set(value Value) {
 	kv.Value = value
 }
 
-// Load returns value
+// Load returns a specified value.
 func (kv *KeyValue) Load() Value {
 	return kv.Value
 }
 
-// FromBytes replace value from bytes
+// FromBytes replaces a KeyValue object specified in the form of a byte array.
 func (kv *KeyValue) FromBytes(d []byte) error {
 	return kv.Value.FromBytes(d)
 }
 
-// String converts KeyValue to string
+// String returns a string representation of a KeyValue object.
 func (kv *KeyValue) String() string {
 	if kv.Value.IsNull() {
 		return ""
@@ -74,10 +74,10 @@ func (kv *KeyValue) String() string {
 	return fmt.Sprintf("%s: %s", kv.Key, kv.Value)
 }
 
-// KeyValues is a list of KeyValue elements
+// KeyValues is an array of KeyValue objects.
 type KeyValues []*KeyValue
 
-// ToBytes converts KeyValue list to bytes
+// ToBytes returns a byte representation of a KeyValues array.
 func (kvs KeyValues) ToBytes() []byte {
 	var msg [][]byte
 	for _, kv := range kvs {

@@ -2,7 +2,7 @@ package generator
 
 import "encoding/xml"
 
-// Doc is a structure with components and fields of special FIX-protocol
+// Doc is a structure identifying the components and fields required for a custom FIX protocol implementation.
 type Doc struct {
 	Type        string `xml:"type,attr"`
 	Major       string `xml:"major,attr"`
@@ -16,7 +16,8 @@ type Doc struct {
 	Fields     []*Field     `xml:"fields>field"`
 }
 
-// Component is a minimal part of FIX-message like key-value group or component
+// Component is a structure identifying the set of basic elements required for FIX messages,
+// such as key-value groups or basic components.
 type Component struct {
 	Name    string `xml:"name,attr"`
 	MsgCat  string `xml:"msgcat,attr"`
@@ -25,7 +26,7 @@ type Component struct {
 	Members []*ComponentMember `xml:",any"`
 }
 
-// Field is a key-value component
+// Field is a structure used to implement key-value groups.
 type Field struct {
 	Number string   `xml:"number,attr"`
 	Name   string   `xml:"name,attr"`
@@ -33,7 +34,7 @@ type Field struct {
 	Values []*Value `xml:"value"`
 }
 
-// Value is a enum-variant
+// Value is a structure used to support enumeration-like FIX values.
 type Value struct {
 	Enum        string `xml:"enum,attr"`
 	Description string `xml:"description,attr"`

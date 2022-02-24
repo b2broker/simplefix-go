@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type EnumResetSeqNumFlag
+// Enum type: EnumResetSeqNumFlag
 const (
 	EnumResetSeqNumFlagNo  string = "N"
 	EnumResetSeqNumFlagYes string = "Y"

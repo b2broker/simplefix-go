@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	ErrZeroTimeout       = errors.New("zero timeout")
-	ErrTooSmallFrequency = errors.New("too small frequency")
+	ErrZeroTimeout       = errors.New("Zero timeout")
+	ErrTooSmallFrequency = errors.New("The frequency is too small")
 )
 
 const frequency time.Duration = 10
@@ -58,7 +58,7 @@ func (t *Timer) Refresh() {
 	t.lastUpdate = time.Now()
 }
 
-// TakeTimeout will be end when time will is over or closed
+// TakeTimeout will be in action until timeout is reached or the Close method is called.
 func (t *Timer) TakeTimeout() {
 	t.Refresh()
 	ticker := time.NewTicker(t.checkingTimeout)

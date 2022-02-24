@@ -10,18 +10,18 @@ import (
 	"github.com/b2broker/simplefix-go/utils"
 )
 
-// Sender interface for any structure which can send SendingMessage
+// Sender is an interface implemented by any structure that can issue a SendingMessage.
 type Sender interface {
 	Send(message SendingMessage) error
 }
 
-// OutgoingHandlerFunc is a function for handle message
+// OutgoingHandlerFunc is used for handling outgoing messages.
 type OutgoingHandlerFunc func(msg SendingMessage) bool
 
-// OutgoingHandlerFunc is a function for handle message
+// IncomingHandlerFunc is used for handling incoming messages.
 type IncomingHandlerFunc func(data []byte) bool
 
-// AcceptorHandler is a collection of methods requires for the base work of acceptor
+// AcceptorHandler is a set of methods providing basic functionality to the Acceptor.
 type AcceptorHandler interface {
 	ServeIncoming(msg []byte)
 	Outgoing() <-chan []byte
@@ -39,12 +39,12 @@ type AcceptorHandler interface {
 	Context() context.Context
 }
 
-// HandlerFactory makes handlers for an acceptor
+// HandlerFactory creates handlers for the Acceptor.
 type HandlerFactory interface {
 	MakeHandler(ctx context.Context) AcceptorHandler
 }
 
-// Acceptor is a server side service for handling connections of clients
+// Acceptor is a server-side service used for handling client connections.
 type Acceptor struct {
 	listener        net.Listener
 	factory         HandlerFactory
@@ -55,7 +55,7 @@ type Acceptor struct {
 	cancel context.CancelFunc
 }
 
-// NewAcceptor creates new Acceptor
+// NewAcceptor is used to create a new Acceptor instance.
 func NewAcceptor(listener net.Listener, factory HandlerFactory, handleNewClient func(handler AcceptorHandler)) *Acceptor {
 	s := &Acceptor{
 		factory:         factory,
@@ -68,13 +68,13 @@ func NewAcceptor(listener net.Listener, factory HandlerFactory, handleNewClient 
 	return s
 }
 
-// Close cancels context of Acceptor to stop working
+// Close is called to cancel the Acceptor context and close a connection.
 func (s *Acceptor) Close() {
 	s.cancel()
 }
 
-// ListenAndServe runs listening and serving for connection
-// start accepting connections of new clients
+// ListenAndServe is used for listening and maintaining connections.
+// It verifies and accepts connection requests from new clients.
 func (s *Acceptor) ListenAndServe() error {
 	listenErr := make(chan error, 1)
 	defer s.Close()
@@ -95,7 +95,7 @@ func (s *Acceptor) ListenAndServe() error {
 	for {
 		select {
 		case err := <-listenErr:
-			return fmt.Errorf("could not accept conn: %w", err)
+			return fmt.Errorf("Could not accept connection: %w", err)
 
 		case <-s.ctx.Done():
 			return nil
@@ -103,8 +103,8 @@ func (s *Acceptor) ListenAndServe() error {
 	}
 }
 
-// serve runs listening and serving connection
-// handles ClientConn's connection
+// serve is used for listening and maintaining connections.
+// It handles client connections opened for ClientConn instances.
 func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
@@ -163,7 +163,7 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 
 		case msg, ok := <-conn.Reader():
 			if !ok {
-				continue
+				return
 			}
 			handler.ServeIncoming(msg)
 		}

@@ -6,12 +6,12 @@ import (
 )
 
 var (
-	ErrNotEnoughMessages = errors.New("not enough messages in storage")
-	ErrInvalidBoundaries = errors.New("invalid boundaries")
-	ErrInvalidSequence   = errors.New("unexpected sequence index")
+	ErrNotEnoughMessages = errors.New("Not enough messages in the storage")
+	ErrInvalidBoundaries = errors.New("Invalid boundaries")
+	ErrInvalidSequence   = errors.New("Unexpected sequence index")
 )
 
-// MessageStorage is an interface with basic method for storage of sending messages
+// MessageStorage is an interface providing a basic method for storing messages awaiting to be sent.
 type MessageStorage interface {
 	Save(msg simplefixgo.SendingMessage, msgSeqNum int) error
 	Messages(msgSeqNumFrom, msgSeqNumTo int) ([]simplefixgo.SendingMessage, error)

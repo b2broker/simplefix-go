@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type EnumSubscriptionRequestType
+// Enum type: EnumSubscriptionRequestType
 const (
 	EnumSubscriptionRequestTypeSnapshot       string = "0"
 	EnumSubscriptionRequestTypeSnapshotupdate string = "1"

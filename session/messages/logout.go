@@ -1,16 +1,16 @@
 package messages
 
-// LogoutBuilder is an interface for generated Logout message builder
+// LogoutBuilder is an interface providing functionality to a builder of auto-generated Logout messages.
 type LogoutBuilder interface {
 
-	// Flow Message
+	// This message is required as a part of standard pipelines.
 	Parse(data []byte) (LogoutBuilder, error)
 	New() LogoutBuilder
 
-	// HeaderBuilder
+	// The builder of message headers.
 	HeaderBuilder() HeaderBuilder
 
-	// SendingMessage
+	// The code initiating sending of a message.
 	MsgType() string
 	ToBytes() ([]byte, error)
 }

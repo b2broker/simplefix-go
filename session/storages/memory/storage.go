@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-// Storage stores last messages
+// Storage is used to store the most recent messages.
 type Storage struct {
 	maxSize    int
 	bufferSize int
@@ -16,10 +16,10 @@ type Storage struct {
 	mu         sync.Mutex
 }
 
-// NewStorage is a constructor of in-memory Storage
-// bufferSize is a size of additional messages at storage
-// the larger the buffer, the less frequent of the flush
-// maxSize is a count of messages in the storage
+// NewStorage is a constructor for creation of a new in-memory Storage.
+// bufferSize determines the size of additional messages that can be put to the storage
+// (the larger the buffer size, the less frequently the storage is flushed).
+// maxSize specifies the maximum number of messages the storage can contain.
 func NewStorage(maxSize int, bufferSize int) *Storage {
 	return &Storage{
 		maxSize:    maxSize,
@@ -41,7 +41,7 @@ func (s *Storage) flush() error {
 	cutEnd := s.start + s.bufferSize
 	for i := s.start; i < cutEnd; i++ {
 		if _, ok := s.messages[i]; !ok {
-			return fmt.Errorf("sequence index does not exit: %d", i)
+			return fmt.Errorf("The sequence index is not found: %d", i)
 		}
 		delete(s.messages, i)
 	}
@@ -60,11 +60,11 @@ func (s *Storage) Save(msg simplefixgo.SendingMessage, msgSeqNum int) error {
 
 	expectedID := s.start + len(s.messages)
 	if expectedID != msgSeqNum {
-		return fmt.Errorf("%w: %d, expect: %d", session.ErrInvalidSequence, msgSeqNum, expectedID)
+		return fmt.Errorf("%w: %d, expected value: %d", session.ErrInvalidSequence, msgSeqNum, expectedID)
 	}
 
 	if _, ok := s.messages[msgSeqNum]; ok {
-		return fmt.Errorf("sequence index alreasy exists: %d", msgSeqNum)
+		return fmt.Errorf("The sequence index already exists: %d", msgSeqNum)
 	}
 
 	s.messages[msgSeqNum] = msg
@@ -72,7 +72,8 @@ func (s *Storage) Save(msg simplefixgo.SendingMessage, msgSeqNum int) error {
 	return nil
 }
 
-// Messages returns message list in sequential order from msgSeqNumFrom to msgSeqNumTo
+// Messages returns a message list, in a sequential order
+// (starting with msgSeqNumFrom and ending with msgSeqNumTo).
 func (s *Storage) Messages(msgSeqNumFrom, msgSeqNumTo int) ([]simplefixgo.SendingMessage, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

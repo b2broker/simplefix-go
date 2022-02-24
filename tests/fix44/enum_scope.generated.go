@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type EnumScope
+// Enum type: EnumScope
 const (
 	EnumScopeLocalmarket string = "1"
 	EnumScopeNational    string = "2"

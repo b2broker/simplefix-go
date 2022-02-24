@@ -6,7 +6,8 @@ import (
 	"time"
 )
 
-// ErrWGExpired returns when timeout expired before wait group will be done
+// ErrWGExpired is returned if the timeout expires before the WaitGroup has received
+// a "Done" confirmation from all of the streams.
 var ErrWGExpired = errors.New("wait group timeout expired")
 
 // TimedWaitGroup is a combination of WaitGroup and timeout
@@ -14,9 +15,9 @@ type TimedWaitGroup struct {
 	sync.WaitGroup
 }
 
-// WaitWithTimeout waits for one of two cases:
-// timeout expired (returns error)
-// wait group will be done (returns nil)
+// WaitWithTimeout awaits any of the two cases:
+// - timeout expires (in which case an error is returned)
+// - a WaitGroup receives a "Done" confirmation (in which case nil is returned)
 func (wg *TimedWaitGroup) WaitWithTimeout(timeout time.Duration) error {
 	ch := make(chan struct{})
 

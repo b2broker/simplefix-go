@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type EnumTradeCondition
+// Enum type: EnumTradeCondition
 const (
 	EnumTradeConditionCashmkt              string = "A"
 	EnumTradeConditionAvgpx                string = "B"

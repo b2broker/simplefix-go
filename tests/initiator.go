@@ -17,7 +17,7 @@ import (
 func RunNewInitiator(addr string, t *testing.T, settings *session.LogonSettings) (s *session.Session, handler *simplefixgo.DefaultHandler) {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
-		t.Fatalf("could not dial: %s", err)
+		t.Fatalf("Could not dial: %s", err)
 	}
 
 	handler = simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
@@ -32,7 +32,7 @@ func RunNewInitiator(addr string, t *testing.T, settings *session.LogonSettings)
 		panic(err)
 	}
 
-	// log messages
+	// logging messages:
 	handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		fmt.Println("incoming:", string(bytes.ReplaceAll(msg, fix.Delimiter, []byte("|"))))
 		return true
@@ -49,7 +49,7 @@ func RunNewInitiator(addr string, t *testing.T, settings *session.LogonSettings)
 	// todo move
 	go func() {
 		time.Sleep(time.Second * 10)
-		fmt.Println("resend request after 10 seconds")
+		fmt.Println("Resending the request after 10 seconds")
 		err := s.Send(fixgen.ResendRequest{}.New().SetFieldBeginSeqNo(2).SetFieldEndSeqNo(3))
 		if err != nil {
 			panic(err)
@@ -58,13 +58,13 @@ func RunNewInitiator(addr string, t *testing.T, settings *session.LogonSettings)
 
 	err = s.Run()
 	if err != nil {
-		t.Fatalf("run session: %s", err)
+		t.Fatalf("Could not run the session: %s", err)
 	}
 
 	go func() {
 		err := client.Serve()
 		if err != nil && !errors.Is(err, simplefixgo.ErrConnClosed) {
-			panic(fmt.Errorf("serve client: %s", err))
+			panic(fmt.Errorf("Could not serve the client: %s", err))
 		}
 	}()
 

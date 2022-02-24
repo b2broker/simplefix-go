@@ -23,7 +23,7 @@ func mustConvToInt(s string) int {
 	return i
 }
 
-// todo move boilerplate to generator
+// TODO: move boilerplate to generator.
 var pseudoGeneratedOpts = session.Opts{
 	MessageBuilders: session.MessageBuilders{
 		HeaderBuilder:        fixgen.Header{}.New(),
@@ -64,7 +64,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("connected")
+	fmt.Println("Connected")
 
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 
@@ -82,7 +82,7 @@ func main() {
 			},
 			func(request *session.LogonSettings) (err error) {
 				fmt.Printf(
-					"free logon for '%s' (%s)\n",
+					"Logon passed for '%s' (%s)\n",
 					request.Username,
 					request.Password,
 				)
@@ -124,5 +124,5 @@ func main() {
 		})
 	})
 
-	panic(fmt.Errorf("server was stopped: %s", server.ListenAndServe()))
+	panic(fmt.Errorf("The server was stopped: %s", server.ListenAndServe()))
 }

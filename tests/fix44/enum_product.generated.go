@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type EnumProduct
+// Enum type: EnumProduct
 const (
 	EnumProductAgency      string = "1"
 	EnumProductMortgage    string = "10"

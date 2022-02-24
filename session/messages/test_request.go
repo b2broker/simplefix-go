@@ -1,19 +1,19 @@
 package messages
 
-// TestRequestBuilder is an interface for generated TestRequest message builder
+// TestRequestBuilder is an interface providing functionality to a builder of auto-generated TestRequest messages.
 type TestRequestBuilder interface {
-	// Flow Message
+	// This message is required as a part of standard pipelines.
 	Parse(data []byte) (TestRequestBuilder, error)
 	New() TestRequestBuilder
 
-	// Generated TestRequest Message
+	// An auto-generated TestRequest message.
 	TestReqID() string
 	SetFieldTestReqID(string) TestRequestBuilder
 
-	// HeaderBuilder
+	// The builder of message headers.
 	HeaderBuilder() HeaderBuilder
 
-	// SendingMessage
+	// The code initiating sending of a message.
 	MsgType() string
 	ToBytes() ([]byte, error)
 }

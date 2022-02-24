@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type EnumEncryptMethod
+// Enum type: EnumEncryptMethod
 const (
 	EnumEncryptMethodNoneother                                        string = "0"
 	EnumEncryptMethodPkcsproprietary                                  string = "1"
