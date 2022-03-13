@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type: EnumMsgDirection
+// Enum type EnumMsgDirection
 const (
 	EnumMsgDirectionReceive string = "R"
 	EnumMsgDirectionSend    string = "S"

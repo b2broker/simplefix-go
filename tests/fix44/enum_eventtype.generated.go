@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type: EnumEventType
+// Enum type EnumEventType
 const (
 	EnumEventTypePut             string = "1"
 	EnumEventTypeCall            string = "2"

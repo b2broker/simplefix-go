@@ -51,16 +51,16 @@ func NewMessageFromBytes(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag 
 
 func (msg *Message) checkRequiredFields() error {
 	if msg.beginString.Value.IsNull() {
-		return fmt.Errorf("The required field value is empty: %s (%s)", msg.beginString.Key, "BeginString")
+		return fmt.Errorf("the required field value is empty: %s (%s)", msg.beginString.Key, "BeginString")
 	}
 	if msg.bodyLength.Value.IsNull() {
-		return fmt.Errorf("The required field value is empty: %s (%s)", msg.bodyLength.Key, "BodyLength")
+		return fmt.Errorf("the required field value is empty: %s (%s)", msg.bodyLength.Key, "BodyLength")
 	}
 	if msg.msgType.Value.IsNull() {
-		return fmt.Errorf("The required field value is empty: %s (%s)", msg.msgType.Key, "MsgType")
+		return fmt.Errorf("the required field value is empty: %s (%s)", msg.msgType.Key, "MsgType")
 	}
 	if msg.checkSum.Value.IsNull() {
-		return fmt.Errorf("The required field value is empty: %s (%s)", msg.checkSum.Key, "CheckSum")
+		return fmt.Errorf("the required field value is empty: %s (%s)", msg.checkSum.Key, "CheckSum")
 	}
 
 	return nil
@@ -76,7 +76,7 @@ func (msg *Message) validate() error {
 	bb := msg.body.ToBytes()
 	bodyLength := msg.calcBodyLength(bh, bb, mt)
 	if bodyLength != msg.bodyLength.Value.Value().(int) {
-		return fmt.Errorf("An invalid body length; specified: %d, required: %d",
+		return fmt.Errorf("an invalid body length; specified: %d, required: %d",
 			msg.bodyLength.Value.Value().(int),
 			bodyLength,
 		)
@@ -96,7 +96,7 @@ func (msg *Message) validate() error {
 	checkSum := string(calcCheckSum(byteMsg))
 
 	if checkSum != msg.checkSum.Value.String() {
-		return fmt.Errorf("An invalid checksum; specified: %s, required: %s", msg.checkSum.Value, checkSum)
+		return fmt.Errorf("an invalid checksum; specified: %s, required: %s", msg.checkSum.Value, checkSum)
 	}
 
 	return nil

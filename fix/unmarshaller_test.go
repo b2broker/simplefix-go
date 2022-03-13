@@ -97,7 +97,7 @@ func TestUnmarshalItems(t *testing.T) {
 		if !bytes.Equal(item.expect, res) {
 			t.Logf("%d. expect %s (%d)", i, showDelimiter(item.expect), len(item.expect))
 			t.Logf("%d. result %s (%d)", i, showDelimiter(res), len(res))
-			t.Fatal("result doesnt equal expected message")
+			t.Fatal("the result is not equal to expected message")
 		}
 	}
 

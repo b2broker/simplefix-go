@@ -96,7 +96,7 @@ In this section, you will learn how to specify the session options and start a n
 The following sample code illustrates how to use a message builder to create various standard messages, as well as define fields and message tags required for FIX session pipelines. The `fixgen` command will generate the required structure in almost no time.
 
 ```
-// Use the fixgen command to generate a custom FIX package:
+// In this code, fixgen is your generated FIX package:
 
 var sessionOpts = session.Opts{
 	MessageBuilders: session.MessageBuilders{
@@ -153,7 +153,7 @@ The default *Acceptor* implementation can be found in the [./acceptor/main.go](h
 
 The SimpleFix library features a default session package which provides all the necessary functionality for the standard FIX API pipelines, such as authentication, logging out, heartbeats, message rejects and handling of typical errors. For this reason, if you want to customize the default messages, such as `Logon <A>` or `Heartbeat <0>`, you should configure the `Session` structure in one of the following ways:
 
-- by integrating the existing structure into your custom procedure, or simply copying the existing structure and modifying it in your client code
+- by integrating the existing structure into your custom procedure by way of composition, or simply copying the existing structure and modifying it in your client code
 
 - by modifying the message builder to account for the messages that you want to customize
 

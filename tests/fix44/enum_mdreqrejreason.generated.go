@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type: EnumMDReqRejReason
+// Enum type EnumMDReqRejReason
 const (
 	EnumMDReqRejReasonUnknownsym                     string = "0"
 	EnumMDReqRejReasonDupid                          string = "1"

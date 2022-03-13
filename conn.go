@@ -9,7 +9,7 @@ import (
 )
 
 // ErrConnClosed handles connection errors.
-var ErrConnClosed = fmt.Errorf("The reader is closed")
+var ErrConnClosed = fmt.Errorf("the reader is closed")
 
 const (
 	endOfMsgTag = "10="

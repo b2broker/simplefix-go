@@ -63,7 +63,7 @@ func (v *Raw) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("Could not convert %s to %s", d, "Byte Array")
+	return fmt.Errorf("could not convert %s to %s", d, "Byte Array")
 }
 
 func (v *Raw) String() string {
@@ -93,7 +93,7 @@ func (v *String) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("Could not convert %s to %s", d, "String")
+	return fmt.Errorf("could not convert %s to %s", d, "String")
 }
 
 func (v *String) ToBytes() []byte {
@@ -154,7 +154,7 @@ func (v *Int) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("Could not convert %s to %s", d, "Int")
+	return fmt.Errorf("could not convert %s to %s", d, "Int")
 }
 
 func (v *Int) Value() interface{} {
@@ -206,7 +206,7 @@ func (v *Uint) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("Could not convert %s to %s", d, "Uint")
+	return fmt.Errorf("could not convert %s to %s", d, "Uint")
 }
 
 func (v *Uint) IsNull() bool {
@@ -294,7 +294,7 @@ func (v *Float) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("Could not convert %s to %s", d, "Float")
+	return fmt.Errorf("could not convert %s to %s", d, "Float")
 }
 
 // Time is a structure used for converting date-time values.
@@ -320,7 +320,7 @@ func (v *Time) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("Could not convert %s to %s", d, "Date-Time")
+	return fmt.Errorf("could not convert %s to %s", d, "Date-Time")
 }
 
 func (v *Time) IsNull() bool {
@@ -420,5 +420,5 @@ func (v *Bool) Set(d interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("Could not convert %s to %s", d, "Boolean")
+	return fmt.Errorf("could not convert %s to %s", d, "Boolean")
 }

@@ -28,7 +28,7 @@ func TestMessageToBytes(t *testing.T) {
 
 	byteMessage, err := message.ToBytes()
 	if err != nil {
-		t.Fatalf("could not marshal msg: %s", err)
+		t.Fatalf("could not marshal message: %s", err)
 	}
 	origin := "8=FIX.4.49=14735=V34=249=ISLD52=20190313-16:45:21.86156=TW146=355=BTC/USD55=BTC/USDT_ABCDE55=BTCABCD/ABCDEFG262=request_1263=1264=5267=2269=0269=110=159"
 
@@ -86,7 +86,7 @@ func TestMessage_FromBytes(t *testing.T) {
 
 	byteMessage, err := msg.ToBytes()
 	if err != nil {
-		t.Fatalf("could not marshal msg: %s", err)
+		t.Fatalf("could not marshal message: %s", err)
 	}
 
 	if !bytes.Equal(byteMessage, testMsg) {
@@ -125,7 +125,7 @@ func TestMessage_FromBytes_Coincidence(t *testing.T) {
 
 	byteMessage, err := msg.ToBytes()
 	if err != nil {
-		t.Fatalf("could not marshal msg: %s", err)
+		t.Fatalf("could not marshal message: %s", err)
 	}
 
 	if !bytes.Equal(byteMessage, testMsg) {

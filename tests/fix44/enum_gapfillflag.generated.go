@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type: EnumGapFillFlag
+// Enum type EnumGapFillFlag
 const (
 	EnumGapFillFlagNo  string = "N"
 	EnumGapFillFlagYes string = "Y"

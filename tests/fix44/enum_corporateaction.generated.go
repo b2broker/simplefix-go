@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type: EnumCorporateAction
+// Enum type EnumCorporateAction
 const (
 	EnumCorporateActionExdividend string = "A"
 	EnumCorporateActionExdist     string = "B"

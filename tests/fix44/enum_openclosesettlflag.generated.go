@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type: EnumOpenCloseSettlFlag
+// Enum type EnumOpenCloseSettlFlag
 const (
 	EnumOpenCloseSettlFlagDailyopen                string = "0"
 	EnumOpenCloseSettlFlagSessionopen              string = "1"

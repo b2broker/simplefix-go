@@ -95,7 +95,7 @@ func (s *Acceptor) ListenAndServe() error {
 	for {
 		select {
 		case err := <-listenErr:
-			return fmt.Errorf("Could not accept connection: %w", err)
+			return fmt.Errorf("could not accept connection: %w", err)
 
 		case <-s.ctx.Done():
 			return nil

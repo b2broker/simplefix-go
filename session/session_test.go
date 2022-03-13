@@ -135,11 +135,11 @@ func TestNewAcceptorSession(t *testing.T) {
 		func(request *LogonSettings) (err error) { return nil },
 	)
 	if err != nil {
-		t.Fatalf("unexpected behaviour, got error: %v", err)
+		t.Fatalf("unexpected behavior, returned error: %v", err)
 	}
 
 	if err := session.Stop(); err != nil {
-		t.Fatalf("unexpected behaviour, got error: %v", err)
+		t.Fatalf("unexpected behavior, returned error: %v", err)
 	}
 
 	session.changeState(WaitingLogoutAnswer)
@@ -157,11 +157,11 @@ func TestNewInitiatorSession(t *testing.T) {
 		SessionErrorCodes:       validSessionErrorCodes,
 	}, &validLogonSettings)
 	if err != nil {
-		t.Fatalf("unexpected behaviour, got error: %v", err)
+		t.Fatalf("unexpected behavior, returned error: %v", err)
 	}
 
 	if err := session.Stop(); err != nil {
-		t.Fatalf("unexpected behaviour, got error: %v", err)
+		t.Fatalf("unexpected behavior, returned error: %v", err)
 	}
 
 	session.changeState(WaitingLogoutAnswer)
@@ -174,7 +174,7 @@ func TestNewInitiatorSessionOpts(t *testing.T) {
 	_, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), nil,
 		&validLogonSettings)
 	if !errors.Is(err, ErrMissingSessionOts) {
-		t.Fatalf("unexpected error, expect: %s, got: %v", ErrMissingSessionOts, err)
+		t.Fatalf("unexpected error, expected: %s, returned: %v", ErrMissingSessionOts, err)
 	}
 }
 
@@ -190,7 +190,7 @@ func TestNewAcceptorSessionMessageBuilders(t *testing.T) {
 			SessionErrorCodes:       validSessionErrorCodes,
 		}, &validLogonSettings)
 		if !errors.Is(err, ErrMissingMessageBuilder) {
-			t.Fatalf("unexpected behaveour, expect error: %s, got: %v", ErrMissingMessageBuilder, err)
+			t.Fatalf("unexpected behavior, expected error: %s, received: %v", ErrMissingMessageBuilder, err)
 		}
 	}
 }
@@ -204,7 +204,7 @@ func TestNewInitiatorSessionHandler(t *testing.T) {
 		SessionErrorCodes:       validSessionErrorCodes,
 	}, &validLogonSettings)
 	if !errors.Is(err, ErrMissingHandler) {
-		t.Fatalf("unexpected error, expect: %s, got: %v", ErrMissingHandler, err)
+		t.Fatalf("unexpected error, expected: %s, received: %v", ErrMissingHandler, err)
 	}
 }
 
@@ -219,7 +219,7 @@ func TestNewInitiatorSessionTags(t *testing.T) {
 		SessionErrorCodes:       validSessionErrorCodes,
 	}, &validLogonSettings)
 	if !errors.Is(err, ErrMissingRequiredTag) {
-		t.Fatalf("unexpected error, expect: %s, got: %v", ErrMissingRequiredTag, err)
+		t.Fatalf("unexpected error, expected: %s, received: %v", ErrMissingRequiredTag, err)
 	}
 }
 
@@ -238,7 +238,7 @@ func TestNewInitiatorSessionEncryptedMethod(t *testing.T) {
 		},
 	)
 	if !errors.Is(err, ErrMissingEncryptedMethods) {
-		t.Fatalf("unexpected error, expect: %s, got: %v", ErrMissingEncryptedMethods, err)
+		t.Fatalf("unexpected error, expected: %s, received: %v", ErrMissingEncryptedMethods, err)
 	}
 }
 
@@ -253,7 +253,7 @@ func TestNewInitiatorSessionErrorCodes(t *testing.T) {
 		SessionErrorCodes:       nil,
 	}, &validLogonSettings)
 	if !errors.Is(err, ErrMissingErrorCodes) {
-		t.Fatalf("unexpected error, expect: %s, got: %v", ErrMissingErrorCodes, err)
+		t.Fatalf("unexpected error, expected: %s, received: %v", ErrMissingErrorCodes, err)
 	}
 }
 
@@ -270,8 +270,8 @@ func TestNewInitiatorSessionLogonSettings(t *testing.T) {
 		settings LogonSettings
 		err      error
 	}{
-		"nil encrypted method": {settings: invalid1, err: ErrMissingEncryptMethod},
-		"zero heartbeat int":   {settings: invalid2, err: ErrInvalidHeartBtInt},
+		"encryption method is nil": {settings: invalid1, err: ErrMissingEncryptMethod},
+		"heartbeat interval is zero":   {settings: invalid2, err: ErrInvalidHeartBtInt},
 	}
 
 	_, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{
@@ -282,7 +282,7 @@ func TestNewInitiatorSessionLogonSettings(t *testing.T) {
 		SessionErrorCodes:       validSessionErrorCodes,
 	}, nil)
 	if !errors.Is(err, ErrMissingLogonSettings) {
-		t.Fatalf("unexpected error, expect: %s, got: %v", ErrMissingLogonSettings, err)
+		t.Fatalf("unexpected error, expected: %s, returned: %v", ErrMissingLogonSettings, err)
 	}
 
 	for name, c := range cases {
@@ -294,7 +294,7 @@ func TestNewInitiatorSessionLogonSettings(t *testing.T) {
 			SessionErrorCodes:       validSessionErrorCodes,
 		}, &c.settings)
 		if !errors.Is(err, c.err) {
-			t.Fatalf("unexpected behavior in case '%s', expect: %s, got: %v", name, c.err, err)
+			t.Fatalf("unexpected behavior in case '%s', expected: %s, returned: %v", name, c.err, err)
 		}
 	}
 }
@@ -329,7 +329,7 @@ func TestNewAcceptorSessionLogonSettings(t *testing.T) {
 		return nil
 	})
 	if !errors.Is(err, ErrMissingLogonSettings) {
-		t.Fatalf("unexpected error, expect: %s, got: %v", ErrMissingLogonSettings, err)
+		t.Fatalf("unexpected error, expected: %s, returned: %v", ErrMissingLogonSettings, err)
 	}
 
 	for name, c := range cases {
@@ -343,7 +343,7 @@ func TestNewAcceptorSessionLogonSettings(t *testing.T) {
 			return nil
 		})
 		if !errors.Is(err, c.err) {
-			t.Fatalf("unexpected behavior in case '%s', expect: %s, got: %v", name, c.err, err)
+			t.Fatalf("unexpected behavior in case '%s', expected: %s, returned: %v", name, c.err, err)
 		}
 	}
 }

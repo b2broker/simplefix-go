@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type: EnumInstrRegistry
+// Enum type EnumInstrRegistry
 const (
 	EnumInstrRegistryCustodian string = "BIC"
 	EnumInstrRegistryCountry   string = "ISO"

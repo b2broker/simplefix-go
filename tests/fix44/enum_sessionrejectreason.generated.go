@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type: EnumSessionRejectReason
+// Enum type EnumSessionRejectReason
 const (
 	EnumSessionRejectReasonInvalidtagnumber                               string = "0"
 	EnumSessionRejectReasonRequiredtagmissing                             string = "1"

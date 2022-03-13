@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type: EnumExecInst
+// Enum type EnumExecInst
 const (
 	EnumExecInstStayoffer            string = "0"
 	EnumExecInstNotheld              string = "1"

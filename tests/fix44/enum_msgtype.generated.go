@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type: EnumMsgType
+// Enum type EnumMsgType
 const (
 	EnumMsgTypeHeartbeat                               string = "0"
 	EnumMsgTypeTestrequest                             string = "1"

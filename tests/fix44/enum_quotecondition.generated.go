@@ -1,6 +1,6 @@
 package fix44
 
-// Enum type: EnumQuoteCondition
+// Enum type EnumQuoteCondition
 const (
 	EnumQuoteConditionOpen       string = "A"
 	EnumQuoteConditionClosed     string = "B"

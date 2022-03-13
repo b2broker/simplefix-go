@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	ErrZeroTimeout       = errors.New("Zero timeout")
-	ErrTooSmallFrequency = errors.New("The frequency is too small")
+	ErrZeroTimeout       = errors.New("zero timeout")
+	ErrTooSmallFrequency = errors.New("the frequency is too small")
 )
 
 const frequency time.Duration = 10

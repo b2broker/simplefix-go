@@ -14,7 +14,7 @@ func UnmarshalItems(data []byte, msg Items, strict bool) error {
 	for _, item := range msg {
 		err := u.unmarshal(u.data, item)
 		if err != nil {
-			return fmt.Errorf("Unmarshal items: %s", err)
+			return fmt.Errorf("could not unmarshal items: %s", err)
 		}
 	}
 
@@ -53,7 +53,7 @@ func (u *unmarshaler) scanKeyValue(data []byte, el *KeyValue) error {
 	v := d[:end]
 	err := el.FromBytes(v)
 	if err != nil {
-		return fmt.Errorf("Could not unmarshal element %s into %s: %s", el.Key, string(v), err)
+		return fmt.Errorf("could not unmarshal element %s into %s: %s", el.Key, string(v), err)
 	}
 
 	return nil
@@ -93,7 +93,7 @@ func (u *unmarshaler) unmarshal(data []byte, fixItem Item) error {
 		noKv := NewKeyValue(noTag, &Int{})
 		err := u.unmarshal(data, noKv)
 		if err != nil {
-			return fmt.Errorf("Unmarshal group: %s", err)
+			return fmt.Errorf("could not unmarshal group: %s", err)
 		}
 
 		cnt := noKv.Value.Value().(int)
@@ -110,11 +110,11 @@ func (u *unmarshaler) unmarshal(data []byte, fixItem Item) error {
 		arrayItems := splitGroup(arrayString, firstTag)
 
 		if len(arrayItems) == 0 {
-			return fmt.Errorf("No elements found in the array")
+			return fmt.Errorf("no elements found in the array")
 		}
 
 		if len(arrayItems) != cnt {
-			return fmt.Errorf("Wrong items count: %d != %d", cnt, len(arrayItems))
+			return fmt.Errorf("wrong items count: %d != %d", cnt, len(arrayItems))
 		}
 
 		for i := 0; i < cnt; i++ {
@@ -123,7 +123,7 @@ func (u *unmarshaler) unmarshal(data []byte, fixItem Item) error {
 			for _, item := range entry {
 				err = u.unmarshal(arrayItems[i], item)
 				if err != nil {
-					return fmt.Errorf("Unmarshal group item: %s", err)
+					return fmt.Errorf("could not unmarshal group item: %s", err)
 				}
 			}
 			el.AddEntry(entry)
@@ -134,12 +134,12 @@ func (u *unmarshaler) unmarshal(data []byte, fixItem Item) error {
 		for _, item := range component {
 			err := u.unmarshal(data, item)
 			if err != nil {
-				return fmt.Errorf("Unmarshal component: %s", err)
+				return fmt.Errorf("could not unmarshal component: %s", err)
 			}
 		}
 
 	default:
-		return fmt.Errorf("Unexpected FIX item type: %s %s", reflect.TypeOf(fixItem), fixItem)
+		return fmt.Errorf("unexpected FIX item type: %s %s", reflect.TypeOf(fixItem), fixItem)
 	}
 
 	return nil

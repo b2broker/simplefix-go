@@ -26,7 +26,7 @@ func TestStorage_Save(t *testing.T) {
 
 	err := st.Save(nil, 10)
 	if !errors.Is(err, session.ErrInvalidSequence) {
-		t.Fatalf("expect error '%s', got '%s'", session.ErrInvalidSequence, err)
+		t.Fatalf("expected error '%s', returned '%s'", session.ErrInvalidSequence, err)
 	}
 }
 
@@ -67,23 +67,23 @@ func TestStorage_Messages(t *testing.T) {
 	}
 
 	if len(storageMessages) != 2 {
-		t.Fatalf("unexpected size of storageMessages: got %d, expect: %d", len(storageMessages), 2)
+		t.Fatalf("unexpected size of storageMessages, retruned: %d, expected: %d", len(storageMessages), 2)
 	}
 
 	if storageMessages[0].MsgType() == "" || storageMessages[0].MsgType() != data[10].MsgType() {
-		t.Fatalf("unexpected message: got %s, expect: %s", storageMessages[0], data[10])
+		t.Fatalf("unexpected message, returned: %s, expected: %s", storageMessages[0], data[10])
 	}
 
 	if storageMessages[1].MsgType() == "" || storageMessages[1].MsgType() != data[11].MsgType() {
-		t.Fatalf("unexpected message: got %s, expect: %s", storageMessages[0], data[11])
+		t.Fatalf("unexpected message: returned: %s, expected: %s", storageMessages[0], data[11])
 	}
 
 	_, err = st.Messages(100, 10)
 	if !errors.Is(err, session.ErrInvalidBoundaries) {
-		t.Fatalf("expect error '%s', got '%s'", session.ErrInvalidBoundaries, err)
+		t.Fatalf("expected error '%s', returned: '%s'", session.ErrInvalidBoundaries, err)
 	}
 	_, err = st.Messages(5, 9)
 	if !errors.Is(err, session.ErrNotEnoughMessages) {
-		t.Fatalf("expect error '%s', got '%s'", session.ErrInvalidBoundaries, err)
+		t.Fatalf("expected error '%s', returned: '%s'", session.ErrInvalidBoundaries, err)
 	}
 }

@@ -41,7 +41,7 @@ func (s *Storage) flush() error {
 	cutEnd := s.start + s.bufferSize
 	for i := s.start; i < cutEnd; i++ {
 		if _, ok := s.messages[i]; !ok {
-			return fmt.Errorf("The sequence index is not found: %d", i)
+			return fmt.Errorf("the sequence index is not found: %d", i)
 		}
 		delete(s.messages, i)
 	}
@@ -64,7 +64,7 @@ func (s *Storage) Save(msg simplefixgo.SendingMessage, msgSeqNum int) error {
 	}
 
 	if _, ok := s.messages[msgSeqNum]; ok {
-		return fmt.Errorf("The sequence index already exists: %d", msgSeqNum)
+		return fmt.Errorf("the sequence index already exists: %d", msgSeqNum)
 	}
 
 	s.messages[msgSeqNum] = msg

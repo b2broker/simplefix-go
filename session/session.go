@@ -19,33 +19,33 @@ import (
 type LogonState int64
 
 var (
-	ErrMissingHandler          = errors.New("A handler is missing")
-	ErrMissingRequiredTag      = errors.New("A required tag is missing in the tags list")
-	ErrMissingEncryptedMethods = errors.New("A list of supported encryption methods is missing")
-	ErrMissingErrorCodes       = errors.New("A list of error codes is missing")
-	ErrMissingMessageBuilder   = errors.New("A required message builder is missing")
-	ErrInvalidHeartBtLimits    = errors.New("An invalid heartbeat value exceeding the allowed limit")
-	ErrInvalidHeartBtInt       = errors.New("An invalid integer value assigned to the heartbeat field")
-	ErrInvalidLogonTimeout     = errors.New("The logon request timeout is too small")
-	ErrMissingEncryptMethod    = errors.New("The encryption method is missing") // done
-	ErrMissingLogonSettings    = errors.New("Logon settings are missing") // done
-	ErrMissingSessionOts       = errors.New("Session options are missing")   // done
+	ErrMissingHandler          = errors.New("a handler is missing")
+	ErrMissingRequiredTag      = errors.New("a required tag is missing in the tags list")
+	ErrMissingEncryptedMethods = errors.New("a list of supported encryption methods is missing")
+	ErrMissingErrorCodes       = errors.New("a list of error codes is missing")
+	ErrMissingMessageBuilder   = errors.New("a required message builder is missing")
+	ErrInvalidHeartBtLimits    = errors.New("an invalid heartbeat value exceeding the allowed limit")
+	ErrInvalidHeartBtInt       = errors.New("an invalid integer value assigned to the heartbeat field")
+	ErrInvalidLogonTimeout     = errors.New("the logon request timeout is too small")
+	ErrMissingEncryptMethod    = errors.New("the encryption method is missing") // done
+	ErrMissingLogonSettings    = errors.New("logon settings are missing") // done
+	ErrMissingSessionOts       = errors.New("session options are missing")   // done
 )
 
 const (
-	// WaitingLogon: the connection has just started, waiting for a Session message or preparing to send it.
+	// WaitingLogon the connection has just started, waiting for a Session message or preparing to send it.
 	WaitingLogon LogonState = iota
 
-	// SuccessfulLogged: session participants are authenticated, ready to work.
+	// SuccessfulLogged session participants are authenticated, ready to work.
 	SuccessfulLogged
 
-	// WaitingLogonAnswer: waiting for a response to a Logon message before starting the session.
+	// WaitingLogonAnswer waiting for a response to a Logon message before starting the session.
 	WaitingLogonAnswer
 
-	// WaitingLogoutAnswer: waiting for a response to a Logout message before terminating the session.
+	// WaitingLogoutAnswer waiting for a response to a Logout message before terminating the session.
 	WaitingLogoutAnswer
 
-	// ReceivedLogoutAnswer: a response to a Logout message was received.
+	// ReceivedLogoutAnswer a response to a Logout message was received.
 	ReceivedLogoutAnswer
 )
 

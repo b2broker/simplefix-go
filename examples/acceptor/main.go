@@ -124,5 +124,5 @@ func main() {
 		})
 	})
 
-	panic(fmt.Errorf("The server was stopped: %s", server.ListenAndServe()))
+	panic(fmt.Errorf("the server was stopped: %s", server.ListenAndServe()))
 }

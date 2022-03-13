@@ -80,7 +80,7 @@ func (h *DefaultHandler) sendRaw(data []byte) error {
 	select {
 	case h.out <- data:
 	case <-h.ctx.Done():
-		return fmt.Errorf("The handler is stopped")
+		return fmt.Errorf("the handler is stopped")
 	}
 	return nil
 }
@@ -90,14 +90,14 @@ func (h *DefaultHandler) send(msg SendingMessage) error {
 		return handle(msg)
 	})
 	if !ok {
-		return errors.New("The handler for all message types has refused the message and returned false")
+		return errors.New("the handler for all message types has refused the message and returned false")
 	}
 
 	ok = h.outgoingHandlers.Range(msg.MsgType(), func(handle OutgoingHandlerFunc) bool {
 		return handle(msg)
 	})
 	if !ok {
-		return errors.New("The handler for the current type has refused the message and returned false")
+		return errors.New("the handler for the current type has refused the message and returned false")
 	}
 
 	data, err := msg.ToBytes()

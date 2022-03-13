@@ -45,7 +45,7 @@ func NewGenerator(doc *Doc, config *Config, libPkg string) *Generator {
 
 func (g *Generator) checkName(name string) (err error) {
 	if name == "" {
-		return fmt.Errorf("The name is empty")
+		return fmt.Errorf("the name is empty")
 	}
 
 	ok, err := regexp.Match("([^a-z0-9_]+|^[0-9].*)", []byte(name))
@@ -54,7 +54,7 @@ func (g *Generator) checkName(name string) (err error) {
 	}
 
 	if ok {
-		return fmt.Errorf("The name contains unexpected character")
+		return fmt.Errorf("the name contains unexpected character")
 	}
 
 	return nil
@@ -70,7 +70,7 @@ func (g *Generator) write(path, data string) (err error) {
 
 	f, err := parser.ParseFile(fset, "", data, parser.ParseComments)
 	if err != nil {
-		return fmt.Errorf("Could not parse the Go file: %w", err)
+		return fmt.Errorf("could not parse the Go file: %w", err)
 	}
 
 	err = (&printer.Config{Mode: printer.TabIndent, Tabwidth: 4}).Fprint(output, fset, f)
@@ -113,7 +113,7 @@ func (g *Generator) Execute(outputDirPath string) (err error) {
 
 	pkg := strings.ReplaceAll(dpkg, "-", "_")
 	if err = g.checkName(pkg); err != nil {
-		return fmt.Errorf("Invalid package name %s: %w", pkg, err)
+		return fmt.Errorf("invalid package name %s: %w", pkg, err)
 	}
 
 	pathFormat := filepath.Join(outputDirPath, "%s.generated.go")
@@ -212,7 +212,7 @@ func (g *Generator) validateComponent(component *ComponentMember) {
 	}
 
 	if len(component.Members) == 0 {
-		panic(fmt.Errorf("The component items count must be greater than 0"))
+		panic(fmt.Errorf("the component items count must be greater than 0"))
 	}
 }
 
@@ -288,7 +288,7 @@ func (g *Generator) makeFieldTypes() string {
 
 func (g *Generator) validateHeader() {
 	if len(g.doc.Header.Members) == 0 {
-		panic(fmt.Errorf("The header must not be empty"))
+		panic(fmt.Errorf("the header must not be empty"))
 	}
 
 	requiredFields := map[string]bool{}
@@ -298,14 +298,14 @@ func (g *Generator) validateHeader() {
 
 	err := g.validateRequiredFields(g.doc.Header.Members, requiredFields)
 	if err != nil {
-		panic(fmt.Errorf("Could not create header: %s", err))
+		panic(fmt.Errorf("could not create header: %s", err))
 	}
 }
 
 func (g *Generator) validateTrailer() {
 	err := g.validateRequiredFields(g.doc.Trailer.Members, RequiredTrailerFields)
 	if err != nil {
-		panic(fmt.Errorf("Could not create trailer: %s", err))
+		panic(fmt.Errorf("could not create trailer: %s", err))
 	}
 }
 
@@ -324,7 +324,7 @@ func (g *Generator) validateRequiredFields(members []*ComponentMember, requiredF
 		for reqField := range requiredFields {
 			fields = append(fields, reqField)
 		}
-		return fmt.Errorf("Some of the required fields are missing: [%s]", strings.Join(fields, ", "))
+		return fmt.Errorf("some of the required fields are missing: [%s]", strings.Join(fields, ", "))
 	}
 
 	return nil
@@ -346,7 +346,7 @@ func (g *Generator) makeHeader() string {
 		if !ok {
 			field, ok = g.enums[fieldName]
 			if !ok {
-				panic(fmt.Errorf("The fieldName required for standard pipelines not found: %s", fieldName))
+				panic(fmt.Errorf("the fieldName required for standard pipelines not found: %s", fieldName))
 			}
 		}
 
@@ -458,7 +458,7 @@ func (g *Generator) makeMessage(message *Component) string {
 			if !ok {
 				field, ok = g.enums[fieldName]
 				if !ok {
-					panic(fmt.Errorf("default flow fieldName not found: %s", fieldName))
+					panic(fmt.Errorf("the fieldName required for standard pipelines not found: %s", fieldName))
 				}
 			}
 
@@ -498,7 +498,7 @@ func (g *Generator) makeType(fieldName string) string {
 		return g.makeEnumName(field)
 	}
 
-	panic(fmt.Errorf("Unexpected field: %s", fieldName))
+	panic(fmt.Errorf("unexpected field: %s", fieldName))
 }
 
 func (g *Generator) makeEnumName(enum *Field) string {
@@ -550,7 +550,7 @@ func (g *Generator) makeTypeConstructor(member *ComponentMember) string {
 		return "&fix.String{}"
 	}
 
-	panic(fmt.Errorf("Unexpected field: %s", member.Name))
+	panic(fmt.Errorf("unexpected field: %s", member.Name))
 }
 
 func (g *Generator) makeFieldCallConstructor(member *ComponentMember) string {

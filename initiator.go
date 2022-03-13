@@ -81,7 +81,7 @@ func (c *Initiator) Serve() error {
 	for {
 		select {
 		case err := <-handlerErr:
-			return fmt.Errorf("Handler error: %w", err)
+			return fmt.Errorf("handler error: %w", err)
 
 		case err := <-connErr:
 			if err != nil {
@@ -94,7 +94,7 @@ func (c *Initiator) Serve() error {
 
 		case msg, ok := <-c.conn.Reader():
 			if !ok {
-				return fmt.Errorf("The connection reader channel was closed")
+				return fmt.Errorf("the connection reader channel was closed")
 			}
 			c.handler.ServeIncoming(msg)
 		}

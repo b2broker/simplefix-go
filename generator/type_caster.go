@@ -38,7 +38,7 @@ func (g *Generator) initTypes() {
 			}
 
 			panic(fmt.Errorf(
-				"unexpected type attribute %s, should be of if [%s]",
+				"unexpected type attribute %s, should be of the [%s] type",
 				tp, strings.Join(types, ", "),
 			))
 		}

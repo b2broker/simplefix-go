@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	ErrNotEnoughMessages = errors.New("Not enough messages in the storage")
-	ErrInvalidBoundaries = errors.New("Invalid boundaries")
-	ErrInvalidSequence   = errors.New("Unexpected sequence index")
+	ErrNotEnoughMessages = errors.New("not enough messages in the storage")
+	ErrInvalidBoundaries = errors.New("invalid boundaries")
+	ErrInvalidSequence   = errors.New("unexpected sequence index")
 )
 
 // MessageStorage is an interface providing a basic method for storing messages awaiting to be sent.
