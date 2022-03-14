@@ -49,18 +49,17 @@ func (c *Initiator) Serve() error {
 	connErr := make(chan error)
 	go func() {
 		connErr <- c.conn.serve()
-		close(connErr)
 	}()
 
 	handlerErr := make(chan error, 1)
 	go func() {
 		handlerErr <- c.handler.Run()
-		close(handlerErr)
 	}()
 
 	defer func() {
-		c.cancel()
+		c.handler.StopWithError(fmt.Errorf("initiator closed"))
 		c.conn.Close()
+		c.cancel()
 	}()
 
 	go func() {
@@ -86,15 +85,16 @@ func (c *Initiator) Serve() error {
 		case err := <-connErr:
 			if err != nil {
 				c.handler.StopWithError(ErrConnClosed)
-				return fmt.Errorf("%w: %s", ErrConnClosed, err)
+				continue
 			}
+			return nil
 
 		case <-c.ctx.Done():
 			return nil
 
 		case msg, ok := <-c.conn.Reader():
 			if !ok {
-				return fmt.Errorf("the connection reader channel was closed")
+				continue
 			}
 			c.handler.ServeIncoming(msg)
 		}
