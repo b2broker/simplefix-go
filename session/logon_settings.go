@@ -2,7 +2,7 @@ package session
 
 import "time"
 
-// todo constructor for acceptor and initiator
+// TODO: constructor for acceptor and initiator
 type LogonSettings struct {
 	TargetCompID  string
 	SenderCompID  string

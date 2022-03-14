@@ -5,29 +5,30 @@ import (
 	"strings"
 )
 
-// Component is a batch of different FIX-items
-// it may contain KeyValue, Group and another Component
+// Component is an array of various FIX entities.
+// It may contain a KeyValue, a Group and another Component.
 type Component struct {
 	items []Item
 }
 
-// NewComponent creates new Component
+// NewComponent is used to create a new Component instance.
 func NewComponent(items ...Item) *Component {
 	return &Component{items: items}
 }
 
-// Items returns items of Component
+// Items returns Component items.
 func (c *Component) Items() Items {
 	return c.items
 }
 
-// AsComponent returns itself
-// need fot structures which aggregate this Component
+// AsComponent returns a specified component.
+// This is required for structures that integrate this component.
 func (c *Component) AsComponent() *Component {
 	return c
 }
 
-// AsTemplate returns new structure with same items with empty values
+// AsTemplate returns a new structure with the same set of items
+// as in a specified component (these items are assigned empty values).
 func (c *Component) AsTemplate() Items {
 	tmp := make([]Item, len(c.items))
 
@@ -47,7 +48,7 @@ func (c *Component) AsTemplate() Items {
 	return tmp
 }
 
-// ToBytes returns FIX-representation message
+// ToBytes returns a representation of a message which is native to FIX.
 func (c *Component) ToBytes() []byte {
 	var msg [][]byte
 	for _, item := range c.items {
@@ -64,33 +65,33 @@ func (c *Component) ToBytes() []byte {
 	return joinBody(msg...)
 }
 
-// Get returns item of component by sequence number
-// it may be *KeyValue, *Component or *Group
+// Get returns a specific component item identified by its sequence number.
+// Such item may be a *KeyValue, *Component or *Group.
 func (c *Component) Get(id int) Item {
 	return c.items[id]
 }
 
-// Set replace item of component by sequence number
+// Set replaces a component item identified by its sequence number.
 func (c *Component) Set(id int, v Item) {
 	c.items[id] = v
 }
 
-// SetGroup sets internal field (any) item
+// SetField is used to define an internal field for any item.
 func (c *Component) SetField(id int, v Item) {
 	c.items[id] = v
 }
 
-// SetGroup sets internal group item
+// SetGroup is used to define an internal group for an item.
 func (c *Component) SetGroup(id int, v *Group) {
 	c.items[id] = v
 }
 
-// SetComponent sets internal component item
+// SetComponent is used to define an internal component for an item.
 func (c *Component) SetComponent(id int, v *Component) {
 	c.items[id] = v
 }
 
-// String converts Component to string
+// String returns a string representation of a component.
 func (c *Component) String() string {
 	var items []string
 	for _, item := range c.items {

@@ -1,6 +1,6 @@
 package messages
 
-// Tags contains required tags for session pipelines
+// Tags is a structure specifying the required tags for session pipelines.
 type Tags struct {
 	MsgType         int
 	MsgSeqNum       int
@@ -8,7 +8,7 @@ type Tags struct {
 	EncryptedMethod int
 }
 
-// SessionErrorCodes contains session error codes
+// SessionErrorCodes is a structure specifying the session error codes.
 type SessionErrorCodes struct {
 	InvalidTagNumber            int
 	RequiredTagMissing          int
@@ -23,7 +23,7 @@ type SessionErrorCodes struct {
 	Other                       int
 }
 
-// Message is an interface for sending message
+// Message is an interface providing the functionality required for sending messages.
 type Message interface {
 	HeaderBuilder() HeaderBuilder
 	MsgType() string

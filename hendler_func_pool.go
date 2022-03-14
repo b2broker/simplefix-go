@@ -6,17 +6,17 @@ import (
 	"sync/atomic"
 )
 
-// ErrHandleNotFound will be returned when looking handler not found
+// ErrHandleNotFound is returned when a required handler is not found.
 var ErrHandleNotFound = errors.New("handler not found")
 
-// HandlerPool is a structure for work with pool of message handlers
+// HandlerPool is used for managing the pool of message handlers.
 type HandlerPool struct {
 	mu       sync.RWMutex
 	handlers map[string]map[int64]interface{}
 	counter  *int64
 }
 
-// NewHandlerPool creates new HandlerPool
+// NewHandlerPool creates a new HandlerPool instance.
 func NewHandlerPool() *HandlerPool {
 	return &HandlerPool{
 		handlers: make(map[string]map[int64]interface{}),
@@ -36,7 +36,7 @@ func (p *HandlerPool) free(msgType string) {
 	delete(p.handlers, msgType)
 }
 
-// Remove removes handler by its id
+// Remove is used to remove a handler with a specified identifier.
 func (p *HandlerPool) Remove(msgType string, id int64) error {
 	if _, ok := p.handlers[msgType]; !ok {
 		return ErrHandleNotFound
@@ -82,18 +82,17 @@ func (p *HandlerPool) add(msgType string, handle interface{}) int64 {
 	return id
 }
 
-// IncomingHandlerPool is a pool for incoming messages with bytes
+// IncomingHandlerPool is used to manage the pool of incoming messages stored in the form of byte arrays.
 type IncomingHandlerPool struct {
 	*HandlerPool
 }
 
-// NewHandlerPool creates new HandlerPool
+// NewIncomingHandlerPool creates a new HandlerPool instance.
 func NewIncomingHandlerPool() IncomingHandlerPool {
 	return IncomingHandlerPool{NewHandlerPool()}
 }
 
-// Range is a handlers traversal
-// it will be stop if one of handlers returns false
+// Range is used for traversal through handlers. The traversal stops if any handler returns false.
 func (p IncomingHandlerPool) Range(msgType string, f func(IncomingHandlerFunc) bool) {
 	for _, handle := range p.handlersByMsgType(msgType) {
 		if !f(handle.(IncomingHandlerFunc)) {
@@ -102,24 +101,24 @@ func (p IncomingHandlerPool) Range(msgType string, f func(IncomingHandlerFunc) b
 	}
 }
 
-// Add adds new message handler for message type
-// returns id of added message
+// Add is used to add a new message handler for the specified message type.
+// The function returns the ID of a message for which a handler was added.
 func (p *IncomingHandlerPool) Add(msgType string, handle IncomingHandlerFunc) int64 {
 	return p.add(msgType, handle)
 }
 
-// IncomingHandlerPool is a pool for outgoing messages with structs
+// OutgoingHandlerPool is used to manage the pool of outgoing messages stored as structures.
 type OutgoingHandlerPool struct {
 	*HandlerPool
 }
 
-// NewHandlerPool creates new HandlerPool
+// NewOutgoingHandlerPool creates a new OutgoingHandlerPool instance.
 func NewOutgoingHandlerPool() OutgoingHandlerPool {
 	return OutgoingHandlerPool{NewHandlerPool()}
 }
 
-// Range is a handlers traversal
-// it will be stop if one of handlers returns false
+// Range is used for traversal through handlers.
+// The traversal stops if any handler returns false.
 func (p OutgoingHandlerPool) Range(msgType string, f func(OutgoingHandlerFunc) bool) (res bool) {
 	for _, handle := range p.handlersByMsgType(msgType) {
 		if !f(handle.(OutgoingHandlerFunc)) {
@@ -130,8 +129,8 @@ func (p OutgoingHandlerPool) Range(msgType string, f func(OutgoingHandlerFunc) b
 	return true
 }
 
-// Add adds new message handler for message type
-// returns id of added message
+// Add is used to add a new message handler for the specified message type.
+// The function returns the ID of a message for which a handler was added.
 func (p *HandlerPool) Add(msgType string, handle OutgoingHandlerFunc) int64 {
 	return p.add(msgType, handle)
 }

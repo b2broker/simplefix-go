@@ -12,14 +12,14 @@ import (
 
 const AllMsgTypes = "ALL"
 
-// SendingMessage basic method for sending message
+// SendingMessage provides a basic method for sending messages.
 type SendingMessage interface {
 	HeaderBuilder() messages.HeaderBuilder
 	MsgType() string
 	ToBytes() ([]byte, error)
 }
 
-// DefaultHandler is a standard handler for
+// DefaultHandler is a standard handler for the Acceptor and Initiator objects.
 type DefaultHandler struct {
 	mu sync.Mutex
 
@@ -38,7 +38,7 @@ type DefaultHandler struct {
 	errors chan error
 }
 
-// NewAcceptorHandler creates handler for Acceptor
+// NewAcceptorHandler creates a handler for an Acceptor object.
 func NewAcceptorHandler(ctx context.Context, msgTypeTag string, bufferSize int) *DefaultHandler {
 	sh := &DefaultHandler{
 		msgTypeTag:    msgTypeTag,
@@ -46,7 +46,7 @@ func NewAcceptorHandler(ctx context.Context, msgTypeTag string, bufferSize int) 
 
 		out:      make(chan []byte, bufferSize),
 		incoming: make(chan []byte, bufferSize),
-		errors:   make(chan error, 5),
+		errors:   make(chan error),
 
 		incomingHandlers: NewIncomingHandlerPool(),
 		outgoingHandlers: NewOutgoingHandlerPool(),
@@ -57,7 +57,7 @@ func NewAcceptorHandler(ctx context.Context, msgTypeTag string, bufferSize int) 
 	return sh
 }
 
-// NewInitiatorHandler creates handler for Initiator
+// NewInitiatorHandler creates a handler for the Initiator object.
 func NewInitiatorHandler(ctx context.Context, msgTypeTag string, bufferSize int) *DefaultHandler {
 	sh := &DefaultHandler{
 		msgTypeTag:    msgTypeTag,
@@ -65,7 +65,7 @@ func NewInitiatorHandler(ctx context.Context, msgTypeTag string, bufferSize int)
 
 		out:      make(chan []byte, bufferSize),
 		incoming: make(chan []byte, bufferSize),
-		errors:   make(chan error, 5),
+		errors:   make(chan error),
 
 		incomingHandlers: NewIncomingHandlerPool(),
 		outgoingHandlers: NewOutgoingHandlerPool(),
@@ -80,7 +80,7 @@ func (h *DefaultHandler) sendRaw(data []byte) error {
 	select {
 	case h.out <- data:
 	case <-h.ctx.Done():
-		return fmt.Errorf("handler is stopped")
+		return fmt.Errorf("the handler is stopped")
 	}
 	return nil
 }
@@ -90,14 +90,14 @@ func (h *DefaultHandler) send(msg SendingMessage) error {
 		return handle(msg)
 	})
 	if !ok {
-		return errors.New("all message types handler refused message by returning false")
+		return errors.New("the handler for all message types has refused the message and returned false")
 	}
 
 	ok = h.outgoingHandlers.Range(msg.MsgType(), func(handle OutgoingHandlerFunc) bool {
 		return handle(msg)
 	})
 	if !ok {
-		return errors.New("current type handler refused message by returning false")
+		return errors.New("the handler for the current type has refused the message and returned false")
 	}
 
 	data, err := msg.ToBytes()
@@ -108,12 +108,13 @@ func (h *DefaultHandler) send(msg SendingMessage) error {
 	return h.sendRaw(data)
 }
 
-// SendRaw sends raw message without any additional handlers
+// SendRaw sends a message in the byte array format
+// without involving any additional handlers.
 func (h *DefaultHandler) SendRaw(data []byte) error {
 	return h.sendRaw(data)
 }
 
-// Send sends prepared message
+// Send is a function that sends a previously prepared message.
 func (h *DefaultHandler) Send(message SendingMessage) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -121,32 +122,32 @@ func (h *DefaultHandler) Send(message SendingMessage) error {
 	return h.send(message)
 }
 
-// RemoveOutgoingHandler removes existing incoming handler
+// RemoveIncomingHandler removes an existing handler for incoming messages.
 func (h *DefaultHandler) RemoveIncomingHandler(msgType string, id int64) (err error) {
 	return h.incomingHandlers.Remove(msgType, id)
 }
 
-// RemoveOutgoingHandler removes existing outgoing handler
+// RemoveOutgoingHandler removes an existing handler for outgoing messages.
 func (h *DefaultHandler) RemoveOutgoingHandler(msgType string, id int64) (err error) {
 	return h.outgoingHandlers.Remove(msgType, id)
 }
 
-// HandleIncoming subscribes handler function to incoming messages with specific msgType
-// For subscription to all messages use AllMsgTypes constant for field msgType
-// in this case your messages will have high priority
+// HandleIncoming subscribes a handler function to incoming messages with a specific msgType.
+// To subscribe to all messages, specify the AllMsgTypes constant for the msgType field
+// (such messages will have a higher priority than the ones assigned to specific handlers).
 func (h *DefaultHandler) HandleIncoming(msgType string, handle IncomingHandlerFunc) (id int64) {
 	return h.incomingHandlers.Add(msgType, handle)
 }
 
-// HandleOutgoing subscribes handler function to outgoing messages with specific msgType
-// for modification before sending
-// For subscription to all messages use AllMsgTypes constant for field msgType
-// in this case your messages will have high priority
+// HandleOutgoing subscribes a handler function to outgoing messages with a specific msgType
+// (this may be required for modifying messages before sending).
+// To subscribe to all messages, specify the AllMsgTypes constant for the msgType field
+// (such messages will have a higher priority than the ones assigned to specific handlers).
 func (h *DefaultHandler) HandleOutgoing(msgType string, handle OutgoingHandlerFunc) (id int64) {
 	return h.outgoingHandlers.Add(msgType, handle)
 }
 
-// ServeIncoming is inner method for handle incoming messages
+// ServeIncoming is an internal method for handling incoming messages.
 func (h *DefaultHandler) ServeIncoming(msg []byte) {
 	h.incoming <- msg
 }
@@ -169,7 +170,7 @@ func (h *DefaultHandler) serve(msg []byte) (err error) {
 	return nil
 }
 
-// Run starts listen and serve messages
+// Run is a function that is used for listening and processing messages.
 func (h *DefaultHandler) Run() (err error) {
 	h.eventHandlers.Trigger(utils.EventConnect)
 
@@ -204,32 +205,33 @@ func (h *DefaultHandler) Context() context.Context {
 	return h.ctx
 }
 
-// Outgoing is service method for returning outgoing chan to server or client connection manager
+// Outgoing is a service method that provides an outgoing channel
+// to the server or client connection manager.
 func (h *DefaultHandler) Outgoing() <-chan []byte {
 	return h.out
 }
 
-// Stop is a graceful stop
+// Stop is a function that enables graceful termination of a session.
 func (h *DefaultHandler) Stop() {
 	h.cancel()
 }
 
-// Stop is a graceful stop with error
+// StopWithError is a function that enables graceful termination of a session with throwing an error.
 func (h *DefaultHandler) StopWithError(err error) {
 	h.errors <- err
 }
 
-// OnDisconnect handles disconnect event
+// OnDisconnect handles disconnection events.
 func (h *DefaultHandler) OnDisconnect(handlerFunc utils.EventHandlerFunc) {
 	h.eventHandlers.Handle(utils.EventDisconnect, handlerFunc)
 }
 
-// OnDisconnect handles disconnect event
+// OnConnect handles connection events.
 func (h *DefaultHandler) OnConnect(handlerFunc utils.EventHandlerFunc) {
 	h.eventHandlers.Handle(utils.EventConnect, handlerFunc)
 }
 
-// OnStopped handles Close event
+// OnStopped handles session termination events.
 func (h *DefaultHandler) OnStopped(handlerFunc utils.EventHandlerFunc) {
 	h.eventHandlers.Handle(utils.EventStopped, handlerFunc)
 }

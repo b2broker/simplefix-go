@@ -7,29 +7,29 @@ import (
 	"strings"
 )
 
-// Message FIX-Message
+// Message is a structure providing functionality to FIX messages.
 type Message struct {
-	// beginString, bodyLength, msgType is required fields of any message
+	// The beginString, bodyLength and msgType fields are required for any FIX message.
 	beginString *KeyValue
 	bodyLength  *KeyValue
-	msgType     *KeyValue // This tag must appear third in the list of header tags.
+	msgType     *KeyValue // This must be the third tag appearing in the message header.
 
-	// header of message expect of required fields [ bodyLength, beginString, msgType ]
+	// The message header must include all the required fields (bodyLength, beginString, msgType).
 	header *Component
 
-	// body of message
+	// The message body.
 	body Items
 
-	// trailer of message expect of checkSum
+	// The message trailer which includes all the required fields except for checkSum.
 	trailer *Component
 
-	// checkSum auto generated checksum is required field
+	// The auto-generated checkSum value is a required field.
 	checkSum *KeyValue
 
 	raw []byte
 }
 
-// NewMessage creates new Message
+// NewMessage is called to create a new message.
 func NewMessage(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag, beginString, msgType string) *Message {
 	return &Message{
 		beginString: NewKeyValue(beginStringTag, NewString(beginString)),
@@ -39,7 +39,7 @@ func NewMessage(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag, beginStr
 	}
 }
 
-// NewMessageFromBytes creates new empty message
+// NewMessageFromBytes creates a new empty message.
 func NewMessageFromBytes(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag string) *Message {
 	return &Message{
 		beginString: NewKeyValue(beginStringTag, &String{}),
@@ -51,16 +51,16 @@ func NewMessageFromBytes(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag 
 
 func (msg *Message) checkRequiredFields() error {
 	if msg.beginString.Value.IsNull() {
-		return fmt.Errorf("empty required field: %s (%s)", msg.beginString.Key, "BeginString")
+		return fmt.Errorf("the required field value is empty: %s (%s)", msg.beginString.Key, "BeginString")
 	}
 	if msg.bodyLength.Value.IsNull() {
-		return fmt.Errorf("empty required field: %s (%s)", msg.bodyLength.Key, "BodyLength")
+		return fmt.Errorf("the required field value is empty: %s (%s)", msg.bodyLength.Key, "BodyLength")
 	}
 	if msg.msgType.Value.IsNull() {
-		return fmt.Errorf("empty required field: %s (%s)", msg.msgType.Key, "MsgType")
+		return fmt.Errorf("the required field value is empty: %s (%s)", msg.msgType.Key, "MsgType")
 	}
 	if msg.checkSum.Value.IsNull() {
-		return fmt.Errorf("empty required field: %s (%s)", msg.checkSum.Key, "CheckSum")
+		return fmt.Errorf("the required field value is empty: %s (%s)", msg.checkSum.Key, "CheckSum")
 	}
 
 	return nil
@@ -76,7 +76,7 @@ func (msg *Message) validate() error {
 	bb := msg.body.ToBytes()
 	bodyLength := msg.calcBodyLength(bh, bb, mt)
 	if bodyLength != msg.bodyLength.Value.Value().(int) {
-		return fmt.Errorf("invalid body length, definde: %d, got: %d",
+		return fmt.Errorf("an invalid body length; specified: %d, required: %d",
 			msg.bodyLength.Value.Value().(int),
 			bodyLength,
 		)
@@ -96,13 +96,13 @@ func (msg *Message) validate() error {
 	checkSum := string(calcCheckSum(byteMsg))
 
 	if checkSum != msg.checkSum.Value.String() {
-		return fmt.Errorf("invalid checksum, defined: %s, got: %s", msg.checkSum.Value, checkSum)
+		return fmt.Errorf("an invalid checksum; specified: %s, required: %s", msg.checkSum.Value, checkSum)
 	}
 
 	return nil
 }
 
-// Unmarshal read data into current Message
+// Unmarshal parses byte data and inserts it into a specified Message object.
 func (msg *Message) Unmarshal(data []byte) error {
 	message := Items{
 		msg.beginString,
@@ -122,37 +122,37 @@ func (msg *Message) Unmarshal(data []byte) error {
 	return msg.validate()
 }
 
-// Body returns body of message as Items
+// Body returns the body of a FIX message as an Items object.
 func (msg *Message) Body() (kvs Items) {
 	return msg.body
 }
 
-// Header returns header of message as Component
+// Header returns the header of a FIX message as a Component object.
 func (msg *Message) Header() *Component {
 	return msg.header
 }
 
-// Trailer returns trailer of message as Component
+// Trailer returns the trailer of a FIX message as a Component object.
 func (msg *Message) Trailer() *Component {
 	return msg.trailer
 }
 
-// BeginString returns begin string
+// BeginString returns the beginString field value.
 func (msg *Message) BeginString() string {
 	return msg.beginString.Value.String()
 }
 
-// BodyLength returns length of body
+// BodyLength returns the BodyLength field value.
 func (msg *Message) BodyLength() int {
 	return msg.bodyLength.Value.Value().(int)
 }
 
-// MsgType returns message type
+// MsgType returns the MsgType field value.
 func (msg *Message) MsgType() string {
 	return msg.msgType.Value.String()
 }
 
-// CheckSum returns check sum of message
+// CheckSum returns the CheckSum field value.
 func (msg *Message) CheckSum() string {
 	return msg.checkSum.Value.String()
 }
@@ -166,7 +166,7 @@ func (msg *Message) calcBodyLength(header, body, msgType []byte) int {
 	return count
 }
 
-// Raw
+// Raw returns message data in the form of a byte array.
 func (msg *Message) Raw() ([]byte, error) {
 	if len(msg.raw) > 0 {
 		return msg.raw, nil
@@ -175,7 +175,7 @@ func (msg *Message) Raw() ([]byte, error) {
 	return msg.ToBytes()
 }
 
-// ToBytes convert current message to bytes
+// ToBytes returns a byte representation of a specified message.
 func (msg *Message) ToBytes() ([]byte, error) {
 	bh := msg.header.ToBytes()
 	bb := msg.body.ToBytes()
@@ -212,7 +212,7 @@ func (msg *Message) ToBytes() ([]byte, error) {
 	return msg.raw, nil
 }
 
-// String convert current message to string
+// String returns a string representation of a specified message.
 func (msg *Message) String() string {
 	message := Items{
 		msg.beginString,
@@ -242,19 +242,19 @@ func (msg *Message) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(items, ", "))
 }
 
-// Get returns Item of body by sequence number
+// Get returns an Item corresponding to the message body (identified by the item sequence number).
 func (msg *Message) Get(id int) Item { return msg.body[id] }
 
-// Get replace Item of body by sequence number
+// Set replaces an Item corresponding to the message body (identified by the item sequence number).
 func (msg *Message) Set(id int, item Item) *Message { msg.body[id] = item; return msg }
 
-// SetHeader set message header
+// SetHeader specifies the message header.
 func (msg *Message) SetHeader(header *Component) *Message { msg.setHeader(header); return msg }
 
-// SetBody set message body
+// SetBody specifies the message body.
 func (msg *Message) SetBody(body ...Item) *Message { msg.setBody(body); return msg }
 
-// SetTrailer set trailer of message expect of checkSum
+// SetTrailer specifies the message trailer fields (except for checkSum).
 func (msg *Message) SetTrailer(trailer *Component) *Message { msg.setTrailer(trailer); return msg }
 
 func (msg *Message) setHeader(header *Component)   { msg.header = header }

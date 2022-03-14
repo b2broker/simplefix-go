@@ -27,7 +27,7 @@ func TestHeartbeat(t *testing.T) {
 		heartBtInt        = 1
 	)
 
-	// close acceptor after work
+	// Close the Acceptor after its work is accomplished:
 	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
 	defer acceptor.Close()
 	go func() {
@@ -64,7 +64,7 @@ func TestHeartbeat(t *testing.T) {
 
 	err := waitHeartbeats.WaitWithTimeout(time.Second * countOfHeartbeats * heartBtInt * 2)
 	if err != nil {
-		t.Fatalf("wait heartbeats: %s", err)
+		t.Fatalf("awaiting heartbeats: %s", err)
 	}
 }
 
@@ -78,10 +78,10 @@ func TestGroup(t *testing.T) {
 	}
 	var done = make(chan struct{})
 
-	// close acceptor after work
+	// Close the Acceptor after its work is accomplished:
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
-		t.Fatalf("listen error: %s", err)
+		t.Fatalf("listening error: %s", err)
 	}
 
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
@@ -105,7 +105,7 @@ func TestGroup(t *testing.T) {
 
 		err = s.Run()
 		if err != nil {
-			t.Fatalf("run s: %s", err)
+			t.Fatalf("could not run the session: %s", err)
 		}
 
 		handler.HandleIncoming(fixgen.MsgTypeMarketDataRequest, func(msg []byte) bool {
@@ -123,7 +123,7 @@ func TestGroup(t *testing.T) {
 			}
 
 			if len(testInstrumentSymbols) > 0 {
-				t.Fatalf("some instruments remained at map: %v", testInstrumentSymbols)
+				t.Fatalf("some instruments remained in the map: %v", testInstrumentSymbols)
 			}
 
 			close(done)
@@ -176,7 +176,7 @@ func TestGroup(t *testing.T) {
 
 	select {
 	case <-time.After(time.Second * 5):
-		t.Fatalf("wait heartbeats: %s", err)
+		t.Fatalf("awaiting heartbeats: %s", err)
 	case <-done:
 	}
 }
@@ -187,7 +187,7 @@ func TestTestRequest(t *testing.T) {
 		testReqID  = "aloha"
 	)
 
-	// close acceptor after work
+	// Close the Acceptor after its work is accomplished:
 	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
 	defer acceptor.Close()
 	go func() {
@@ -210,7 +210,7 @@ func TestTestRequest(t *testing.T) {
 	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) bool {
 		heartbeatMsg, err := fixgen.ParseHeartbeat(msg)
 		if err != nil {
-			t.Fatalf("parse heartbeat: %s", err)
+			t.Fatalf("could not parse the heartbeat: %s", err)
 		}
 
 		if heartbeatMsg.TestReqID() == testReqID {
@@ -222,7 +222,7 @@ func TestTestRequest(t *testing.T) {
 
 	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
 		t.Log("client connected to server")
-		t.Log("send test request")
+		t.Log("sending a test request")
 
 		testRequestMsg := fixgen.TestRequest{}.New()
 		testRequestMsg.SetFieldTestReqID(testReqID)
@@ -237,7 +237,7 @@ func TestTestRequest(t *testing.T) {
 
 	err := waitHeartbeats.WaitWithTimeout(time.Second * heartBtInt * 2)
 	if err != nil {
-		t.Fatalf("wait heartbeats: %s", err)
+		t.Fatalf("awaiting heartbeats: %s", err)
 	}
 }
 
@@ -249,9 +249,9 @@ func TestResendSequence(t *testing.T) {
 		resendEnd           = 3
 	)
 
-	var countOfResending = resendEnd - resendBegin + 1 // including
+	var countOfResending = resendEnd - resendBegin + 1 // The range encompasses the elements that mark the end and beginning.
 
-	// close acceptor after work
+	// Close the Acceptor after its work is accomplished:
 	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
 	defer acceptor.Close()
 	go func() {
@@ -275,7 +275,7 @@ func TestResendSequence(t *testing.T) {
 	initiatorHandler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		msgSeqNumB, err := fix.ValueByTag(msg, fixgen.FieldMsgSeqNum)
 		if err != nil {
-			t.Fatalf("message sequence num parsing: %s", err)
+			t.Fatalf("could not parse the message sequence number: %s", err)
 		}
 
 		msgSeqNum := string(msgSeqNumB)
@@ -285,7 +285,7 @@ func TestResendSequence(t *testing.T) {
 			if !bytes.Equal(old.([]byte), msg) {
 				t.Log("> incoming", string(msg))
 				t.Log("> saved", string(old.([]byte)))
-				t.Fatalf("> different messages with same sequence number")
+				t.Fatalf("> different messages with identical sequence numbers")
 			} else {
 				defer waitRepeats.Done()
 			}
@@ -310,15 +310,15 @@ func TestResendSequence(t *testing.T) {
 	defer acceptor.Close()
 	err = waitRepeats.WaitWithTimeout(waitingResend)
 	if err != nil {
-		t.Fatalf("wait heartbeats: %s", err)
+		t.Fatalf("awaiting heartbeats: %s", err)
 	}
 }
 
 func TestCloseInitiatorConn(t *testing.T) {
-	// close acceptor after work
+	// Close the Acceptor after its work is accomplished:
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
-		t.Fatalf("listen error: %s", err)
+		t.Fatalf("listening error: %s", err)
 	}
 
 	waitClientClosed := make(chan struct{})
@@ -339,11 +339,11 @@ func TestCloseInitiatorConn(t *testing.T) {
 
 		err = s.Run()
 		if err != nil {
-			t.Fatalf("run s: %s", err)
+			t.Fatalf("could not run the session: %s", err)
 		}
 
 		handler.OnDisconnect(func() bool {
-			t.Log("client disconnected")
+			t.Log("client is disconnected")
 			waitClientClosed <- struct{}{}
 			return true
 		})
@@ -381,13 +381,13 @@ func TestCloseInitiatorConn(t *testing.T) {
 	go func() {
 		err := client.Serve()
 		if err != nil && !errors.Is(err, simplefixgo.ErrConnClosed) {
-			panic(fmt.Errorf("serve client: %s", err))
+			panic(fmt.Errorf("could not serve the client: %s", err))
 		}
 	}()
 
 	err = s.Run()
 	if err != nil {
-		t.Fatalf("run session: %s", err)
+		t.Fatalf("could not run the session: %s", err)
 	}
 
 	client.Close()
@@ -395,15 +395,15 @@ func TestCloseInitiatorConn(t *testing.T) {
 	select {
 	case <-waitClientClosed:
 	case <-time.After(time.Second * 3):
-		t.Fatalf("too long time waiting close")
+		t.Fatalf("awaiting closing for too long")
 	}
 }
 
 func TestCloseAcceptorConn(t *testing.T) {
-	// close acceptor after work
+	// Close the Acceptor after its work is accomplished:
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
-		t.Fatalf("listen error: %s", err)
+		t.Fatalf("listening error: %s", err)
 	}
 
 	waitServerDisconnect := make(chan struct{})
@@ -425,11 +425,11 @@ func TestCloseAcceptorConn(t *testing.T) {
 
 		err = s.Run()
 		if err != nil {
-			t.Fatalf("run s: %s", err)
+			t.Fatalf("could not run the session: %s", err)
 		}
 
 		handler.OnConnect(func() bool {
-			t.Log("server: client connected")
+			t.Log("server: client is connected")
 			return true
 		})
 	})
@@ -471,7 +471,7 @@ func TestCloseAcceptorConn(t *testing.T) {
 	})
 
 	initiatorHandler.OnDisconnect(func() bool {
-		t.Log("server disconnected")
+		t.Log("server is disconnected")
 		waitServerDisconnect <- struct{}{}
 		return true
 	})
@@ -479,26 +479,26 @@ func TestCloseAcceptorConn(t *testing.T) {
 	go func() {
 		err := client.Serve()
 		if !errors.Is(err, simplefixgo.ErrConnClosed) {
-			panic(fmt.Errorf("serve client: %s", err))
+			panic(fmt.Errorf("could not serve the client: %s", err))
 		}
 	}()
 
 	err = s.Run()
 	if err != nil {
-		t.Fatalf("run session: %s", err)
+		t.Fatalf("could not run the session: %s", err)
 	}
 
 	select {
 	case <-waitServerDisconnect:
 	case <-time.After(time.Second * 3):
-		t.Fatalf("too long time waiting close")
+		t.Fatalf("awaiting closing for too long")
 	}
 }
 
 func TestLookAtClosingOfInitiator(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
-		t.Fatalf("listen error: %s", err)
+		t.Fatalf("listening error: %s", err)
 	}
 
 	waitClientDisconnect := make(chan struct{})
@@ -520,11 +520,11 @@ func TestLookAtClosingOfInitiator(t *testing.T) {
 
 		err = acceptorSession.Run()
 		if err != nil {
-			t.Fatalf("run s: %s", err)
+			t.Fatalf("could not run the session: %s", err)
 		}
 
 		handler.OnConnect(func() bool {
-			t.Log("start some message stream")
+			t.Log("starting a message stream")
 			go func() {
 				for {
 					select {
@@ -583,26 +583,26 @@ func TestLookAtClosingOfInitiator(t *testing.T) {
 	go func() {
 		err := client.Serve()
 		if err != nil && !errors.Is(err, simplefixgo.ErrConnClosed) {
-			panic(fmt.Errorf("serve client: %s", err))
+			panic(fmt.Errorf("could not serve the client: %s", err))
 		}
 	}()
 
 	err = initiatorSession.Run()
 	if err != nil {
-		t.Fatalf("run session: %s", err)
+		t.Fatalf("could not run the session: %s", err)
 	}
 
 	select {
 	case <-waitClientDisconnect:
 	case <-time.After(time.Second * 3):
-		t.Fatalf("too long time waiting close")
+		t.Fatalf("awaiting closing for too long")
 	}
 }
 
 func TestInterruptHandling(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
-		t.Fatalf("listen error: %s", err)
+		t.Fatalf("listening error: %s", err)
 	}
 
 	waitClientDisconnect := make(chan struct{})
@@ -619,16 +619,16 @@ func TestInterruptHandling(t *testing.T) {
 			func(request *session.LogonSettings) (err error) { return nil },
 		)
 		if err != nil {
-			t.Fatalf("new session: %s", err)
+			t.Fatalf("could not start a new session: %s", err)
 		}
 
 		err = acceptorSession.Run()
 		if err != nil {
-			t.Fatalf("run acceptor session: %s", err)
+			t.Fatalf("could not run the Acceptor session: %s", err)
 		}
 
 		handler.OnConnect(func() bool {
-			t.Log("start some message stream")
+			t.Log("starting a message stream")
 			go func() {
 				select {
 				case <-acceptorSession.Context().Done():
@@ -685,19 +685,19 @@ func TestInterruptHandling(t *testing.T) {
 	go func() {
 		err := client.Serve()
 		if err != nil && errors.Is(err, simplefixgo.ErrConnClosed) {
-			panic(fmt.Errorf("serve client: %s", err))
+			panic(fmt.Errorf("could not serve the client: %s", err))
 		}
 	}()
 
 	err = initiatorSession.Run()
 	if err != nil {
-		t.Fatalf("run session: %s", err)
+		t.Fatalf("could not run the session: %s", err)
 	}
 
 	select {
 	case <-waitClientDisconnect:
 	case <-time.After(time.Second * 3):
-		t.Fatalf("too long time waiting close")
+		t.Fatalf("awaiting closing for too long")
 	}
 }
 
@@ -707,7 +707,7 @@ func TestHighload(t *testing.T) {
 	triesNum := 100
 	threadsNum := 5
 
-	// close acceptor after work
+	// Close the Acceptor after its work is accomplished:
 	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
 	defer acceptor.Close()
 	go func() {
@@ -738,7 +738,7 @@ func TestHighload(t *testing.T) {
 	initiatorHandler.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
 		data, err := msg.ToBytes()
 		if err != nil {
-			t.Fatalf("parse snapshot: %s", err)
+			t.Fatalf("could not parse the snapshot: %s", err)
 		}
 
 		str := string(bytes.ReplaceAll(data, fix.Delimiter, []byte("|")))
@@ -747,7 +747,7 @@ func TestHighload(t *testing.T) {
 		if len(seq) > 0 {
 			seqInt, _ := strconv.Atoi(seq[1])
 			if int64(seqInt) != seqCount {
-				t.Fatalf("broken sequence: %d, reference %d", seqInt, seqCount)
+				t.Fatalf("the sequence is broken: %d, reference message Seq. No.: %d", seqInt, seqCount)
 			}
 			atomic.AddInt64(&seqCount, 1)
 		}
@@ -757,7 +757,7 @@ func TestHighload(t *testing.T) {
 
 	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
 		t.Log("client connected to server")
-		t.Log("send test request")
+		t.Log("sending a test request")
 
 		symbol := fixgen.NewInstrument().SetSymbol("XXX/YYY")
 		group := fixgen.NewMDEntriesGrp()
@@ -788,7 +788,7 @@ func TestHighload(t *testing.T) {
 
 	err := waitSnapshots.WaitWithTimeout(time.Second * heartBtInt)
 	if err != nil {
-		t.Fatalf("wait snapshots: %s", err)
+		t.Fatalf("snapshots awaiting timeout: %s", err)
 	}
 }
 
@@ -798,7 +798,7 @@ func TestSessionClosing(t *testing.T) {
 		testReqID  = "aloha"
 	)
 
-	// close acceptor after work
+	// Close the Acceptor after its work is accomplished:
 	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
 	defer acceptor.Close()
 	go func() {
@@ -823,7 +823,7 @@ func TestSessionClosing(t *testing.T) {
 	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) bool {
 		heartbeatMsg, err := fixgen.ParseHeartbeat(msg)
 		if err != nil {
-			t.Fatalf("parse heartbeat: %s", err)
+			t.Fatalf("could not parse the heartbeat: %s", err)
 		}
 
 		if heartbeatMsg.TestReqID() == testReqID {
@@ -835,7 +835,7 @@ func TestSessionClosing(t *testing.T) {
 
 	initiatorSession.OnChangeState(utils.EventLogon, func() bool {
 		t.Log("client connected to server")
-		t.Log("send test request")
+		t.Log("sending a test request")
 
 		testRequestMsg := fixgen.TestRequest{}.New()
 		testRequestMsg.SetFieldTestReqID(testReqID)
@@ -852,17 +852,17 @@ func TestSessionClosing(t *testing.T) {
 
 	err := waitHeartbeats.WaitWithTimeout(time.Second * heartBtInt)
 	if err != nil {
-		t.Fatalf("wait heartbeats: %s", err)
+		t.Fatalf("heartbeats awaiting timeout: %s", err)
 	}
 
 	if err := initiatorSession.Stop(); err != nil {
-		t.Fatalf("unexpected behaviour, got error: %v", err)
+		t.Fatalf("unexpected behavior which caused an error: %v", err)
 	}
 
 	time.Sleep(10 * time.Millisecond)
 
 	if ctxErr := initiatorSession.Context().Err(); ctxErr == nil {
-		t.Fatalf("context should be already cancelled")
+		t.Fatalf("the context must have been already cancelled")
 	}
 
 }

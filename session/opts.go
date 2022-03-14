@@ -16,12 +16,12 @@ type MessageBuilders struct {
 	ResendRequestBuilder messages.ResendRequestBuilder
 }
 
-// Opts is options for Session from generated code
+// Opts is a structure providing auto-generated Session options.
 type Opts struct {
 	Location                string
 	MessageBuilders         MessageBuilders
 	Tags                    *messages.Tags
-	AllowedEncryptedMethods map[string]struct{} // can contain only None type
+	AllowedEncryptedMethods map[string]struct{} // Can only be of the "None" type.
 	SessionErrorCodes       *messages.SessionErrorCodes
 }
 

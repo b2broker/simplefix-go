@@ -5,40 +5,41 @@ import "sync"
 type Event int
 
 const (
-	// EventDisconnect calls when connection down
+	// EventDisconnect occurs when the connection is down.
 	EventDisconnect Event = iota
 
-	// EventDisconnect calls when connection up
+	// EventDisconnect occurs when the connection is up.
 	EventConnect
 
-	// EventStopped calls when handler stopped
+	// EventStopped occurs when the handler is stopped.
 	EventStopped
 
-	// EventLogon calls when logon message received
+	// EventLogon occurs upon receiving the Logon message.
 	EventLogon
 
-	// EventRequest calls when logon sent and Session waiting for answer from other side
+	// EventRequest occurs upon sending the Logon message,
+	// after which the Session awaits an answer from the counterparty.
 	EventRequest
 
-	// EventLogout calls when logout message received
+	// EventLogout occurs upon receiving the Logout message.
 	EventLogout
 )
 
-// EventHandlerFunc is a function for calling when event happened
+// EventHandlerFunc is called when an event occurs.
 type EventHandlerFunc func() bool
 
-// EventHandlerPool is a service for saving and calling handlers
+// EventHandlerPool is a service required for saving and calling the event handlers.
 type EventHandlerPool struct {
 	mu   sync.RWMutex
 	pool map[Event][]EventHandlerFunc
 }
 
-// NewEventHandlerPool creates new EventHandlerPool
+// NewEventHandlerPool creates a new EventHandlerPool instance.
 func NewEventHandlerPool() *EventHandlerPool {
 	return &EventHandlerPool{pool: make(map[Event][]EventHandlerFunc)}
 }
 
-// Handle adds new handler for event
+// Handle adds a new handler for an event.
 func (evp *EventHandlerPool) Handle(e Event, handle EventHandlerFunc) {
 	evp.mu.Lock()
 	defer evp.mu.Unlock()
@@ -50,7 +51,7 @@ func (evp *EventHandlerPool) Handle(e Event, handle EventHandlerFunc) {
 	evp.pool[e] = append(evp.pool[e], handle)
 }
 
-// Trigger calls all handlers for received event
+// Trigger calls all handlers associated with an occurring event.
 func (evp *EventHandlerPool) Trigger(e Event) {
 	evp.mu.RLock()
 	defer evp.mu.RUnlock()

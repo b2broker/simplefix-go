@@ -1,19 +1,19 @@
 package messages
 
-// HeartbeatBuilder is an interface for generated Heartbeat message builder
+// HeartbeatBuilder is an interface providing functionality to a builder of auto-generated Heartbeat messages.
 type HeartbeatBuilder interface {
-	// Flow Message
+	// This message is required as a part of standard pipelines.
 	Parse(data []byte) (HeartbeatBuilder, error)
 	New() HeartbeatBuilder
 
-	// Generated Heartbeat Message
+	// An auto-generated heartbeat message.
 	TestReqID() string
 	SetFieldTestReqID(string) HeartbeatBuilder
 
-	// HeaderBuilder
+	// The builder of message headers.
 	HeaderBuilder() HeaderBuilder
 
-	// SendingMessage
+	// The code initiating sending of a message.
 	MsgType() string
 	ToBytes() ([]byte, error)
 }

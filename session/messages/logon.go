@@ -1,12 +1,12 @@
 package messages
 
-// LogonBuilder is an interface for generated Logon message builder
+// LogonBuilder is an interface providing functionality to a builder of auto-generated Logon messages.
 type LogonBuilder interface {
-	// Flow Message
+	// This message is required as a part of standard pipelines.
 	Parse(data []byte) (LogonBuilder, error)
 	New() LogonBuilder
 
-	// Generated Logon Message
+	// An auto-generated Logon message.
 	EncryptMethod() string
 	SetFieldEncryptMethod(string) LogonBuilder
 	HeartBtInt() int
@@ -17,10 +17,10 @@ type LogonBuilder interface {
 	Username() string
 	SetFieldUsername(string) LogonBuilder
 
-	// HeaderBuilder
+	// The builder of message headers.
 	HeaderBuilder() HeaderBuilder
 
-	// SendingMessage
+	// The code initiating sending of a message.
 	MsgType() string
 	ToBytes() ([]byte, error)
 }

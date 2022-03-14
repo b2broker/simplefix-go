@@ -9,7 +9,7 @@ import (
 func TestTimer_TimeoutZero(t *testing.T) {
 	_, err := NewTimer(0)
 	if !errors.Is(err, ErrZeroTimeout) {
-		t.Fatalf("expected error: %s, got: %s", ErrZeroTimeout, err)
+		t.Fatalf("expected error: %s, returned: %s", ErrZeroTimeout, err)
 	}
 }
 
@@ -24,7 +24,7 @@ func TestTimer_Timeout(t *testing.T) {
 	for {
 		tm.TakeTimeout()
 		if time.Until(now.Add(delay)) > 0 {
-			t.Fatalf("delay was not apply")
+			t.Fatalf("delay was not applied")
 		} else {
 			return
 		}

@@ -19,7 +19,8 @@ const (
 	ComponentItem = "component"
 )
 
-// Generator generates structures and methods for FIX-messages from Doc file
+// Generator reads a specified file (Doc) to create structures and methods
+// required for constructing FIX messages.
 type Generator struct {
 	doc      *Doc
 	config   *Config
@@ -32,7 +33,7 @@ type Generator struct {
 	groups     map[string]*ComponentMember
 }
 
-// NewGenerator creates new Generator
+// NewGenerator creates a new Generator instance.
 func NewGenerator(doc *Doc, config *Config, libPkg string) *Generator {
 	return &Generator{
 		doc:    doc,
@@ -44,7 +45,7 @@ func NewGenerator(doc *Doc, config *Config, libPkg string) *Generator {
 
 func (g *Generator) checkName(name string) (err error) {
 	if name == "" {
-		return fmt.Errorf("empty name")
+		return fmt.Errorf("the name is empty")
 	}
 
 	ok, err := regexp.Match("([^a-z0-9_]+|^[0-9].*)", []byte(name))
@@ -53,7 +54,7 @@ func (g *Generator) checkName(name string) (err error) {
 	}
 
 	if ok {
-		return fmt.Errorf("unexpected symbols in name")
+		return fmt.Errorf("the name contains unexpected character")
 	}
 
 	return nil
@@ -69,7 +70,7 @@ func (g *Generator) write(path, data string) (err error) {
 
 	f, err := parser.ParseFile(fset, "", data, parser.ParseComments)
 	if err != nil {
-		return fmt.Errorf("could not parse go file: %w", err)
+		return fmt.Errorf("could not parse the Go file: %w", err)
 	}
 
 	err = (&printer.Config{Mode: printer.TabIndent, Tabwidth: 4}).Fprint(output, fset, f)
@@ -84,11 +85,11 @@ func (g *Generator) makeFile(data, pkg string) string {
 	imports := []string{}
 
 	if strings.Contains(data, "fix.") {
-		// todo move
+		// TODO: move
 		imports = append(imports, `"github.com/b2broker/simplefix-go/fix"`)
 	}
 	if strings.Contains(data, "messages.") {
-		// todo move
+		// TODO: move
 		imports = append(imports, `"github.com/b2broker/simplefix-go/session/messages"`)
 	}
 	if strings.Contains(data, "time.") {
@@ -102,9 +103,9 @@ func (g *Generator) makeFile(data, pkg string) string {
 	})
 }
 
-// Execute creates messages as separate files
+// Execute creates a separate file for each message.
 func (g *Generator) Execute(outputDirPath string) (err error) {
-	// todo split generated code into packages
+	// TODO: split generated code into packages
 	g.prepare()
 	od := filepath.Clean(outputDirPath)
 
@@ -112,7 +113,7 @@ func (g *Generator) Execute(outputDirPath string) (err error) {
 
 	pkg := strings.ReplaceAll(dpkg, "-", "_")
 	if err = g.checkName(pkg); err != nil {
-		return fmt.Errorf("can not use package name %s: %w", pkg, err)
+		return fmt.Errorf("invalid package name %s: %w", pkg, err)
 	}
 
 	pathFormat := filepath.Join(outputDirPath, "%s.generated.go")
@@ -186,7 +187,7 @@ func (g *Generator) prepare() {
 		g.components[component.Name] = component
 	}
 
-	// grab groups
+	// The following code is used to obtain key-value groups from an XML scheme.
 	for _, msg := range g.doc.Messages {
 		for _, member := range msg.Members {
 			g.grabGroups(member)
@@ -207,11 +208,11 @@ func (g *Generator) prepare() {
 
 func (g *Generator) validateComponent(component *ComponentMember) {
 	if component.Name == "" {
-		panic(fmt.Errorf("componentName could not be empty"))
+		panic(fmt.Errorf("componentName must not be empty"))
 	}
 
 	if len(component.Members) == 0 {
-		panic(fmt.Errorf("count of component items should be greted than 0"))
+		panic(fmt.Errorf("the component items count must be greater than 0"))
 	}
 }
 
@@ -266,7 +267,7 @@ func (g *Generator) makeArg(member *ComponentMember) string {
 		tmp.Type = g.fixTypeToGo(g.makeType(member.Name))
 	default:
 		panic(fmt.Errorf(
-			"unexpected item time, expect: %s, %s, %s, got '%s'",
+			"Unexpected item time. Expected value: %s, %s, %s; Specified value: '%s'",
 			ComponentItem, GroupItem, FieldItem, member.XMLName.Local,
 		))
 	}
@@ -287,7 +288,7 @@ func (g *Generator) makeFieldTypes() string {
 
 func (g *Generator) validateHeader() {
 	if len(g.doc.Header.Members) == 0 {
-		panic(fmt.Errorf("header could not be empty"))
+		panic(fmt.Errorf("the header must not be empty"))
 	}
 
 	requiredFields := map[string]bool{}
@@ -297,14 +298,14 @@ func (g *Generator) validateHeader() {
 
 	err := g.validateRequiredFields(g.doc.Header.Members, requiredFields)
 	if err != nil {
-		panic(fmt.Errorf("could not make header: %s", err))
+		panic(fmt.Errorf("could not create header: %s", err))
 	}
 }
 
 func (g *Generator) validateTrailer() {
 	err := g.validateRequiredFields(g.doc.Trailer.Members, RequiredTrailerFields)
 	if err != nil {
-		panic(fmt.Errorf("could not make trailer: %s", err))
+		panic(fmt.Errorf("could not create trailer: %s", err))
 	}
 }
 
@@ -323,7 +324,7 @@ func (g *Generator) validateRequiredFields(members []*ComponentMember, requiredF
 		for reqField := range requiredFields {
 			fields = append(fields, reqField)
 		}
-		return fmt.Errorf("not enougth required fields: [%s]", strings.Join(fields, ", "))
+		return fmt.Errorf("some of the required fields are missing: [%s]", strings.Join(fields, ", "))
 	}
 
 	return nil
@@ -345,7 +346,7 @@ func (g *Generator) makeHeader() string {
 		if !ok {
 			field, ok = g.enums[fieldName]
 			if !ok {
-				panic(fmt.Errorf("default flow fieldName not found: %s", fieldName))
+				panic(fmt.Errorf("the fieldName required for standard pipelines not found: %s", fieldName))
 			}
 		}
 
@@ -448,7 +449,7 @@ func (g *Generator) makeMessage(message *Component) string {
 		GetterSetters: strings.Join(goGetterSetters, "\n"),
 	}
 
-	// if message in default
+	// The following code is executed if a message is a part of standard pipelines.
 	if fields, ok := DefaultFlowFields[message.Name]; ok {
 		var fieldSetters []string
 
@@ -457,7 +458,7 @@ func (g *Generator) makeMessage(message *Component) string {
 			if !ok {
 				field, ok = g.enums[fieldName]
 				if !ok {
-					panic(fmt.Errorf("default flow fieldName not found: %s", fieldName))
+					panic(fmt.Errorf("the fieldName required for standard pipelines not found: %s", fieldName))
 				}
 			}
 
@@ -595,7 +596,7 @@ func (g *Generator) makeSetterGetterField(parentName string, member *ComponentMe
 		tp = g.fixTypeToGo(g.makeType(member.Name))
 	default:
 		panic(fmt.Errorf(
-			"unexpected item time, expect: %s, %s, %s, got '%s'",
+			"Unexpected item time. Expected value: %s, %s, %s; specified value: '%s'",
 			ComponentItem, GroupItem, FieldItem, member.XMLName.Local,
 		))
 	}
@@ -621,7 +622,7 @@ func (g *Generator) makeSetterCall(member *ComponentMember) string {
 		name = member.Name
 	default:
 		panic(fmt.Errorf(
-			"unexpected item time, expect: %s, %s, %s, got '%s'",
+			"Unexpected item time. Expected value: %s, %s, %s; specified value: '%s'",
 			ComponentItem, GroupItem, FieldItem, member.XMLName.Local,
 		))
 	}
@@ -683,7 +684,7 @@ func (g *Generator) makeCallConstructor(member *ComponentMember) string {
 	}
 
 	panic(fmt.Errorf(
-		"unexpected item time, expect: %s, %s, %s, got '%s'",
+		"Unexpected item time. Expected value: %s, %s, %s; specified value: '%s'",
 		ComponentItem, GroupItem, FieldItem, member.XMLName.Local,
 	))
 }

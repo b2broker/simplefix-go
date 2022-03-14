@@ -6,78 +6,97 @@
 [![Generic badge](https://img.shields.io/badge/Go->=1.16-blue.svg?style=for-the-badge&logo=go)](https://golang.org/doc/go1.16)
 [![Generic badge](https://img.shields.io/badge/semver-semantic_release-blue.svg?style=for-the-badge&logo=semantic-release)](https://github.com/go-semantic-release/semantic-release)
 
-:warning: This is beta-version. It may contain errors.
+:warning: This is a beta-version of SimpleFix Go. This library is under development and is subject to future changes.
 
 <details>
-<summary>Table of content</summary>
+<summary>Table of contents</summary>
 
 ## Table of contents
 
-- [What is FIX](#what-is-fix-api)
-- [Installation](#installation)
-- [Getting started](#getting-started)
-- [Generator](#generator)
-- [Client (Initiator)](#starting-as-client)
-- [Server (Acceptor)](#starting-as-server)
-- [Features](#features)
+- [What is FIX?](#what-is-fix)
+- [Why SimpleFix Go?](#why-simplefix-go)
+- [Installing SimpleFix Go](#installation)
+- [Using the Generator](#generator)
+- [Getting started with SimpleFix Go](#getting-started)
+- [Customizing messages](#customizing-messages)
 
 </details>
 
-## What is FIX API?
+## What is FIX?
 
-[The exhaustive material of FIX API](https://www.onixs.biz/fix-dictionary.html)
+FIX (a shorthand for Financial Information eXchange) is a widely adopted electronic communications protocol used for real-time exchange of information related to trading and markets. FIX connects the global ecosystem of venues, asset managers, banks/brokers, vendors and regulators by standardizing the communication among participants. FIX is a public-domain specification owned and maintained by [FIX Protocol, Ltd (FPL)](https://www.fixtrading.org/).
 
-## Installation
+## Why SimpleFix Go?
 
-Download SimpleFix-Go library
+SimpleFix Go is an open-source library that allows you to quickly integrate FIX messaging into your environment. The library is entirely written in Go, making it perfect for solutions powered by this programming language. SimpleFix Go supports any FIX API version. To learn about specifics of various FIX protocol versions, refer to the [OnixS website](https://www.onixs.biz/fix-dictionary.html).
+
+You can provide your own extensions to SimpleFix Go and create a custom FIX dialect. This guide explains the basics of SimpleFix Go installation and provides examples illustrating how to configure and customize the library according to your requirements.
+
+### Main features
+
+- [x] Adding custom fields to the FIX protocol
+- [x] Adding custom messages to the FIX protocol
+- [ ] Adding custom types to the FIX protocol
+- [x] Built-in session pipelines features
+- [x] Built-in Acceptor (for the server side)
+- [x] Built-in Initiator (for the client side)
+- [ ] Validation of incoming messages
+- [x] Validation of outgoing messages
+- [x] A [demo server](https://docs.marksman.b2broker.com/en/fix-api.html#demo-mode) complete with mock data
+- [x] Anything missing? Let us know!
+
+## Installing SimpleFix Go
+
+To install SimpleFix Go, download the library by executing the following command:
 
 ```sh
 $ go get -u github.com/b2broker/simplefix-go
 ```
 
-Install *generator* if you want to use your own scheme.
+2. Install the *Generator* if you want to use your own XML schema providing a custom set of FIX messaging options:
 
 ```sh
 $ cd $GOPATH/src/github.com/b2broker/simplefix-go && go install ./...
 ```
 
-## Generator
+## Using the Generator
 
-Generator create message structures, tag and msg type constants and methods for work with any FIX API.
+The *Generator* is used to define the structure of FIX messages, as well as specify their tags and define message type constants and methods required to support any FIX API version.
 
-You can see basic result of Generator working
-at [tests directory](https://github.com/b2broker/simplefix-go/tree/master/tests/fix44). It is short version of FIX 4.4
-generated from scheme located in ./source directory.
+Examples of code produced by the *Generator* can be found in the [./tests](https://github.com/b2broker/simplefix-go/tree/master/tests/fix44) directory containing an automatically generated Go library based on a stripped-down FIX version 4.4. The library code is generated according to a scheme located in the [./source](https://github.com/b2broker/simplefix-go/tree/master/source) directory.
 
-### Simple generating example
+### Generating a basic FIX library
+
+The following code generates a FIX library based on an [XML schema](https://github.com/b2broker/simplefix-go/blob/master/source/fix44.xml) defining the library structure:
 
 ```sh
 fixgen -o=./fix44 -s=./source/fix44.xml -t=./source/types.xml
 ```
 
-So, now you have your library code in ./fix44 directory.
+After executing this command, the generated library code will be located in the [./fix44](https://github.com/b2broker/simplefix-go/tree/master/tests/fix44) directory.
 
-### Parameters
+### Specifying Generator parameters
 
-`-o` – output directory
+To create a custom FIX messaging library, prepare two XML files and specify the following parameters for the `fixgen` command:
 
-`-s` – path to main XML-scheme, you can see examples in ./source directory
+`-o` — the output directory
 
-`-t` – path to XML file with types mapping. This file provides generator information about type casting. FIX protocol
-has a lot of types, but in Go we should have small set of types for use FIX API.
+`-s` — the path to the main XML schema
 
-According to parameters we must have two XML files for make our own library. You can use existing files or modify them
-as you want.
+`-t` — the path to an XML file specifying value type mapping and informing the *Generator* about proper type casting (although the original FIX protocol features a lot of different value types, Go uses a smaller set of types that should be mapped to the FIX API)
 
-## Getting started
+Sample XML files are located in the [./source](https://github.com/b2broker/simplefix-go/blob/master/source/) directory. You can use the existing files or modify them as required.
 
-### Session Options
+## Getting started with SimpleFix Go
 
-This is message builder, field and message tags for session pipelines. This structure will be generated by fixgen
-command very soon.
+In this section, you will learn how to specify the session options and start a new FIX session as a client or as a server.
+
+### Specifying session options
+
+The following sample code illustrates how to use a message builder to create various standard messages, as well as define fields and message tags required for FIX session pipelines. The `fixgen` command will generate the required structure in almost no time.
 
 ```
-// fixgen is your generated fix package
+// In this code, fixgen is your generated FIX package:
 
 var sessionOpts = session.Opts{
 	MessageBuilders: session.MessageBuilders{
@@ -115,38 +134,35 @@ var sessionOpts = session.Opts{
 }
 ```
 
-### Starting as client
+### Starting as a client
 
-*Initiator* is a FIX API client, which connect to an existing server by.
+The *Initiator* is a FIX API client that connects to an existing server.
 
-You can see [example here](https://github.com/b2broker/simplefix-go/blob/master/examples/initiator/main.go).
+The default *Initiator* implementation can be found in the [./initiator/main.go](https://github.com/b2broker/simplefix-go/blob/master/examples/initiator/main.go) file.
 
-### Starting as server
+### Starting as a server
 
-*Acceptor* is a listener. It accepts and handles client connections. According to the FIX protocol acceptor could be
-provider or receiver of data. It means acceptor can send requests to the clients and read data streams of them.
+The *Acceptor* is a listener that accepts and handles client connection requests. According to the FIX protocol, the *Acceptor* can be both a provider and receiver of data, meaning that it can send requests to the clients as well as read data streams received from them.
 
-You can see [example here](https://github.com/b2broker/simplefix-go/blob/master/examples/acceptor/main.go).
+The default *Acceptor* implementation can be found in the [./acceptor/main.go](https://github.com/b2broker/simplefix-go/blob/master/examples/acceptor/main.go) file.
 
-## Customize messages
 
-### Custom message field
+## Customizing messages
 
-Session package provides you ready functional for work with default processes of FIX API such as authentication, logout,
-heartbeats, rejects and typical errors. It means that if you want to customize you default messages such as Logon (A) or
-Heartbeat (0), you should customize Session structure. There are two ways to do this:
+### Adding custom message fields
 
-1. Aggregate existing structure in your new one or just copy and edit it in you client code.
+The SimpleFix library features a default session package which provides all the necessary functionality for the standard FIX API pipelines, such as authentication, logging out, heartbeats, message rejects and handling of typical errors. For this reason, if you want to customize the default messages, such as `Logon <A>` or `Heartbeat <0>`, you should configure the `Session` structure in one of the following ways:
 
-2. Modify builder for message which you want to change.
+- by integrating the existing structure into your custom procedure by way of composition, or simply copying the existing structure and modifying it in your client code
 
-#### How to modify builder?
+- by modifying the message builder to account for the messages that you want to customize
 
-Standard Session structure accepts MessageBuilders as Opts field. Each of message builders is an interface. So it means
-you can create your own builder and library will use it as default.
 
-For example, you want to add a new field "CounterPartyID" (tag number 22000) in you Logon message. You modified your XML
-document by adding new field in 'fields' section and in your Logon message:
+#### Customizing the message builder
+
+The standard `Session` structure accepts each `MessageBuilder` instance as an auto-generated `Opts` field. Each message builder is an interface, which means that you can create a custom builder, and the library will use it as the default one.
+
+For example, if you want to add a new `CounterPartyID` field (tag number 22000) to you `Logon` message, you should modify your XML schema by adding a new field to the `fields` section and to your custom `Logon` message:
 
 ```xml
 
@@ -167,10 +183,10 @@ document by adding new field in 'fields' section and in your Logon message:
 </fix>
 ```
 
-Then you generated code by fixgen. But you want to fill this fields manually. And this is time for custom builder:
+While the rest of the code is generated by `fixgen`, you should specify this field manually using a custom builder:
 
 ```
-// fixgen is your generated fix package
+// Your FIX package is generated by fixgen:
 
 type CustomLogon struct {
     *fixgen.Logon
@@ -183,17 +199,4 @@ func (cl *CustomLogon) New() messages.LogonBuilder {
 }
 ```
 
-Now you can use your CustomLogon with new field as LogonBuilder in default FIX API pipelines.
-
-## Features
-
-- [x] Add custom fields to protocol
-- [x] Add custom messages to protocol
-- [ ] Add custom types to protocol
-- [x] Features for session pipelines
-- [x] Acceptor (server)
-- [x] Initiator (client)
-- [ ] Validation of incoming messages
-- [x] Validation of outgoing messages
-- [ ] Mock server with testing data
-- [ ] Anything you want Just with submit a new issue
+After this, you can use your `CustomLogon` structure (with a new field added to it) as a `LogonBuilder` in the default FIX API pipelines.

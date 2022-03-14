@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-// InitiatorHandler is a basic methods of handling the initiator
+// InitiatorHandler is an interface implementing basic methods required for handling the Initiator object.
 type InitiatorHandler interface {
 	ServeIncoming(msg []byte)
 	Outgoing() <-chan []byte
@@ -15,7 +15,7 @@ type InitiatorHandler interface {
 	Send(message SendingMessage) error
 }
 
-// Initiator is a client side service
+// Initiator provides the client-side service functionality.
 type Initiator struct {
 	conn    *Conn
 	handler InitiatorHandler
@@ -24,7 +24,7 @@ type Initiator struct {
 	cancel context.CancelFunc
 }
 
-// NewInitiator creates new Initiator
+// NewInitiator creates a new Initiator instance.
 func NewInitiator(conn net.Conn, handler InitiatorHandler, bufSize int) *Initiator {
 	c := &Initiator{handler: handler}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
@@ -34,32 +34,33 @@ func NewInitiator(conn net.Conn, handler InitiatorHandler, bufSize int) *Initiat
 	return c
 }
 
-// Close cancels context
+// Close is used to cancel the specified Initiator context.
 func (c *Initiator) Close() {
 	c.cancel()
 }
 
-// Send message
+// Send is used to send a FIX message.
 func (c *Initiator) Send(message SendingMessage) error {
 	return c.handler.Send(message)
 }
 
-// Serve starts process of serving messages
+// Serve is used to initiate the procedure of delivering messages.
 func (c *Initiator) Serve() error {
 	connErr := make(chan error)
 	go func() {
 		connErr <- c.conn.serve()
+		close(connErr)
 	}()
 
 	handlerErr := make(chan error, 1)
 	go func() {
 		handlerErr <- c.handler.Run()
+		close(handlerErr)
 	}()
 
 	defer func() {
-		c.handler.StopWithError(fmt.Errorf("initiator closed"))
-		c.conn.Close()
 		c.cancel()
+		c.conn.Close()
 	}()
 
 	go func() {
@@ -85,16 +86,15 @@ func (c *Initiator) Serve() error {
 		case err := <-connErr:
 			if err != nil {
 				c.handler.StopWithError(ErrConnClosed)
-				continue
+				return fmt.Errorf("%w: %s", ErrConnClosed, err)
 			}
-			return nil
 
 		case <-c.ctx.Done():
 			return nil
 
 		case msg, ok := <-c.conn.Reader():
 			if !ok {
-				continue
+				return fmt.Errorf("the connection reader channel was closed")
 			}
 			c.handler.ServeIncoming(msg)
 		}

@@ -5,16 +5,16 @@ import (
 	"strings"
 )
 
-// Item contains required method for basic FIX-item
+// Item is an interface providing a method required to implement basic FIX item functionality.
 type Item interface {
 	ToBytes() []byte
 	String() string
 }
 
-// Items is an array of Item elements
+// Items is an array of Item elements.
 type Items []Item
 
-// ToBytes converts Items to bytes
+// ToBytes returns a byte representation of an Items array.
 func (v Items) ToBytes() []byte {
 	var msg [][]byte
 	for _, item := range v {
@@ -26,7 +26,7 @@ func (v Items) ToBytes() []byte {
 	return joinBody(msg...)
 }
 
-// String converts Items to string
+// String returns a string representation of an Items array.
 func (v Items) String() string {
 	var items []string
 	for _, item := range v {

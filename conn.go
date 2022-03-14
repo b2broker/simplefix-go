@@ -5,18 +5,17 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"net"
 )
 
-// ErrConnClosed connection error
-var ErrConnClosed = fmt.Errorf("connection closed")
+// ErrConnClosed handles connection errors.
+var ErrConnClosed = fmt.Errorf("the reader is closed")
 
 const (
 	endOfMsgTag = "10="
 )
 
-// Conn is net.Conn wrapper for working with split messages
+// net.Conn is a wrapper that is used for handling split messages.
 type Conn struct {
 	reader chan []byte
 	writer chan []byte
@@ -26,7 +25,7 @@ type Conn struct {
 	cancel context.CancelFunc
 }
 
-// NewConn creates new Conn
+// NewConn is called to create a new connection.
 func NewConn(ctx context.Context, conn net.Conn, msgBuffSize int) *Conn {
 	c := &Conn{
 		reader: make(chan []byte, msgBuffSize),
@@ -40,40 +39,42 @@ func NewConn(ctx context.Context, conn net.Conn, msgBuffSize int) *Conn {
 	return c
 }
 
-// Close cancels Conn context to stop work
+// Close is called to cancel a connection context and close a connection.
 func (c *Conn) Close() {
-	c.conn.Close()
 	c.cancel()
 }
 
 func (c *Conn) serve() error {
-	defer close(c.writer)
-	defer close(c.reader)
+	defer c.conn.Close()
 
-	eg := errgroup.Group{}
+	errCh := make(chan error, 2)
+	go c.runWriter(errCh)
+	go c.runReader(errCh)
 
-	eg.Go(c.runWriter)
-	eg.Go(c.runReader)
-
-	return eg.Wait()
+	select {
+	case err := <-errCh:
+		return err
+	case <-c.ctx.Done():
+		return nil
+	}
 }
 
-func (c *Conn) runReader() error {
-	defer c.cancel()
+func (c *Conn) runReader(errCh chan error) {
 	r := bufio.NewReader(c.conn)
+	defer c.cancel()
 
 	var msg []byte
 	for {
 		select {
 		case <-c.ctx.Done():
-			return nil
-
+			return
 		default:
 		}
 
 		buff, err := r.ReadBytes(byte(1))
 		if err != nil {
-			return fmt.Errorf("read error: %w", err)
+			errCh <- err
+			return
 		}
 
 		msg = append(msg, buff...)
@@ -84,7 +85,7 @@ func (c *Conn) runReader() error {
 	}
 }
 
-func (c *Conn) runWriter() error {
+func (c *Conn) runWriter(errCh chan error) {
 	defer c.cancel()
 
 	for {
@@ -92,26 +93,26 @@ func (c *Conn) runWriter() error {
 		case msg := <-c.writer:
 			_, err := c.conn.Write(msg)
 			if err != nil {
-				return fmt.Errorf("write error: %w", err)
+				errCh <- err
+				return
 			}
 
 		case <-c.ctx.Done():
-			return nil
+			errCh <- ErrConnClosed
+			return
 		}
 	}
 }
 
-// Reader returns sole chan incoming with messages
+// Reader returns a separate channel for handing incoming messages.
 func (c *Conn) Reader() <-chan []byte {
 	return c.reader
 }
 
-// Write sends messages to outgoing socket
+// Write is called to send messages to an outgoing socket.
 func (c *Conn) Write(msg []byte) {
-	select {
-	case <-c.ctx.Done():
+	if len(c.writer) > 1 && len(c.writer) == cap(c.writer) {
 		return
-	default:
 	}
 	c.writer <- msg
 }

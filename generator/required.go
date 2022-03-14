@@ -1,7 +1,7 @@
 package generator
 
-// ExcludedFields is a list of tags which will be omitted at generated messages
-// because they already exists in base structure
+// ExcludedFields specifies the tags that will be omitted in generated messages
+// because they are already included into the base message structure.
 var ExcludedFields = map[string]bool{
 	"BeginString": true,
 	"BodyLength":  true,
@@ -9,40 +9,41 @@ var ExcludedFields = map[string]bool{
 	"CheckSum":    true,
 }
 
-// RequiredHeaderFields required fields for Header
-// FIX protocol could not work without this fields
+// RequiredHeaderFields indicates the required fields that must be contained in the header.
+// A FIX message is not considered properly structured unless it contains these fields in its header.
 var RequiredHeaderFields = map[string]bool{
-	// Always unencrypted, must be first field in message
+	// Always unencrypted, must be the first field in a message.
 	"BeginString": true,
 
-	// Always unencrypted, must be second field in message
+	// Always unencrypted, must be the second field in a message.
 	"BodyLength": true,
 
-	// Always unencrypted, must be third field in message
+	// Always unencrypted, must be the third field in a message.
 	"MsgType": true,
 
-	// Assigned value used to identify firm sending message.
+	// The assigned value is used to identify the party sending a message.
 	"SenderCompID": true,
 
-	// Assigned value used to identify receiving firm.
+	// The assigned value is used to identify the party receiving a message.
 	"TargetCompID": true,
 
-	// Integer message sequence number.
+	// An integer value, indicating the message sequence number.
 	"MsgSeqNum": true,
 
-	// Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as "GMT")
+	// The date and time of message transmission, in UTC time.
 	"SendingTime": true,
 }
 
-// RequiredTrailerFields required fields for Trailer
-// FIX protocol could not work without this fields
+// RequiredTrailerFields indicates the required field(s) that must be contained in the trailer.
+// A FIX message is not considered properly structured unless it contains these fields in its trailer.
 var RequiredTrailerFields = map[string]bool{
-	// Always unencrypted, always last field in message
+	// Always unencrypted, must be the last field in a message.
 	"CheckSum": true,
 }
 
-// RequiredTrailerFields required message types and tags for Trailer
-// Session pipeline could not work without this tags and messages
+// RequiredTrailerFields indicates the required tags for each message type
+// that must be contained in the trailer.
+// A FIX session pipeline will not operate properly if any of these tags are missing for the specified messages.
 var DefaultFlowFields = map[string][]string{
 	"Logon":         {"HeartBtInt", "EncryptMethod", "Password", "Username"},
 	"Logout":        nil,

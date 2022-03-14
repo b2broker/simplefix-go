@@ -2,12 +2,12 @@ package messages
 
 import "github.com/b2broker/simplefix-go/fix"
 
-// ComponentConverter is an interface for Trailer message builder
+// ComponentConverter is an interface providing functionality to a builder of trailer messages.
 type ComponentConverter interface {
 	AsComponent() *fix.Component
 }
 
-// HeaderBuilder is an interface for Header message builder
+// HeaderBuilder is an interface providing functionality to a builder of header messages.
 type HeaderBuilder interface {
 	New() HeaderBuilder
 

@@ -1,12 +1,12 @@
 package messages
 
-// RejectBuilder is an interface for generated Reject message builder
+// RejectBuilder is an interface providing functionality to a builder of auto-generated Reject messages.
 type RejectBuilder interface {
-	// Flow Message
+	// This message is required as a part of standard pipelines.
 	Parse(data []byte) (RejectBuilder, error)
 	New() RejectBuilder
 
-	// Generated Reject Message
+	// An auto-generated Reject message.
 	RefTagID() int
 	SetFieldRefTagID(int) RejectBuilder
 	RefSeqNum() int
@@ -14,10 +14,10 @@ type RejectBuilder interface {
 	SessionRejectReason() string
 	SetFieldSessionRejectReason(string) RejectBuilder
 
-	// HeaderBuilder
+	// The builder of message headers.
 	HeaderBuilder() HeaderBuilder
 
-	// SendingMessage
+	// The code initiating sending of a message.
 	MsgType() string
 	ToBytes() ([]byte, error)
 }
