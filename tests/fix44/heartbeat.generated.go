@@ -25,25 +25,20 @@ func makeHeartbeat() *Heartbeat {
 	return msg
 }
 
-func NewHeartbeat() *Heartbeat {
+func CreateHeartbeat() *Heartbeat {
 	msg := makeHeartbeat()
 
 	return msg
 }
 
-func ParseHeartbeat(data []byte) (*Heartbeat, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
-		SetBody(makeHeartbeat().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
-
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func NewHeartbeat() *Heartbeat {
+	m := makeHeartbeat()
 	return &Heartbeat{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func (heartbeat *Heartbeat) Header() *Header {
@@ -76,10 +71,6 @@ func (heartbeat *Heartbeat) SetTestReqID(testReqID string) *Heartbeat {
 
 func (Heartbeat) New() messages.HeartbeatBuilder {
 	return makeHeartbeat()
-}
-
-func (Heartbeat) Parse(data []byte) (messages.HeartbeatBuilder, error) {
-	return ParseHeartbeat(data)
 }
 
 func (heartbeat *Heartbeat) SetFieldTestReqID(testReqID string) messages.HeartbeatBuilder {

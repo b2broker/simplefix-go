@@ -242,8 +242,9 @@ func (v *Uint) ToBytes() []byte {
 
 // Float is a structure used for converting values to the float64 type.
 type Float struct {
-	value float64
-	valid bool
+	source []byte
+	value  float64
+	valid  bool
 }
 
 func NewFloat(value float64) *Float {
@@ -265,6 +266,7 @@ func (v *Float) FromBytes(d []byte) (err error) {
 	}
 
 	v.valid = true
+	v.source = d
 	v.value, err = strconv.ParseFloat(string(d), 64)
 
 	return err
@@ -273,6 +275,9 @@ func (v *Float) FromBytes(d []byte) (err error) {
 func (v *Float) ToBytes() []byte {
 	if !v.valid {
 		return nil
+	}
+	if v.source != nil {
+		return v.source
 	}
 	return []byte(strconv.FormatFloat(v.value, 'f', -1, 64))
 }

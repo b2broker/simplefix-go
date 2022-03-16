@@ -35,7 +35,7 @@ func makeLogon() *Logon {
 	return msg
 }
 
-func NewLogon(encryptMethod string, heartBtInt int) *Logon {
+func CreateLogon(encryptMethod string, heartBtInt int) *Logon {
 	msg := makeLogon().
 		SetEncryptMethod(encryptMethod).
 		SetHeartBtInt(heartBtInt)
@@ -43,19 +43,14 @@ func NewLogon(encryptMethod string, heartBtInt int) *Logon {
 	return msg
 }
 
-func ParseLogon(data []byte) (*Logon, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeLogon).
-		SetBody(makeLogon().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
-
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func NewLogon() *Logon {
+	m := makeLogon()
 	return &Logon{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func (logon *Logon) Header() *Header {
@@ -208,10 +203,6 @@ func (logon *Logon) SetPassword(password string) *Logon {
 
 func (Logon) New() messages.LogonBuilder {
 	return makeLogon()
-}
-
-func (Logon) Parse(data []byte) (messages.LogonBuilder, error) {
-	return ParseLogon(data)
 }
 
 func (logon *Logon) SetFieldHeartBtInt(heartBtInt int) messages.LogonBuilder {

@@ -3,6 +3,7 @@ package fix
 import (
 	"bytes"
 	"testing"
+	"time"
 )
 
 func TestMessageToBytes(t *testing.T) {
@@ -46,43 +47,71 @@ func TestMessageToBytes(t *testing.T) {
 func TestMessage_FromBytes(t *testing.T) {
 	var testMsg = []byte("8=FIX.4.49=23635=A34=149=sender56=target52=20210208-15:51:43.000262=1263=1264=20267=2269=0269=1146=355=BTC/USD864=2865=1868=put865=2868=call55=ETH/USD864=2865=1868=put865=2868=call55=KGB/FBI864=2865=1868=put865=2868=call10=051")
 
-	msg := NewMessageFromBytes(beginString, bodyLength, checksum, msgType)
+	msg := NewMessage(beginString, bodyLength, checksum, msgType, "FIX.4.4", "A")
 
 	msg.
 		SetHeader(
 			NewComponent(
-				NewKeyValue(msgSeqNum, &Int{}),
-				NewKeyValue(senderCompID, &String{}),
-				NewKeyValue(targetCompID, &String{}),
-				NewKeyValue(sendingTime, &Time{}),
+				NewKeyValue(msgSeqNum, NewInt(1)),
+				NewKeyValue(senderCompID, NewString("sender")),
+				NewKeyValue(targetCompID, NewString("target")),
+				NewKeyValue("52", NewTime(time.Date(2021, 2, 8, 15, 51, 43, 0, time.UTC))),
 			),
 		).
 		SetTrailer(NewComponent()).
 		SetBody(
-			NewKeyValue(mdReqID, &Int{}),
-			NewKeyValue(subscriptionRequestType, &String{}),
-			NewKeyValue(marketDepth, &Int{}),
-			NewGroup(noMDEntryTypes,
-				NewComponent(
-					NewKeyValue(mdEntryType, &String{}),
-				),
-			),
-			NewGroup(noRelatedSym,
-				NewComponent(
-					NewKeyValue(symbol, &String{}),
-					NewGroup(noEvents,
-						NewKeyValue(eventType, &String{}),
-						NewKeyValue(eventText, &String{}),
-						NewKeyValue(eventDate, &Time{}),
-					),
-				),
-			),
+			NewKeyValue(mdReqID, NewInt(1)),
+			NewKeyValue(subscriptionRequestType, NewString("1")),
+			NewKeyValue(marketDepth, NewInt(20)),
+			NewGroup(noMDEntryTypes, NewComponent(
+				&KeyValue{Key: mdEntryType},
+			)).
+				AddEntry(NewComponent(
+					NewKeyValue(mdEntryType, NewString("0")),
+				).Items()).
+				AddEntry(NewComponent(
+					NewKeyValue(mdEntryType, NewString("1")),
+				).Items()),
+			NewGroup(noRelatedSym, NewComponent(&KeyValue{Key: symbol},
+				NewGroup(noEvents, NewComponent(&KeyValue{Key: eventType}, &KeyValue{Key: eventText}))),
+			).
+				AddEntry(NewComponent(
+					NewKeyValue(symbol, NewString("BTC/USD")),
+					NewGroup(noEvents, NewComponent(&KeyValue{Key: eventType}, &KeyValue{Key: eventText})).
+						AddEntry(NewComponent(
+							NewKeyValue(eventType, NewString("1")),
+							NewKeyValue(eventText, NewString("put")),
+						).Items()).
+						AddEntry(NewComponent(
+							NewKeyValue(eventType, NewString("2")),
+							NewKeyValue(eventText, NewString("call")),
+						).Items()),
+				).Items()).
+				AddEntry(NewComponent(
+					NewKeyValue(symbol, NewString("ETH/USD")),
+					NewGroup(noEvents, NewComponent(&KeyValue{Key: eventType}, &KeyValue{Key: eventText})).
+						AddEntry(NewComponent(
+							NewKeyValue(eventType, NewString("1")),
+							NewKeyValue(eventText, NewString("put")),
+						).Items()).
+						AddEntry(NewComponent(
+							NewKeyValue(eventType, NewString("2")),
+							NewKeyValue(eventText, NewString("call")),
+						).Items()),
+				).Items()).
+				AddEntry(NewComponent(
+					NewKeyValue(symbol, NewString("KGB/FBI")),
+					NewGroup(noEvents, NewComponent(&KeyValue{Key: eventType}, &KeyValue{Key: eventText})).
+						AddEntry(NewComponent(
+							NewKeyValue(eventType, NewString("1")),
+							NewKeyValue(eventText, NewString("put")),
+						).Items()).
+						AddEntry(NewComponent(
+							NewKeyValue(eventType, NewString("2")),
+							NewKeyValue(eventText, NewString("call")),
+						).Items()),
+				).Items()),
 		)
-
-	err := msg.Unmarshal(testMsg)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	byteMessage, err := msg.ToBytes()
 	if err != nil {
@@ -103,25 +132,20 @@ func TestMessage_FromBytes(t *testing.T) {
 func TestMessage_FromBytes_Coincidence(t *testing.T) {
 	var testMsg = []byte("8=FIX.4.49=5935=A56=client115=server122=20210305-15:16:58.263108=3010=191")
 
-	msg := NewMessageFromBytes(beginString, bodyLength, checksum, msgType)
+	msg := NewMessage(beginString, bodyLength, checksum, msgType, "FIX.4.4", "A")
 
 	msg.
 		SetHeader(
 			NewComponent(
-				NewKeyValue("48", &String{}),
-				NewKeyValue("56", &String{}),
-				NewKeyValue("115", &String{}),
-				NewKeyValue("122", &Time{}),
-				NewKeyValue("91", &String{}),
-				NewKeyValue("108", &String{}),
+				NewKeyValue("48", NewString("")),
+				NewKeyValue("56", NewString("client")),
+				NewKeyValue("115", NewString("server")),
+				NewKeyValue("122", NewTime(time.Date(2021, 3, 05, 15, 16, 58, 263000000, time.UTC))),
+				NewKeyValue("91", NewString("")),
+				NewKeyValue("108", NewString("30")),
 			),
 		).
 		SetTrailer(NewComponent())
-
-	err := msg.Unmarshal(testMsg)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	byteMessage, err := msg.ToBytes()
 	if err != nil {

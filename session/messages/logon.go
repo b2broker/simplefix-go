@@ -1,12 +1,12 @@
 package messages
 
+import "github.com/b2broker/simplefix-go/fix"
+
 // LogonBuilder is an interface providing functionality to a builder of auto-generated Logon messages.
 type LogonBuilder interface {
-	// This message is required as a part of standard pipelines.
-	Parse(data []byte) (LogonBuilder, error)
 	New() LogonBuilder
+	Items() fix.Items
 
-	// An auto-generated Logon message.
 	EncryptMethod() string
 	SetFieldEncryptMethod(string) LogonBuilder
 	HeartBtInt() int
@@ -17,10 +17,8 @@ type LogonBuilder interface {
 	Username() string
 	SetFieldUsername(string) LogonBuilder
 
-	// The builder of message headers.
 	HeaderBuilder() HeaderBuilder
 
-	// The code initiating sending of a message.
 	MsgType() string
 	ToBytes() ([]byte, error)
 }

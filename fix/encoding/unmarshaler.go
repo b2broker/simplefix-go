@@ -1,15 +1,34 @@
-package fix
+package encoding
 
 import (
 	"bytes"
 	"fmt"
+	"github.com/b2broker/simplefix-go/fix"
 	"reflect"
 )
 
-// UnmarshalItems parses the FIX message data stored as a byte array
+type MessageBuilder interface {
+	Items() fix.Items
+}
+
+type DefaultUnmarshaller struct {
+	Strict bool
+}
+
+func (u DefaultUnmarshaller) Unmarshal(msg MessageBuilder, d []byte) error {
+	return unmarshalItems(msg.Items(), d, u.Strict)
+}
+
+func Unmarshal(msg MessageBuilder, d []byte) error {
+	u := DefaultUnmarshaller{Strict: true}
+
+	return u.Unmarshal(msg, d)
+}
+
+// unmarshalItems parses the FIX message data stored as a byte array
 // and writes it into the Items object.
-func UnmarshalItems(data []byte, msg Items, strict bool) error {
-	u := &unmarshaler{data: data, strict: strict}
+func unmarshalItems(msg fix.Items, data []byte, strict bool) error {
+	u := newState(data, msg, strict)
 
 	for _, item := range msg {
 		err := u.unmarshal(u.data, item)
@@ -21,20 +40,24 @@ func UnmarshalItems(data []byte, msg Items, strict bool) error {
 	return nil
 }
 
-type unmarshaler struct {
+type state struct {
 	data   []byte
 	strict bool
 }
 
+func newState(data []byte, msg fix.Items, strict bool) *state {
+	return &state{data: data, strict: strict}
+}
+
 // scanKeyValue parses the message data related to key-value pairs
 // and writes it into KeyValue objects.
-func (u *unmarshaler) scanKeyValue(data []byte, el *KeyValue) error {
+func (s *state) scanKeyValue(data []byte, el *fix.KeyValue) error {
 	q := bytes.Join([][]byte{[]byte(el.Key), {'='}}, nil)
 	var keyIndex int
 	if bytes.Equal(data[:len(q)], q) {
 		keyIndex = 0
 	} else {
-		ks := bytes.Join([][]byte{Delimiter, []byte(el.Key), {'='}}, nil)
+		ks := bytes.Join([][]byte{fix.Delimiter, []byte(el.Key), {'='}}, nil)
 		keyIndex = bytes.Index(data, ks)
 		if keyIndex == -1 {
 			return nil
@@ -82,16 +105,16 @@ func splitGroup(line []byte, firstTag []byte) (array [][]byte) {
 // unmarshal traverses through a fixItem and parses its byte data,
 // which is then assigned to the fixItem. A fixItem is a constructed FIX message (or its portion)
 // with assigned KeyValue, Component and Group items.
-func (u *unmarshaler) unmarshal(data []byte, fixItem Item) error {
+func (s *state) unmarshal(data []byte, fixItem fix.Item) error {
 	switch el := fixItem.(type) {
-	case *KeyValue:
-		return u.scanKeyValue(data, el)
+	case *fix.KeyValue:
+		return s.scanKeyValue(data, el)
 
-	case *Group:
+	case *fix.Group:
 		noTag := el.NoTag()
 
-		noKv := NewKeyValue(noTag, &Int{})
-		err := u.unmarshal(data, noKv)
+		noKv := fix.NewKeyValue(noTag, &fix.Int{})
+		err := s.unmarshal(data, noKv)
 		if err != nil {
 			return fmt.Errorf("could not unmarshal group: %s", err)
 		}
@@ -102,7 +125,7 @@ func (u *unmarshaler) unmarshal(data []byte, fixItem Item) error {
 			return nil
 		}
 
-		startFirstFieldTag := bytes.Index(data[startNoTag:], Delimiter)
+		startFirstFieldTag := bytes.Index(data[startNoTag:], fix.Delimiter)
 		arrayString := data[startNoTag+startFirstFieldTag:]
 		endFirstFieldTag := bytes.Index(arrayString, []byte{'='})
 
@@ -121,7 +144,7 @@ func (u *unmarshaler) unmarshal(data []byte, fixItem Item) error {
 			entry := el.AsTemplate()
 
 			for _, item := range entry {
-				err = u.unmarshal(arrayItems[i], item)
+				err = s.unmarshal(arrayItems[i], item)
 				if err != nil {
 					return fmt.Errorf("could not unmarshal group item: %s", err)
 				}
@@ -129,10 +152,10 @@ func (u *unmarshaler) unmarshal(data []byte, fixItem Item) error {
 			el.AddEntry(entry)
 		}
 
-	case *Component:
-		component := el.items
+	case *fix.Component:
+		component := el.Items()
 		for _, item := range component {
-			err := u.unmarshal(data, item)
+			err := s.unmarshal(data, item)
 			if err != nil {
 				return fmt.Errorf("could not unmarshal component: %s", err)
 			}

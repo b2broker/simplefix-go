@@ -34,7 +34,7 @@ func makeMarketDataRequest() *MarketDataRequest {
 	return msg
 }
 
-func NewMarketDataRequest(mDReqID string, subscriptionRequestType string, marketDepth int, noMDEntryTypes *MDEntryTypesGrp, noRelatedSym *RelatedSymGrp) *MarketDataRequest {
+func CreateMarketDataRequest(mDReqID string, subscriptionRequestType string, marketDepth int, noMDEntryTypes *MDEntryTypesGrp, noRelatedSym *RelatedSymGrp) *MarketDataRequest {
 	msg := makeMarketDataRequest().
 		SetMDReqID(mDReqID).
 		SetSubscriptionRequestType(subscriptionRequestType).
@@ -45,19 +45,14 @@ func NewMarketDataRequest(mDReqID string, subscriptionRequestType string, market
 	return msg
 }
 
-func ParseMarketDataRequest(data []byte) (*MarketDataRequest, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeMarketDataRequest).
-		SetBody(makeMarketDataRequest().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
-
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func NewMarketDataRequest() *MarketDataRequest {
+	m := makeMarketDataRequest()
 	return &MarketDataRequest{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func (marketDataRequest *MarketDataRequest) Header() *Header {

@@ -28,26 +28,21 @@ func makeMarketDataIncrementalRefresh() *MarketDataIncrementalRefresh {
 	return msg
 }
 
-func NewMarketDataIncrementalRefresh(noMDEntries *MDEntriesGrp) *MarketDataIncrementalRefresh {
+func CreateMarketDataIncrementalRefresh(noMDEntries *MDEntriesGrp) *MarketDataIncrementalRefresh {
 	msg := makeMarketDataIncrementalRefresh().
 		SetMDEntriesGrp(noMDEntries)
 
 	return msg
 }
 
-func ParseMarketDataIncrementalRefresh(data []byte) (*MarketDataIncrementalRefresh, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeMarketDataIncrementalRefresh).
-		SetBody(makeMarketDataIncrementalRefresh().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
-
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func NewMarketDataIncrementalRefresh() *MarketDataIncrementalRefresh {
+	m := makeMarketDataIncrementalRefresh()
 	return &MarketDataIncrementalRefresh{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func (marketDataIncrementalRefresh *MarketDataIncrementalRefresh) Header() *Header {

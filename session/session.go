@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/b2broker/simplefix-go/fix/encoding"
 	"math"
 	"strconv"
 	"sync"
@@ -28,8 +29,8 @@ var (
 	ErrInvalidHeartBtInt       = errors.New("an invalid integer value assigned to the heartbeat field")
 	ErrInvalidLogonTimeout     = errors.New("the logon request timeout is too small")
 	ErrMissingEncryptMethod    = errors.New("the encryption method is missing") // done
-	ErrMissingLogonSettings    = errors.New("logon settings are missing") // done
-	ErrMissingSessionOts       = errors.New("session options are missing")   // done
+	ErrMissingLogonSettings    = errors.New("logon settings are missing")       // done
+	ErrMissingSessionOts       = errors.New("session options are missing")      // done
 )
 
 const (
@@ -81,7 +82,8 @@ type Session struct {
 	stateMu sync.RWMutex
 
 	// Services:
-	router Handler
+	router       Handler
+	unmarshaller Unmarshaller
 
 	msgStorageAllHandler    int64
 	msgStorageResendHandler int64
@@ -171,6 +173,7 @@ func newSession(opts *Opts, handler Handler, settings *LogonSettings) (session *
 		router:       handler,
 		counter:      new(int64),
 		eventHandler: utils.NewEventHandlerPool(),
+		unmarshaller: encoding.DefaultUnmarshaller{},
 
 		LogonSettings: settings,
 	}
@@ -233,7 +236,9 @@ func (s *Session) SetMessageStorage(storage MessageStorage) {
 		return true
 	})
 	s.msgStorageResendHandler = s.router.HandleIncoming(s.MessageBuilders.ResendRequestBuilder.MsgType(), func(data []byte) bool {
-		resendMsg, err := s.MessageBuilders.ResendRequestBuilder.Parse(data)
+
+		resendMsg := s.MessageBuilders.ResendRequestBuilder.New()
+		err := s.unmarshaller.Unmarshal(resendMsg, data)
 		if err != nil {
 			s.RejectMessage(data)
 			return true
@@ -308,10 +313,12 @@ func (s *Session) Run() (err error) {
 		})
 	}
 
-	s.router.HandleIncoming(s.MessageBuilders.LogonBuilder.MsgType(), func(msg []byte) bool {
-		incomingLogon, err := s.MessageBuilders.LogonBuilder.Parse(msg)
+	s.router.HandleIncoming(s.MessageBuilders.LogonBuilder.MsgType(), func(data []byte) bool {
+
+		incomingLogon := s.MessageBuilders.LogonBuilder.New()
+		err := s.unmarshaller.Unmarshal(incomingLogon, data)
 		if err != nil {
-			s.RejectMessage(msg)
+			s.RejectMessage(data)
 			return true
 		}
 
@@ -358,10 +365,10 @@ func (s *Session) Run() (err error) {
 
 		return true
 	})
-	s.router.HandleIncoming(s.MessageBuilders.LogoutBuilder.MsgType(), func(msg []byte) bool {
-		_, err := s.MessageBuilders.LogoutBuilder.Parse(msg)
+	s.router.HandleIncoming(s.MessageBuilders.LogoutBuilder.MsgType(), func(data []byte) bool {
+		err := s.unmarshaller.Unmarshal(s.MessageBuilders.LogoutBuilder.New(), data)
 		if err != nil {
-			s.RejectMessage(msg)
+			s.RejectMessage(data)
 			return true
 		}
 
@@ -376,7 +383,7 @@ func (s *Session) Run() (err error) {
 			s.sendWithErrorCheck(s.MessageBuilders.LogoutBuilder.New())
 
 		default:
-			s.RejectMessage(msg)
+			s.RejectMessage(data)
 		}
 
 		if s.side == sideInitiator {
@@ -387,34 +394,36 @@ func (s *Session) Run() (err error) {
 
 		return true
 	})
-	s.router.HandleIncoming(s.MessageBuilders.HeartbeatBuilder.MsgType(), func(msg []byte) bool {
-		_, err := s.MessageBuilders.HeartbeatBuilder.Parse(msg)
+	s.router.HandleIncoming(s.MessageBuilders.HeartbeatBuilder.MsgType(), func(data []byte) bool {
+		heartbeat := s.MessageBuilders.HeartbeatBuilder.New()
+		err := s.unmarshaller.Unmarshal(heartbeat, data)
 		if err != nil {
-			s.RejectMessage(msg)
+			s.RejectMessage(data)
 			return true
 		}
 
 		if !s.IsLogged() {
-			s.RejectMessage(msg)
+			s.RejectMessage(data)
 			return true
 		}
 
 		return true
 	})
-	s.router.HandleIncoming(s.MessageBuilders.TestRequestBuilder.MsgType(), func(msg []byte) bool {
-		incomingTestRequest, err := s.MessageBuilders.TestRequestBuilder.Parse(msg)
+	s.router.HandleIncoming(s.MessageBuilders.TestRequestBuilder.MsgType(), func(data []byte) bool {
+		testRequest := s.MessageBuilders.TestRequestBuilder.New()
+		err := s.unmarshaller.Unmarshal(testRequest, data)
 		if err != nil {
-			s.RejectMessage(msg)
+			s.RejectMessage(data)
 			return true
 		}
 
 		if !s.IsLogged() {
-			s.RejectMessage(msg)
+			s.RejectMessage(data)
 			return true
 		}
 
 		s.sendWithErrorCheck(s.MessageBuilders.HeartbeatBuilder.New().
-			SetFieldTestReqID(incomingTestRequest.TestReqID()))
+			SetFieldTestReqID(testRequest.TestReqID()))
 
 		return true
 	})
@@ -562,6 +571,12 @@ func (s *Session) MakeReject(reasonCode, tag, seqNum int) messages.RejectBuilder
 	}
 
 	return msg
+}
+
+// SetUnmarshaller replaces current unmarshaller buy custom one
+// It could be called only before starting Session
+func (s *Session) SetUnmarshaller(unmarshaller Unmarshaller) {
+	s.unmarshaller = unmarshaller
 }
 
 func (s *Session) Stop() (err error) {

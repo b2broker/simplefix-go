@@ -25,26 +25,21 @@ func makeTestRequest() *TestRequest {
 	return msg
 }
 
-func NewTestRequest(testReqID string) *TestRequest {
+func CreateTestRequest(testReqID string) *TestRequest {
 	msg := makeTestRequest().
 		SetTestReqID(testReqID)
 
 	return msg
 }
 
-func ParseTestRequest(data []byte) (*TestRequest, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeTestRequest).
-		SetBody(makeTestRequest().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
-
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func NewTestRequest() *TestRequest {
+	m := makeTestRequest()
 	return &TestRequest{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func (testRequest *TestRequest) Header() *Header {
@@ -77,10 +72,6 @@ func (testRequest *TestRequest) SetTestReqID(testReqID string) *TestRequest {
 
 func (TestRequest) New() messages.TestRequestBuilder {
 	return makeTestRequest()
-}
-
-func (TestRequest) Parse(data []byte) (messages.TestRequestBuilder, error) {
-	return ParseTestRequest(data)
 }
 
 func (testRequest *TestRequest) SetFieldTestReqID(testReqID string) messages.TestRequestBuilder {

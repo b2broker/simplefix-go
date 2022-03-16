@@ -144,28 +144,65 @@ func TestGroup_Parse(t *testing.T) {
 	var testMsg = []byte("8=FIX.4.49=23635=A34=149=sender56=target52=20210208-15:51:43.000262=1263=1264=20267=2269=0269=1146=355=BTC/USD864=2865=1868=put865=2868=call55=ETH/USD864=2865=1868=put865=2868=call55=KGB/FBI864=2865=1868=put865=2868=call10=051")
 
 	msg := Items{
-		NewKeyValue(beginString, &String{}),
-		NewKeyValue(bodyLength, &Int{}),
-		NewKeyValue(msgType, &String{}),
-		NewKeyValue(msgSeqNum, &Int{}),
-		NewKeyValue(senderCompID, &String{}),
-		NewKeyValue(targetCompID, &String{}),
-		NewKeyValue(sendingTime, &Time{}),
-		NewKeyValue(mdReqID, &Int{}),
-		NewKeyValue(subscriptionRequestType, &String{}),
-		NewKeyValue(marketDepth, &Int{}),
-		NewGroup(noMDEntryTypes,
-			NewComponent(
-				NewKeyValue(mdEntryType, &String{}),
-			),
-		),
-		makeTestGroup().Group,
-		NewKeyValue("10", &String{}),
-	}
-
-	err := UnmarshalItems(testMsg, msg, true)
-	if err != nil {
-		panic(err)
+		NewKeyValue(beginString, NewString("FIX.4.4")),
+		NewKeyValue(bodyLength, NewInt(236)),
+		NewKeyValue(msgType, NewString("A")),
+		NewKeyValue(msgSeqNum, NewInt(1)),
+		NewKeyValue(senderCompID, NewString("sender")),
+		NewKeyValue(targetCompID, NewString("target")),
+		NewKeyValue(sendingTime, NewTime(time.Date(2021, 2, 8, 15, 51, 43, 0, time.UTC))),
+		NewKeyValue(mdReqID, NewInt(1)),
+		NewKeyValue(subscriptionRequestType, NewString("1")),
+		NewKeyValue(marketDepth, NewInt(20)),
+		NewGroup(noMDEntryTypes, NewComponent(
+			&KeyValue{Key: mdEntryType},
+		)).
+			AddEntry(NewComponent(
+				NewKeyValue(mdEntryType, NewString("0")),
+			).Items()).
+			AddEntry(NewComponent(
+				NewKeyValue(mdEntryType, NewString("1")),
+			).Items()),
+		NewGroup(noRelatedSym, NewComponent(&KeyValue{Key: symbol},
+			NewGroup(noEvents, NewComponent(&KeyValue{Key: eventType}, &KeyValue{Key: eventText}))),
+		).
+			AddEntry(NewComponent(
+				NewKeyValue(symbol, NewString("BTC/USD")),
+				NewGroup(noEvents, NewComponent(&KeyValue{Key: eventType}, &KeyValue{Key: eventText})).
+					AddEntry(NewComponent(
+						NewKeyValue(eventType, NewString("1")),
+						NewKeyValue(eventText, NewString("put")),
+					).Items()).
+					AddEntry(NewComponent(
+						NewKeyValue(eventType, NewString("2")),
+						NewKeyValue(eventText, NewString("call")),
+					).Items()),
+			).Items()).
+			AddEntry(NewComponent(
+				NewKeyValue(symbol, NewString("ETH/USD")),
+				NewGroup(noEvents, NewComponent(&KeyValue{Key: eventType}, &KeyValue{Key: eventText})).
+					AddEntry(NewComponent(
+						NewKeyValue(eventType, NewString("1")),
+						NewKeyValue(eventText, NewString("put")),
+					).Items()).
+					AddEntry(NewComponent(
+						NewKeyValue(eventType, NewString("2")),
+						NewKeyValue(eventText, NewString("call")),
+					).Items()),
+			).Items()).
+			AddEntry(NewComponent(
+				NewKeyValue(symbol, NewString("KGB/FBI")),
+				NewGroup(noEvents, NewComponent(&KeyValue{Key: eventType}, &KeyValue{Key: eventText})).
+					AddEntry(NewComponent(
+						NewKeyValue(eventType, NewString("1")),
+						NewKeyValue(eventText, NewString("put")),
+					).Items()).
+					AddEntry(NewComponent(
+						NewKeyValue(eventType, NewString("2")),
+						NewKeyValue(eventText, NewString("call")),
+					).Items()),
+			).Items()),
+		NewKeyValue(checksum, NewString("051")),
 	}
 
 	res := msg.ToBytes()
