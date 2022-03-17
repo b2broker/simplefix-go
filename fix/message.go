@@ -3,7 +3,6 @@ package fix
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -26,7 +25,7 @@ type Message struct {
 	// The auto-generated checkSum value is a required field.
 	checkSum *KeyValue
 
-	raw []byte
+	prepared []byte
 }
 
 // NewMessage is called to create a new message.
@@ -35,16 +34,6 @@ func NewMessage(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag, beginStr
 		beginString: NewKeyValue(beginStringTag, NewString(beginString)),
 		bodyLength:  NewKeyValue(bodyLengthTag, &Int{}),
 		msgType:     NewKeyValue(msgTypeTag, NewString(msgType)),
-		checkSum:    NewKeyValue(checkSumTag, &String{}),
-	}
-}
-
-// NewMessageFromBytes creates a new empty message.
-func NewMessageFromBytes(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag string) *Message {
-	return &Message{
-		beginString: NewKeyValue(beginStringTag, &String{}),
-		bodyLength:  NewKeyValue(bodyLengthTag, &Int{}),
-		msgType:     NewKeyValue(msgTypeTag, &String{}),
 		checkSum:    NewKeyValue(checkSumTag, &String{}),
 	}
 }
@@ -109,16 +98,7 @@ func (msg *Message) CalcBodyLength() int {
 	return len(bh) + len(mt) + len(bb) + CountOfSOHSymbols
 }
 
-// Raw returns message data in the form of a byte array.
-func (msg *Message) Raw() ([]byte, error) {
-	if len(msg.raw) > 0 {
-		return msg.raw, nil
-	}
-
-	return msg.ToBytes()
-}
-
-func (msg *Message) RawBytes() []byte {
+func (msg *Message) BytesWithoutChecksum() []byte {
 	bh := msg.header.ToBytes()
 	bb := msg.body.ToBytes()
 
@@ -136,25 +116,35 @@ func (msg *Message) RawBytes() []byte {
 	return bm
 }
 
-// ToBytes returns a byte representation of a specified message.
-func (msg *Message) ToBytes() ([]byte, error) {
-	msg.bodyLength.Value = NewString(strconv.Itoa(msg.CalcBodyLength()))
+// Prepare prepares message by calculating body length and check sum
+func (msg *Message) Prepare() error {
+	msg.bodyLength.Value = NewInt(msg.CalcBodyLength())
 
-	byteMsg := msg.RawBytes()
+	byteMsg := msg.BytesWithoutChecksum()
 
 	checkSum := CalcCheckSum(byteMsg)
 	err := msg.checkSum.Value.Set(string(checkSum))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	msg.raw = bytes.Join([][]byte{
+	msg.prepared = bytes.Join([][]byte{
 		byteMsg,
 		makeTagValue(msg.checkSum.Key, checkSum),
 	}, Delimiter)
-	msg.raw = append(msg.raw, Delimiter...)
+	msg.prepared = append(msg.prepared, Delimiter...)
 
-	return msg.raw, nil
+	return nil
+}
+
+// Prepared returns a byte representation of a specified message.
+func (msg *Message) ToBytes() ([]byte, error) {
+	err := msg.Prepare()
+	if err != nil {
+		return nil, err
+	}
+
+	return msg.prepared, nil
 }
 
 // String returns a string representation of a specified message.

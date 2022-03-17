@@ -1,9 +1,9 @@
 package session
 
 import (
-	"github.com/b2broker/simplefix-go/fix/encoding"
+	"github.com/b2broker/simplefix-go/session/messages"
 )
 
 type Unmarshaller interface {
-	Unmarshal(msg encoding.MessageBuilder, d []byte) error
+	Unmarshal(msg messages.Builder, d []byte) error
 }

@@ -4,23 +4,34 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/b2broker/simplefix-go/fix"
+	"github.com/b2broker/simplefix-go/session/messages"
 	"reflect"
 )
 
-type MessageBuilder interface {
-	Items() fix.Items
+type Validator interface {
+	Do(msg messages.Builder) error
 }
 
 type DefaultUnmarshaller struct {
-	Strict bool
+	Validator Validator
+	Strict    bool
 }
 
-func (u DefaultUnmarshaller) Unmarshal(msg MessageBuilder, d []byte) error {
-	return unmarshalItems(msg.Items(), d, u.Strict)
+func NewDefaultUnmarshaller(strict bool) *DefaultUnmarshaller {
+	return &DefaultUnmarshaller{Strict: strict, Validator: DefaultValidator{}}
 }
 
-func Unmarshal(msg MessageBuilder, d []byte) error {
-	u := DefaultUnmarshaller{Strict: true}
+func (u DefaultUnmarshaller) Unmarshal(msg messages.Builder, d []byte) error {
+	err := unmarshalItems(msg.Items(), d, u.Strict)
+	if err != nil {
+		return err
+	}
+
+	return u.Validator.Do(msg)
+}
+
+func Unmarshal(msg messages.Builder, d []byte) error {
+	u := DefaultUnmarshaller{Strict: true, Validator: DefaultValidator{}}
 
 	return u.Unmarshal(msg, d)
 }
@@ -28,10 +39,10 @@ func Unmarshal(msg MessageBuilder, d []byte) error {
 // unmarshalItems parses the FIX message data stored as a byte array
 // and writes it into the Items object.
 func unmarshalItems(msg fix.Items, data []byte, strict bool) error {
-	u := newState(data, msg, strict)
+	s := newState(data, strict)
 
 	for _, item := range msg {
-		err := u.unmarshal(u.data, item)
+		err := s.unmarshal(s.data, item)
 		if err != nil {
 			return fmt.Errorf("could not unmarshal items: %s", err)
 		}
@@ -45,7 +56,7 @@ type state struct {
 	strict bool
 }
 
-func newState(data []byte, msg fix.Items, strict bool) *state {
+func newState(data []byte, strict bool) *state {
 	return &state{data: data, strict: strict}
 }
 

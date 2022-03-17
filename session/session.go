@@ -173,7 +173,7 @@ func newSession(opts *Opts, handler Handler, settings *LogonSettings) (session *
 		router:       handler,
 		counter:      new(int64),
 		eventHandler: utils.NewEventHandlerPool(),
-		unmarshaller: encoding.DefaultUnmarshaller{},
+		unmarshaller: encoding.NewDefaultUnmarshaller(true),
 
 		LogonSettings: settings,
 	}

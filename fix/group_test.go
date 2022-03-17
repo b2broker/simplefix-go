@@ -28,7 +28,6 @@ const (
 
 	noEvents  = "864"
 	eventType = "865"
-	eventDate = "866"
 	eventText = "868"
 )
 
@@ -118,25 +117,6 @@ func TestGroup_AddItem(t *testing.T) {
 		t.Log(len(testMsg), string(testMsg))
 		t.Log(len(res), string(res))
 		t.Fatalf("message length is not equal")
-	}
-}
-
-type TestGroup struct {
-	*Group
-}
-
-func makeTestGroup() TestGroup {
-	return TestGroup{
-		Group: NewGroup(noRelatedSym,
-			NewComponent(
-				NewKeyValue(symbol, &String{}),
-				NewGroup(noEvents,
-					NewKeyValue(eventType, &String{}),
-					NewKeyValue(eventText, &String{}),
-					NewKeyValue(eventDate, &Time{}),
-				),
-			),
-		),
 	}
 }
 

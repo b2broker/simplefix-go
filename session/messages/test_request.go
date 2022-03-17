@@ -1,14 +1,13 @@
 package messages
 
-import "github.com/b2broker/simplefix-go/fix"
+type TestRequest interface {
+	New() TestRequestBuilder
+	SetFieldTestReqID(string) TestRequestBuilder
+	TestReqID() string
+}
 
 // TestRequestBuilder is an interface providing functionality to a builder of auto-generated TestRequest messages.
 type TestRequestBuilder interface {
-	New() TestRequestBuilder
-	Items() fix.Items
-	TestReqID() string
-	SetFieldTestReqID(string) TestRequestBuilder
-	HeaderBuilder() HeaderBuilder
-	MsgType() string
-	ToBytes() ([]byte, error)
+	TestRequest
+	PipelineBuilder
 }
