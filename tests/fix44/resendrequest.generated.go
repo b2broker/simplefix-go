@@ -26,7 +26,7 @@ func makeResendRequest() *ResendRequest {
 	return msg
 }
 
-func NewResendRequest(beginSeqNo int, endSeqNo int) *ResendRequest {
+func CreateResendRequest(beginSeqNo int, endSeqNo int) *ResendRequest {
 	msg := makeResendRequest().
 		SetBeginSeqNo(beginSeqNo).
 		SetEndSeqNo(endSeqNo)
@@ -34,19 +34,14 @@ func NewResendRequest(beginSeqNo int, endSeqNo int) *ResendRequest {
 	return msg
 }
 
-func ParseResendRequest(data []byte) (*ResendRequest, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeResendRequest).
-		SetBody(makeResendRequest().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
-
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func NewResendRequest() *ResendRequest {
+	m := makeResendRequest()
 	return &ResendRequest{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func (resendRequest *ResendRequest) Header() *Header {
@@ -91,10 +86,6 @@ func (resendRequest *ResendRequest) SetEndSeqNo(endSeqNo int) *ResendRequest {
 
 func (ResendRequest) New() messages.ResendRequestBuilder {
 	return makeResendRequest()
-}
-
-func (ResendRequest) Parse(data []byte) (messages.ResendRequestBuilder, error) {
-	return ParseResendRequest(data)
 }
 
 func (resendRequest *ResendRequest) SetFieldBeginSeqNo(beginSeqNo int) messages.ResendRequestBuilder {

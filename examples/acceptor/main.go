@@ -5,6 +5,7 @@ import (
 	"fmt"
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
+	"github.com/b2broker/simplefix-go/fix/encoding"
 	"github.com/b2broker/simplefix-go/session"
 	"github.com/b2broker/simplefix-go/session/messages"
 	"github.com/b2broker/simplefix-go/session/storages/memory"
@@ -111,7 +112,8 @@ func main() {
 		})
 
 		handler.HandleIncoming(fixgen.MsgTypeMarketDataRequest, func(msg []byte) bool {
-			request, err := fixgen.ParseMarketDataRequest(msg)
+			request := fixgen.NewMarketDataRequest()
+			err := encoding.Unmarshal(request, msg)
 			if err != nil {
 				panic(err)
 			}

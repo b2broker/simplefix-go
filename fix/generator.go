@@ -8,7 +8,10 @@ import (
 
 const TimeLayout = "20060102-15:04:05.000"
 
-const CountOfSOHSymbols = 3
+const (
+	CountOfSOHSymbols            = 3
+	CountOfSOHSymbolsWithoutBody = 2
+)
 
 var Delimiter = []byte{1}
 
@@ -34,7 +37,7 @@ func makeGroup(entries []map[string][]byte, tags []string) []byte {
 	return bytes.Join(groupItems, Delimiter)
 }
 
-func calcCheckSum(body []byte) []byte {
+func CalcCheckSum(body []byte) []byte {
 	var sum int
 	for _, b := range body {
 		sum += int(b)

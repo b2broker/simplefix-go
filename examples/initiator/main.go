@@ -6,6 +6,7 @@ import (
 	"fmt"
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
+	"github.com/b2broker/simplefix-go/fix/encoding"
 	"github.com/b2broker/simplefix-go/session"
 	"github.com/b2broker/simplefix-go/session/messages"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
@@ -92,7 +93,8 @@ func main() {
 	}
 
 	handler.HandleIncoming(fixgen.MsgTypeLogon, func(msg []byte) bool {
-		incomingLogon, err := fixgen.ParseLogon(msg)
+		incomingLogon := fixgen.NewLogon()
+		err := encoding.Unmarshal(incomingLogon, msg)
 		_, _ = incomingLogon, err
 		return true
 	})
@@ -111,7 +113,7 @@ func main() {
 	})
 
 	sess.OnChangeState(utils.EventLogon, func() bool {
-		err := sess.Send(fixgen.NewMarketDataRequest(
+		err := sess.Send(fixgen.CreateMarketDataRequest(
 			"test",
 			fixgen.EnumSubscriptionRequestTypeSnapshot,
 			20,

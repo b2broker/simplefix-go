@@ -69,25 +69,21 @@ func make{{.Name}}() *{{.Name}} {
 	return msg
 }
 
-func New{{.Name}}({{.Args}}) *{{.Name}} {
+func Create{{.Name}}({{.Args}}) *{{.Name}} {
 	msg := make{{.Name}}(){{.Setters}}
 	
 	return msg
 }
 
-func Parse{{.Name}}(data []byte) (*{{.Name}}, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgType{{.Name}}).
-		SetBody(make{{.Name}}().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
 
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func New{{.Name}}() *{{.Name}} {
+	m := make{{.Name}}()
 	return &{{.Name}}{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func ({{.LocalName}} *{{.Name}}) Header() *Header {
@@ -139,10 +135,6 @@ func (Trailer) New() messages.TrailerBuilder {
 var defaultFlowMessageTemplate = `
 func ({{.Name}}) New() messages.{{.Name}}Builder {
 	return make{{.Name}}()
-}
-
-func ({{.Name}}) Parse(data []byte) (messages.{{.Name}}Builder, error) {
-	return Parse{{.Name}}(data)
 }
 
 {{.FieldSetters}}

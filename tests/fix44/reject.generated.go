@@ -31,26 +31,21 @@ func makeReject() *Reject {
 	return msg
 }
 
-func NewReject(refSeqNum int) *Reject {
+func CreateReject(refSeqNum int) *Reject {
 	msg := makeReject().
 		SetRefSeqNum(refSeqNum)
 
 	return msg
 }
 
-func ParseReject(data []byte) (*Reject, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeReject).
-		SetBody(makeReject().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
-
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func NewReject() *Reject {
+	m := makeReject()
 	return &Reject{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func (reject *Reject) Header() *Header {
@@ -155,10 +150,6 @@ func (reject *Reject) SetEncodedText(encodedText string) *Reject {
 
 func (Reject) New() messages.RejectBuilder {
 	return makeReject()
-}
-
-func (Reject) Parse(data []byte) (messages.RejectBuilder, error) {
-	return ParseReject(data)
 }
 
 func (reject *Reject) SetFieldSessionRejectReason(sessionRejectReason string) messages.RejectBuilder {

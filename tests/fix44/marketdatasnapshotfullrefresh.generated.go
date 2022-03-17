@@ -34,7 +34,7 @@ func makeMarketDataSnapshotFullRefresh() *MarketDataSnapshotFullRefresh {
 	return msg
 }
 
-func NewMarketDataSnapshotFullRefresh(instrument *Instrument, noMDEntries *MDEntriesGrp) *MarketDataSnapshotFullRefresh {
+func CreateMarketDataSnapshotFullRefresh(instrument *Instrument, noMDEntries *MDEntriesGrp) *MarketDataSnapshotFullRefresh {
 	msg := makeMarketDataSnapshotFullRefresh().
 		SetInstrument(instrument).
 		SetMDEntriesGrp(noMDEntries)
@@ -42,19 +42,14 @@ func NewMarketDataSnapshotFullRefresh(instrument *Instrument, noMDEntries *MDEnt
 	return msg
 }
 
-func ParseMarketDataSnapshotFullRefresh(data []byte) (*MarketDataSnapshotFullRefresh, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeMarketDataSnapshotFullRefresh).
-		SetBody(makeMarketDataSnapshotFullRefresh().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
-
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func NewMarketDataSnapshotFullRefresh() *MarketDataSnapshotFullRefresh {
+	m := makeMarketDataSnapshotFullRefresh()
 	return &MarketDataSnapshotFullRefresh{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func (marketDataSnapshotFullRefresh *MarketDataSnapshotFullRefresh) Header() *Header {

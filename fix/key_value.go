@@ -37,7 +37,7 @@ func (kv *KeyValue) AsTemplate() *KeyValue {
 
 // ToBytes returns a byte representation of a KeyValue.
 func (kv *KeyValue) ToBytes() []byte {
-	if kv.Value.IsNull() {
+	if kv == nil || kv.Value == nil || kv.Value.IsNull() {
 		return nil
 	}
 

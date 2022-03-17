@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/b2broker/simplefix-go/fix/encoding"
 	"net"
 	"regexp"
 	"strconv"
@@ -109,7 +110,8 @@ func TestGroup(t *testing.T) {
 		}
 
 		handler.HandleIncoming(fixgen.MsgTypeMarketDataRequest, func(msg []byte) bool {
-			request, err := fixgen.ParseMarketDataRequest(msg)
+			request := fixgen.NewMarketDataRequest()
+			err := encoding.Unmarshal(request, msg)
 			if err != nil {
 				panic(err)
 			}
@@ -155,7 +157,7 @@ func TestGroup(t *testing.T) {
 			relatedSymbols.AddEntry(fixgen.NewRelatedSymEntry().SetInstrument(fixgen.NewInstrument().SetSymbol(symbol)))
 		}
 
-		err := initiatorSession.Send(fixgen.NewMarketDataRequest(
+		err := initiatorSession.Send(fixgen.CreateMarketDataRequest(
 			"test",
 			fixgen.EnumSubscriptionRequestTypeSnapshot,
 			20,
@@ -208,7 +210,8 @@ func TestTestRequest(t *testing.T) {
 	waitHeartbeats.Add(1)
 
 	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) bool {
-		heartbeatMsg, err := fixgen.ParseHeartbeat(msg)
+		heartbeatMsg := fixgen.NewHeartbeat()
+		err := encoding.Unmarshal(heartbeatMsg, msg)
 		if err != nil {
 			t.Fatalf("could not parse the heartbeat: %s", err)
 		}
@@ -532,7 +535,7 @@ func TestLookAtClosingOfInitiator(t *testing.T) {
 						waitClientDisconnect <- struct{}{}
 						return
 					case <-time.After(time.Second):
-						err := acceptorSession.Send(fixgen.NewMarketDataIncrementalRefresh(fixgen.NewMDEntriesGrp()))
+						err := acceptorSession.Send(fixgen.CreateMarketDataIncrementalRefresh(fixgen.NewMDEntriesGrp()))
 						if err != nil {
 							panic(err)
 						}
@@ -635,7 +638,7 @@ func TestInterruptHandling(t *testing.T) {
 					waitClientDisconnect <- struct{}{}
 					return
 				case <-time.After(time.Second):
-					err := acceptorSession.Send(fixgen.NewMarketDataIncrementalRefresh(fixgen.NewMDEntriesGrp()))
+					err := acceptorSession.Send(fixgen.CreateMarketDataIncrementalRefresh(fixgen.NewMDEntriesGrp()))
 					if err != nil {
 						panic(err)
 					}
@@ -770,7 +773,7 @@ func TestHighload(t *testing.T) {
 			group.AddEntry(entry)
 		}
 
-		testMsg := fixgen.NewMarketDataSnapshotFullRefresh(symbol, group)
+		testMsg := fixgen.CreateMarketDataSnapshotFullRefresh(symbol, group)
 
 		for j := 0; j < threadsNum; j++ {
 			go func() {
@@ -821,7 +824,8 @@ func TestSessionClosing(t *testing.T) {
 	waitHeartbeats.Add(triesNum)
 
 	initiatorHandler.HandleIncoming(fixgen.MsgTypeHeartbeat, func(msg []byte) bool {
-		heartbeatMsg, err := fixgen.ParseHeartbeat(msg)
+		heartbeatMsg := fixgen.NewHeartbeat()
+		err := encoding.Unmarshal(heartbeatMsg, msg)
 		if err != nil {
 			t.Fatalf("could not parse the heartbeat: %s", err)
 		}

@@ -27,25 +27,20 @@ func makeLogout() *Logout {
 	return msg
 }
 
-func NewLogout() *Logout {
+func CreateLogout() *Logout {
 	msg := makeLogout()
 
 	return msg
 }
 
-func ParseLogout(data []byte) (*Logout, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeLogout).
-		SetBody(makeLogout().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
-
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func NewLogout() *Logout {
+	m := makeLogout()
 	return &Logout{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func (logout *Logout) Header() *Header {
@@ -102,8 +97,4 @@ func (logout *Logout) SetEncodedText(encodedText string) *Logout {
 
 func (Logout) New() messages.LogoutBuilder {
 	return makeLogout()
-}
-
-func (Logout) Parse(data []byte) (messages.LogoutBuilder, error) {
-	return ParseLogout(data)
 }

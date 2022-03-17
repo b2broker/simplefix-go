@@ -26,26 +26,21 @@ func makeSequenceReset() *SequenceReset {
 	return msg
 }
 
-func NewSequenceReset(newSeqNo int) *SequenceReset {
+func CreateSequenceReset(newSeqNo int) *SequenceReset {
 	msg := makeSequenceReset().
 		SetNewSeqNo(newSeqNo)
 
 	return msg
 }
 
-func ParseSequenceReset(data []byte) (*SequenceReset, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeSequenceReset).
-		SetBody(makeSequenceReset().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
-
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func NewSequenceReset() *SequenceReset {
+	m := makeSequenceReset()
 	return &SequenceReset{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func (sequenceReset *SequenceReset) Header() *Header {
@@ -90,10 +85,6 @@ func (sequenceReset *SequenceReset) SetNewSeqNo(newSeqNo int) *SequenceReset {
 
 func (SequenceReset) New() messages.SequenceResetBuilder {
 	return makeSequenceReset()
-}
-
-func (SequenceReset) Parse(data []byte) (messages.SequenceResetBuilder, error) {
-	return ParseSequenceReset(data)
 }
 
 func (sequenceReset *SequenceReset) SetFieldNewSeqNo(newSeqNo int) messages.SequenceResetBuilder {

@@ -30,26 +30,21 @@ func makeMarketDataRequestReject() *MarketDataRequestReject {
 	return msg
 }
 
-func NewMarketDataRequestReject(mDReqID string) *MarketDataRequestReject {
+func CreateMarketDataRequestReject(mDReqID string) *MarketDataRequestReject {
 	msg := makeMarketDataRequestReject().
 		SetMDReqID(mDReqID)
 
 	return msg
 }
 
-func ParseMarketDataRequestReject(data []byte) (*MarketDataRequestReject, error) {
-	msg := fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeMarketDataRequestReject).
-		SetBody(makeMarketDataRequestReject().Body()...).
-		SetHeader(makeHeader().AsComponent()).
-		SetTrailer(makeTrailer().AsComponent())
-
-	if err := msg.Unmarshal(data); err != nil {
-		return nil, err
-	}
-
+func NewMarketDataRequestReject() *MarketDataRequestReject {
+	m := makeMarketDataRequestReject()
 	return &MarketDataRequestReject{
-		Message: msg,
-	}, nil
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+			SetBody(m.Body()...).
+			SetHeader(m.Header().AsComponent()).
+			SetTrailer(m.Trailer().AsComponent()),
+	}
 }
 
 func (marketDataRequestReject *MarketDataRequestReject) Header() *Header {

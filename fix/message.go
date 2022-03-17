@@ -3,7 +3,6 @@ package fix
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -26,7 +25,7 @@ type Message struct {
 	// The auto-generated checkSum value is a required field.
 	checkSum *KeyValue
 
-	raw []byte
+	prepared []byte
 }
 
 // NewMessage is called to create a new message.
@@ -39,87 +38,19 @@ func NewMessage(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag, beginStr
 	}
 }
 
-// NewMessageFromBytes creates a new empty message.
-func NewMessageFromBytes(beginStringTag, bodyLengthTag, checkSumTag, msgTypeTag string) *Message {
-	return &Message{
-		beginString: NewKeyValue(beginStringTag, &String{}),
-		bodyLength:  NewKeyValue(bodyLengthTag, &Int{}),
-		msgType:     NewKeyValue(msgTypeTag, &String{}),
-		checkSum:    NewKeyValue(checkSumTag, &String{}),
-	}
-}
-
-func (msg *Message) checkRequiredFields() error {
-	if msg.beginString.Value.IsNull() {
-		return fmt.Errorf("the required field value is empty: %s (%s)", msg.beginString.Key, "BeginString")
-	}
-	if msg.bodyLength.Value.IsNull() {
-		return fmt.Errorf("the required field value is empty: %s (%s)", msg.bodyLength.Key, "BodyLength")
-	}
-	if msg.msgType.Value.IsNull() {
-		return fmt.Errorf("the required field value is empty: %s (%s)", msg.msgType.Key, "MsgType")
-	}
-	if msg.checkSum.Value.IsNull() {
-		return fmt.Errorf("the required field value is empty: %s (%s)", msg.checkSum.Key, "CheckSum")
-	}
-
-	return nil
-}
-
-func (msg *Message) validate() error {
-	if err := msg.checkRequiredFields(); err != nil {
-		return err
-	}
-
-	mt := msg.msgType.ToBytes()
-	bh := msg.header.ToBytes()
-	bb := msg.body.ToBytes()
-	bodyLength := msg.calcBodyLength(bh, bb, mt)
-	if bodyLength != msg.bodyLength.Value.Value().(int) {
-		return fmt.Errorf("an invalid body length; specified: %d, required: %d",
-			msg.bodyLength.Value.Value().(int),
-			bodyLength,
-		)
-	}
-
-	byteMsg := bytes.Join([][]byte{
-		msg.beginString.ToBytes(),
-		msg.bodyLength.ToBytes(),
-		msg.msgType.ToBytes(),
-		bh,
-	}, Delimiter)
-
-	if len(bb) > 0 {
-		byteMsg = bytes.Join([][]byte{byteMsg, bb}, Delimiter)
-	}
-
-	checkSum := string(calcCheckSum(byteMsg))
-
-	if checkSum != msg.checkSum.Value.String() {
-		return fmt.Errorf("an invalid checksum; specified: %s, required: %s", msg.checkSum.Value, checkSum)
-	}
-
-	return nil
-}
-
-// Unmarshal parses byte data and inserts it into a specified Message object.
-func (msg *Message) Unmarshal(data []byte) error {
-	message := Items{
+// Items returns all fields as Items slice
+func (msg *Message) Items() Items {
+	items := Items{
 		msg.beginString,
 		msg.bodyLength,
 		msg.msgType,
 		msg.header,
 	}
 
-	message = append(message, msg.body...)
-	message = append(message, msg.trailer, msg.checkSum)
+	items = append(items, msg.body...)
+	items = append(items, msg.trailer, msg.checkSum)
 
-	err := UnmarshalItems(data, message, false)
-	if err != nil {
-		return err
-	}
-
-	return msg.validate()
+	return items
 }
 
 // Body returns the body of a FIX message as an Items object.
@@ -138,8 +69,8 @@ func (msg *Message) Trailer() *Component {
 }
 
 // BeginString returns the beginString field value.
-func (msg *Message) BeginString() string {
-	return msg.beginString.Value.String()
+func (msg *Message) BeginString() *KeyValue {
+	return msg.beginString
 }
 
 // BodyLength returns the BodyLength field value.
@@ -157,32 +88,21 @@ func (msg *Message) CheckSum() string {
 	return msg.checkSum.Value.String()
 }
 
-func (msg *Message) calcBodyLength(header, body, msgType []byte) int {
-	count := len(header) + len(msgType) + len(body) + CountOfSOHSymbols
-	if len(body) == 0 {
-		return count - 1
-	}
-
-	return count
-}
-
-// Raw returns message data in the form of a byte array.
-func (msg *Message) Raw() ([]byte, error) {
-	if len(msg.raw) > 0 {
-		return msg.raw, nil
-	}
-
-	return msg.ToBytes()
-}
-
-// ToBytes returns a byte representation of a specified message.
-func (msg *Message) ToBytes() ([]byte, error) {
+func (msg *Message) CalcBodyLength() int {
 	bh := msg.header.ToBytes()
 	bb := msg.body.ToBytes()
 	mt := msg.msgType.ToBytes()
-	msg.bodyLength.Value = NewString(strconv.Itoa(msg.calcBodyLength(bh, bb, mt)))
+	if len(bb) == 0 {
+		return len(bh) + len(mt) + len(bb) + CountOfSOHSymbolsWithoutBody
+	}
+	return len(bh) + len(mt) + len(bb) + CountOfSOHSymbols
+}
 
-	byteMsg := bytes.Join([][]byte{
+func (msg *Message) BytesWithoutChecksum() []byte {
+	bh := msg.header.ToBytes()
+	bb := msg.body.ToBytes()
+
+	bm := bytes.Join([][]byte{
 		msg.beginString.ToBytes(),
 		msg.bodyLength.ToBytes(),
 		msg.msgType.ToBytes(),
@@ -190,26 +110,41 @@ func (msg *Message) ToBytes() ([]byte, error) {
 	}, Delimiter)
 
 	if len(bb) > 0 {
-		byteMsg = bytes.Join([][]byte{byteMsg, bb}, Delimiter)
+		bm = bytes.Join([][]byte{bm, bb}, Delimiter)
 	}
 
-	checkSum := calcCheckSum(byteMsg)
+	return bm
+}
+
+// Prepare prepares message by calculating body length and check sum
+func (msg *Message) Prepare() error {
+	msg.bodyLength.Value = NewInt(msg.CalcBodyLength())
+
+	byteMsg := msg.BytesWithoutChecksum()
+
+	checkSum := CalcCheckSum(byteMsg)
 	err := msg.checkSum.Value.Set(string(checkSum))
+	if err != nil {
+		return err
+	}
+
+	msg.prepared = bytes.Join([][]byte{
+		byteMsg,
+		makeTagValue(msg.checkSum.Key, checkSum),
+	}, Delimiter)
+	msg.prepared = append(msg.prepared, Delimiter...)
+
+	return nil
+}
+
+// Prepared returns a byte representation of a specified message.
+func (msg *Message) ToBytes() ([]byte, error) {
+	err := msg.Prepare()
 	if err != nil {
 		return nil, err
 	}
 
-	msg.raw = bytes.Join([][]byte{
-		byteMsg,
-		makeTagValue(msg.checkSum.Key, checkSum),
-	}, Delimiter)
-	msg.raw = append(msg.raw, Delimiter...)
-
-	if err := msg.checkRequiredFields(); err != nil {
-		return nil, err
-	}
-
-	return msg.raw, nil
+	return msg.prepared, nil
 }
 
 // String returns a string representation of a specified message.
