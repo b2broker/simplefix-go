@@ -133,7 +133,13 @@ func (Trailer) New() messages.TrailerBuilder {
 `
 
 var defaultFlowMessageTemplate = `
+// New is a plane message constructor
 func ({{.Name}}) New() messages.{{.Name}}Builder {
+	return make{{.Name}}()
+}
+
+// Build provides an opportunity to customize message during building outgoing message 
+func ({{.Name}}) Build() messages.{{.Name}}Builder {
 	return make{{.Name}}()
 }
 

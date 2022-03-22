@@ -70,7 +70,13 @@ func (testRequest *TestRequest) SetTestReqID(testReqID string) *TestRequest {
 	return testRequest
 }
 
+// New is a plane message constructor
 func (TestRequest) New() messages.TestRequestBuilder {
+	return makeTestRequest()
+}
+
+// Build provides an opportunity to customize message during building outgoing message
+func (TestRequest) Build() messages.TestRequestBuilder {
 	return makeTestRequest()
 }
 

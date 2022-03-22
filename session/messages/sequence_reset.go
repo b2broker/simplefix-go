@@ -2,6 +2,7 @@ package messages
 
 type SequenceReset interface {
 	New() SequenceResetBuilder
+	Build() SequenceResetBuilder
 	NewSeqNo() int
 	SetFieldNewSeqNo(newSeqNo int) SequenceResetBuilder
 }

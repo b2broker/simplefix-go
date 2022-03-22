@@ -69,7 +69,13 @@ func (heartbeat *Heartbeat) SetTestReqID(testReqID string) *Heartbeat {
 	return heartbeat
 }
 
+// New is a plane message constructor
 func (Heartbeat) New() messages.HeartbeatBuilder {
+	return makeHeartbeat()
+}
+
+// Build provides an opportunity to customize message during building outgoing message
+func (Heartbeat) Build() messages.HeartbeatBuilder {
 	return makeHeartbeat()
 }
 

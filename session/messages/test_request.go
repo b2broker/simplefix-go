@@ -2,6 +2,7 @@ package messages
 
 type TestRequest interface {
 	New() TestRequestBuilder
+	Build() TestRequestBuilder
 	SetFieldTestReqID(string) TestRequestBuilder
 	TestReqID() string
 }

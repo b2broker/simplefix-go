@@ -192,8 +192,8 @@ type CustomLogon struct {
     *fixgen.Logon
 }
 
-func (cl *CustomLogon) New() messages.LogonBuilder {
-    l := cl.New()
+func (cl *CustomLogon) Build() messages.LogonBuilder {
+    l := cl.Build()
     l.SetFieldCounterParty(os.Getenv("COUNTER_PARTY_ID"))
     return l
 }

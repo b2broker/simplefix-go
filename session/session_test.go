@@ -270,8 +270,8 @@ func TestNewInitiatorSessionLogonSettings(t *testing.T) {
 		settings LogonSettings
 		err      error
 	}{
-		"encryption method is nil": {settings: invalid1, err: ErrMissingEncryptMethod},
-		"heartbeat interval is zero":   {settings: invalid2, err: ErrInvalidHeartBtInt},
+		"encryption method is nil":   {settings: invalid1, err: ErrMissingEncryptMethod},
+		"heartbeat interval is zero": {settings: invalid2, err: ErrInvalidHeartBtInt},
 	}
 
 	_, err := NewInitiatorSession(simplefixgo.NewInitiatorHandler(ctx, "35", 100), &Opts{

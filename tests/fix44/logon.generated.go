@@ -201,7 +201,13 @@ func (logon *Logon) SetPassword(password string) *Logon {
 	return logon
 }
 
+// New is a plane message constructor
 func (Logon) New() messages.LogonBuilder {
+	return makeLogon()
+}
+
+// Build provides an opportunity to customize message during building outgoing message
+func (Logon) Build() messages.LogonBuilder {
 	return makeLogon()
 }
 

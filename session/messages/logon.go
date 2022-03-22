@@ -2,6 +2,7 @@ package messages
 
 type Logon interface {
 	New() LogonBuilder
+	Build() LogonBuilder
 	EncryptMethod() string
 	SetFieldEncryptMethod(string) LogonBuilder
 	HeartBtInt() int

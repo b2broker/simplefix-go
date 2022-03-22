@@ -84,7 +84,13 @@ func (resendRequest *ResendRequest) SetEndSeqNo(endSeqNo int) *ResendRequest {
 	return resendRequest
 }
 
+// New is a plane message constructor
 func (ResendRequest) New() messages.ResendRequestBuilder {
+	return makeResendRequest()
+}
+
+// Build provides an opportunity to customize message during building outgoing message
+func (ResendRequest) Build() messages.ResendRequestBuilder {
 	return makeResendRequest()
 }
 

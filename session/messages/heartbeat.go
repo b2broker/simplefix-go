@@ -2,6 +2,7 @@ package messages
 
 type Heartbeat interface {
 	New() HeartbeatBuilder
+	Build() HeartbeatBuilder
 	TestReqID() string
 	SetFieldTestReqID(string) HeartbeatBuilder
 	HeaderBuilder() HeaderBuilder

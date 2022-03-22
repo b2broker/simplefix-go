@@ -148,7 +148,13 @@ func (reject *Reject) SetEncodedText(encodedText string) *Reject {
 	return reject
 }
 
+// New is a plane message constructor
 func (Reject) New() messages.RejectBuilder {
+	return makeReject()
+}
+
+// Build provides an opportunity to customize message during building outgoing message
+func (Reject) Build() messages.RejectBuilder {
 	return makeReject()
 }
 

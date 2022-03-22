@@ -61,7 +61,7 @@ var pseudoGeneratedOpts = session.Opts{
 }
 
 func main() {
-	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", 9091))
+	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", 9991))
 	if err != nil {
 		panic(fmt.Errorf("could not dial: %s", err))
 	}

@@ -95,6 +95,12 @@ func (logout *Logout) SetEncodedText(encodedText string) *Logout {
 	return logout
 }
 
+// New is a plane message constructor
 func (Logout) New() messages.LogoutBuilder {
+	return makeLogout()
+}
+
+// Build provides an opportunity to customize message during building outgoing message
+func (Logout) Build() messages.LogoutBuilder {
 	return makeLogout()
 }

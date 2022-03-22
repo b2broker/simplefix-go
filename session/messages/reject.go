@@ -2,6 +2,7 @@ package messages
 
 type Reject interface {
 	New() RejectBuilder
+	Build() RejectBuilder
 	RefTagID() int
 	SetFieldRefTagID(int) RejectBuilder
 	RefSeqNum() int

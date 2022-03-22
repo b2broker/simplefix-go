@@ -83,7 +83,13 @@ func (sequenceReset *SequenceReset) SetNewSeqNo(newSeqNo int) *SequenceReset {
 	return sequenceReset
 }
 
+// New is a plane message constructor
 func (SequenceReset) New() messages.SequenceResetBuilder {
+	return makeSequenceReset()
+}
+
+// Build provides an opportunity to customize message during building outgoing message
+func (SequenceReset) Build() messages.SequenceResetBuilder {
 	return makeSequenceReset()
 }
 

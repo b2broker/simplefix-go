@@ -2,6 +2,7 @@ package messages
 
 type ResendRequest interface {
 	New() ResendRequestBuilder
+	Build() ResendRequestBuilder
 	BeginSeqNo() int
 	SetFieldBeginSeqNo(int) ResendRequestBuilder
 	EndSeqNo() int

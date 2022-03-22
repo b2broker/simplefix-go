@@ -260,7 +260,7 @@ func (s *Session) SetMessageStorage(storage MessageStorage) {
 func (s *Session) Logout() error {
 	s.changeState(WaitingLogoutAnswer)
 
-	s.sendWithErrorCheck(s.MessageBuilders.LogoutBuilder.New())
+	s.sendWithErrorCheck(s.MessageBuilders.LogoutBuilder.Build())
 
 	return nil
 }
@@ -276,7 +276,7 @@ func (s *Session) StartWaiting() {
 func (s *Session) LogonRequest() error {
 	s.changeState(WaitingLogonAnswer)
 
-	msg := s.MessageBuilders.LogonBuilder.New().
+	msg := s.MessageBuilders.LogonBuilder.Build().
 		SetFieldEncryptMethod(s.LogonSettings.EncryptMethod).
 		SetFieldHeartBtInt(s.LogonSettings.HeartBtInt).
 		SetFieldPassword(s.LogonSettings.Password).
@@ -349,7 +349,7 @@ func (s *Session) Run() (err error) {
 				return true
 			}
 
-			answer := s.MessageBuilders.LogonBuilder.New()
+			answer := s.MessageBuilders.LogonBuilder.Build()
 
 			s.changeState(SuccessfulLogged)
 
@@ -380,7 +380,7 @@ func (s *Session) Run() (err error) {
 		case SuccessfulLogged:
 			s.changeState(WaitingLogoutAnswer)
 
-			s.sendWithErrorCheck(s.MessageBuilders.LogoutBuilder.New())
+			s.sendWithErrorCheck(s.MessageBuilders.LogoutBuilder.Build())
 
 		default:
 			s.RejectMessage(data)
@@ -422,7 +422,7 @@ func (s *Session) Run() (err error) {
 			return true
 		}
 
-		s.sendWithErrorCheck(s.MessageBuilders.HeartbeatBuilder.New().
+		s.sendWithErrorCheck(s.MessageBuilders.HeartbeatBuilder.Build().
 			SetFieldTestReqID(testRequest.TestReqID()))
 
 		return true
@@ -466,7 +466,7 @@ func (s *Session) start() error {
 			}
 
 			incomingMsgTimer.TakeTimeout()
-			testRequest := s.MessageBuilders.TestRequestBuilder.New()
+			testRequest := s.MessageBuilders.TestRequestBuilder.Build()
 
 			testReqCounter++
 			expectedTestReq := strconv.Itoa(testReqCounter)
@@ -488,7 +488,7 @@ func (s *Session) start() error {
 
 			outgoingMsgTimer.TakeTimeout()
 
-			heartbeat := s.MessageBuilders.HeartbeatBuilder.New()
+			heartbeat := s.MessageBuilders.HeartbeatBuilder.Build()
 
 			s.sendWithErrorCheck(heartbeat)
 		}
@@ -562,7 +562,7 @@ func (s *Session) Context() context.Context {
 }
 
 func (s *Session) MakeReject(reasonCode, tag, seqNum int) messages.RejectBuilder {
-	msg := s.MessageBuilders.RejectBuilder.New().
+	msg := s.MessageBuilders.RejectBuilder.Build().
 		SetFieldRefSeqNum(seqNum).
 		SetFieldSessionRejectReason(strconv.Itoa(reasonCode))
 
