@@ -350,6 +350,7 @@ func (s *Session) Run() (err error) {
 			}
 
 			answer := s.MessageBuilders.LogonBuilder.Build()
+			answer.SetFieldEncryptMethod(s.LogonSettings.EncryptMethod).SetFieldHeartBtInt(s.LogonSettings.HeartBtInt)
 
 			s.changeState(SuccessfulLogged)
 
