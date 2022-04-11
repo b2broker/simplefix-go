@@ -3,7 +3,9 @@ package simplefixgo
 import (
 	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"net"
+	"sync"
 )
 
 // InitiatorHandler is an interface implementing basic methods required for handling the Initiator object.
@@ -36,6 +38,7 @@ func NewInitiator(conn net.Conn, handler InitiatorHandler, bufSize int) *Initiat
 
 // Close is used to cancel the specified Initiator context.
 func (c *Initiator) Close() {
+	c.conn.Close()
 	c.cancel()
 }
 
@@ -46,57 +49,83 @@ func (c *Initiator) Send(message SendingMessage) error {
 
 // Serve is used to initiate the procedure of delivering messages.
 func (c *Initiator) Serve() error {
-	connErr := make(chan error)
-	go func() {
-		connErr <- c.conn.serve()
-	}()
+	eg := errgroup.Group{}
+	defer c.Close()
 
-	handlerErr := make(chan error, 1)
-	go func() {
-		handlerErr <- c.handler.Run()
-	}()
+	stopHandler := sync.Once{}
 
-	defer func() {
-		c.handler.StopWithError(fmt.Errorf("initiator closed"))
-		c.conn.Close()
-		c.cancel()
-	}()
+	eg.Go(func() error {
+		defer c.Close()
 
-	go func() {
+		err := c.conn.serve()
+		if err != nil {
+			err = fmt.Errorf("%s: %w", err, ErrConnClosed)
+			defer stopHandler.Do(func() {
+				c.handler.StopWithError(err)
+			})
+		}
+
+		return err
+	})
+
+	eg.Go(func() error {
+		defer c.Close()
+
+		return c.handler.Run()
+	})
+
+	eg.Go(func() error {
+		defer c.Close()
+
 		for {
 			select {
 			case <-c.ctx.Done():
-				return
+				return nil
 
 			case msg, ok := <-c.handler.Outgoing():
 				if !ok {
-					return
+					return fmt.Errorf("outgoing chan is closed")
 				}
 				c.conn.Write(msg)
 			}
 		}
-	}()
+	})
 
-	for {
-		select {
-		case err := <-handlerErr:
-			return fmt.Errorf("handler error: %w", err)
+	eg.Go(func() error {
+		defer c.Close()
 
-		case err := <-connErr:
-			if err != nil {
-				c.handler.StopWithError(ErrConnClosed)
-				continue
+		<-c.ctx.Done()
+		stopHandler.Do(func() {
+			c.handler.StopWithError(nil)
+		})
+
+		return nil
+	})
+
+	eg.Go(func() error {
+		defer c.Close()
+
+		for {
+			select {
+			case <-c.ctx.Done():
+				return nil
+
+			case msg, ok := <-c.conn.Reader():
+				if !ok {
+					continue
+				}
+				c.handler.ServeIncoming(msg)
 			}
-			return nil
-
-		case <-c.ctx.Done():
-			return nil
-
-		case msg, ok := <-c.conn.Reader():
-			if !ok {
-				continue
-			}
-			c.handler.ServeIncoming(msg)
 		}
+	})
+
+	err := eg.Wait()
+	if err != nil {
+		stopHandler.Do(func() {
+			c.handler.StopWithError(err)
+		})
+		return fmt.Errorf("stop handler: %w", err)
 	}
+
+	return nil
 }
