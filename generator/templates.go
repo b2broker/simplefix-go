@@ -79,7 +79,7 @@ func Create{{.Name}}({{.Args}}) *{{.Name}} {
 func New{{.Name}}() *{{.Name}} {
 	m := make{{.Name}}()
 	return &{{.Name}}{
-		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgTypeHeartbeat).
+		fix.NewMessage(FieldBeginString, FieldBodyLength, FieldCheckSum, FieldMsgType, beginString, MsgType{{.Name}}).
 			SetBody(m.Body()...).
 			SetHeader(m.Header().AsComponent()).
 			SetTrailer(m.Trailer().AsComponent()),
