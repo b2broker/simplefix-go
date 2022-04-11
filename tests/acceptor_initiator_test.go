@@ -687,7 +687,7 @@ func TestInterruptHandling(t *testing.T) {
 
 	go func() {
 		err := client.Serve()
-		if err != nil && errors.Is(err, simplefixgo.ErrConnClosed) {
+		if err != nil && !errors.Is(err, simplefixgo.ErrConnClosed) {
 			panic(fmt.Errorf("could not serve the client: %s", err))
 		}
 	}()
