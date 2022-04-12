@@ -1,4 +1,2 @@
-github.com/sdaf47/go-tools v1.0.2 h1:cj2OCMD43Hrnn2jXddr6i8DflmFHcXHp2q/vloRTsDM=
-github.com/sdaf47/go-tools v1.0.2/go.mod h1:N9hpRxHhD1wijg45c9xYzC/N+LqRU4zxgg2W/O45oU4=
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c h1:5KslGYwFpkhGh+Q16bwMP3cOontH8FOep7tGV86Y7SQ=
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
