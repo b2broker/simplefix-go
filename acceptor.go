@@ -2,10 +2,10 @@ package simplefixgo
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
+	"golang.org/x/sync/errgroup"
 	"net"
+	"sync"
 
 	"github.com/b2broker/simplefix-go/utils"
 )
@@ -110,62 +110,74 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 	defer cancel()
 
 	conn := NewConn(parentCtx, netConn, s.size)
+	defer conn.Close()
 
 	handler := s.factory.MakeHandler(ctx)
 
-	connErr := make(chan error, 1)
-	go func() {
-		connErr <- conn.serve()
-	}()
+	eg := errgroup.Group{}
+	stopHandler := sync.Once{}
 
-	handlerErr := make(chan error, 1)
+	eg.Go(func() error {
+		defer cancel()
 
-	defer conn.Close()
+		err := conn.serve()
+		if err != nil {
+			err = fmt.Errorf("%s: %w", err, ErrConnClosed)
+			defer stopHandler.Do(func() {
+				handler.StopWithError(err)
+			})
+		}
+
+		return err
+	})
 
 	if s.handleNewClient != nil {
 		s.handleNewClient(handler)
 	}
 
-	go func() {
-		handlerErr <- handler.Run()
-	}()
+	eg.Go(func() error {
+		defer cancel()
 
-	go func() {
+		return handler.Run()
+	})
+
+	eg.Go(func() error {
+		defer cancel()
+
 		for {
 			select {
 			case <-s.ctx.Done():
-				return
+				return nil
 
 			case msg, ok := <-handler.Outgoing():
 				if !ok {
-					return
+					return nil
 				}
-				conn.Write(msg)
+
+				err := conn.Write(msg)
+				if err != nil {
+					return err
+				}
 			}
 		}
-	}()
+	})
 
-	for {
-		select {
-		case <-handlerErr:
-			return
+	eg.Go(func() error {
+		defer cancel()
 
-		case err := <-connErr:
-			if errors.Is(err, io.EOF) {
-				handler.StopWithError(ErrConnClosed)
-				return
+		for {
+			select {
+			case <-s.ctx.Done():
+				return nil
+
+			case msg, ok := <-conn.Reader():
+				if !ok {
+					continue
+				}
+				handler.ServeIncoming(msg)
 			}
-			handler.StopWithError(err)
-			return
-
-		case <-s.ctx.Done():
-			return
-
-		case msg, ok := <-conn.Reader():
-			if !ok {
-				continue
-			}
-			handler.ServeIncoming(msg)
 		}
-	}
+	})
+
+	_ = eg.Wait()
 }

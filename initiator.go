@@ -86,7 +86,11 @@ func (c *Initiator) Serve() error {
 				if !ok {
 					return fmt.Errorf("outgoing chan is closed")
 				}
-				c.conn.Write(msg)
+
+				err := c.conn.Write(msg)
+				if err != nil {
+					return ErrConnClosed
+				}
 			}
 		}
 	})
