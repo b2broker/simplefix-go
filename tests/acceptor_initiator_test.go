@@ -704,11 +704,13 @@ func TestInterruptHandling(t *testing.T) {
 	}
 }
 
-func TestHighload(t *testing.T) {
-	const heartBtInt = 5
-
-	triesNum := 100
-	threadsNum := 5
+func TestSequenceNumHighload(t *testing.T) {
+	const (
+		heartBtInt = 1
+		triesNum   = 100
+		threadsNum = 10
+		waitLimit  = time.Second * 10
+	)
 
 	// Close the Acceptor after its work is accomplished:
 	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
@@ -789,7 +791,7 @@ func TestHighload(t *testing.T) {
 		return true
 	})
 
-	err := waitSnapshots.WaitWithTimeout(time.Second * heartBtInt)
+	err := waitSnapshots.WaitWithTimeout(waitLimit)
 	if err != nil {
 		t.Fatalf("snapshots awaiting timeout: %s", err)
 	}
