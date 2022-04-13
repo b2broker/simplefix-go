@@ -707,7 +707,7 @@ func TestInterruptHandling(t *testing.T) {
 func TestSequenceNumHighload(t *testing.T) {
 	const (
 		heartBtInt = 1
-		triesNum   = 100
+		triesNum   = 10
 		threadsNum = 10
 		waitLimit  = time.Second * 10
 	)
