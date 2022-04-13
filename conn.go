@@ -42,7 +42,7 @@ func NewConn(ctx context.Context, conn net.Conn, msgBuffSize int) *Conn {
 
 // Close is called to cancel a connection context and close a connection.
 func (c *Conn) Close() {
-	c.conn.Close()
+	_ = c.conn.Close()
 	c.cancel()
 }
 
@@ -52,7 +52,6 @@ func (c *Conn) serve() error {
 
 	eg := errgroup.Group{}
 
-	eg.Go(c.runWriter)
 	eg.Go(c.runReader)
 
 	return eg.Wait()
@@ -83,34 +82,24 @@ func (c *Conn) runReader() error {
 	}
 }
 
-func (c *Conn) runWriter() error {
-	defer c.cancel()
-
-	for {
-		select {
-		case msg := <-c.writer:
-			_, err := c.conn.Write(msg)
-			if err != nil {
-				return fmt.Errorf("write error: %w", err)
-			}
-
-		case <-c.ctx.Done():
-			return nil
-		}
-	}
-}
-
 // Reader returns a separate channel for handing incoming messages.
 func (c *Conn) Reader() <-chan []byte {
 	return c.reader
 }
 
 // Write is called to send messages to an outgoing socket.
-func (c *Conn) Write(msg []byte) {
+func (c *Conn) Write(msg []byte) error {
 	select {
 	case <-c.ctx.Done():
-		return
+		return ErrConnClosed
 	default:
 	}
-	c.writer <- msg
+
+	_, err := c.conn.Write(msg)
+	if err != nil {
+		c.cancel()
+		return fmt.Errorf("write error: %w", err)
+	}
+
+	return nil
 }
