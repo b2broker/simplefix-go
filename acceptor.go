@@ -3,9 +3,11 @@ package simplefixgo
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"net"
 	"sync"
+	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/b2broker/simplefix-go/utils"
 )
@@ -50,17 +52,19 @@ type Acceptor struct {
 	factory         HandlerFactory
 	size            int
 	handleNewClient func(handler AcceptorHandler)
+	writeTimeout    time.Duration
 
 	ctx    context.Context
 	cancel context.CancelFunc
 }
 
 // NewAcceptor is used to create a new Acceptor instance.
-func NewAcceptor(listener net.Listener, factory HandlerFactory, handleNewClient func(handler AcceptorHandler)) *Acceptor {
+func NewAcceptor(listener net.Listener, factory HandlerFactory, writeTimeout time.Duration, handleNewClient func(handler AcceptorHandler)) *Acceptor {
 	s := &Acceptor{
 		factory:         factory,
 		listener:        listener,
 		handleNewClient: handleNewClient,
+		writeTimeout:    writeTimeout,
 	}
 
 	s.ctx, s.cancel = context.WithCancel(context.Background())
@@ -109,7 +113,7 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
-	conn := NewConn(parentCtx, netConn, s.size)
+	conn := NewConn(parentCtx, netConn, s.size, s.writeTimeout)
 	defer conn.Close()
 
 	handler := s.factory.MakeHandler(ctx)

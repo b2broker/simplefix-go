@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"net"
+	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // ErrConnClosed handles connection errors.
@@ -24,10 +26,12 @@ type Conn struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	writeDeadline time.Duration
 }
 
 // NewConn is called to create a new connection.
-func NewConn(ctx context.Context, conn net.Conn, msgBuffSize int) *Conn {
+func NewConn(ctx context.Context, conn net.Conn, msgBuffSize int, writeDeadline time.Duration) *Conn {
 	c := &Conn{
 		reader: make(chan []byte, msgBuffSize),
 		writer: make(chan []byte, msgBuffSize),
@@ -95,6 +99,10 @@ func (c *Conn) Write(msg []byte) error {
 	default:
 	}
 
+	if err := c.conn.SetWriteDeadline(time.Now().Add(c.writeDeadline)); err != nil {
+		c.cancel()
+		return fmt.Errorf("set write deadline error: %w", err)
+	}
 	_, err := c.conn.Write(msg)
 	if err != nil {
 		c.cancel()

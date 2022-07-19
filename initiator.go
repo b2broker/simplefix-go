@@ -3,9 +3,11 @@ package simplefixgo
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"net"
 	"sync"
+	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // InitiatorHandler is an interface implementing basic methods required for handling the Initiator object.
@@ -27,11 +29,11 @@ type Initiator struct {
 }
 
 // NewInitiator creates a new Initiator instance.
-func NewInitiator(conn net.Conn, handler InitiatorHandler, bufSize int) *Initiator {
+func NewInitiator(conn net.Conn, handler InitiatorHandler, bufSize int, writeDeadline time.Duration) *Initiator {
 	c := &Initiator{handler: handler}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
 
-	c.conn = NewConn(c.ctx, conn, bufSize)
+	c.conn = NewConn(c.ctx, conn, bufSize, writeDeadline)
 
 	return c
 }
