@@ -82,18 +82,19 @@ type Session struct {
 	stateMu sync.RWMutex
 
 	// Services:
-	router       Handler
+	Router       Handler
 	unmarshaller Unmarshaller
 
 	msgStorageAllHandler    int64
 	msgStorageResendHandler int64
 
-	counter      *int64
+	Counter      *int64
 	eventHandler *utils.EventHandlerPool
 
 	// Parameters:
 	LogonHandler  logonHandler
 	LogonSettings *LogonSettings
+	logonRequest  func(*Session) error
 
 	// soon
 	// maxMessageSize  int64  // validation
@@ -170,8 +171,8 @@ func newSession(opts *Opts, handler Handler, settings *LogonSettings) (session *
 
 	session = &Session{
 		Opts:         opts,
-		router:       handler,
-		counter:      new(int64),
+		Router:       handler,
+		Counter:      new(int64),
 		eventHandler: utils.NewEventHandlerPool(),
 		unmarshaller: encoding.NewDefaultUnmarshaller(true),
 
@@ -226,16 +227,16 @@ func (s *Session) checkLogonParams(incoming messages.LogonBuilder) (ok bool, tag
 
 func (s *Session) SetMessageStorage(storage MessageStorage) {
 	if s.msgStorageAllHandler > 0 || s.msgStorageResendHandler > 0 {
-		_ = s.router.RemoveOutgoingHandler(simplefixgo.AllMsgTypes, s.msgStorageAllHandler)
-		_ = s.router.RemoveIncomingHandler(s.MessageBuilders.ResendRequestBuilder.MsgType(), s.msgStorageResendHandler)
+		_ = s.Router.RemoveOutgoingHandler(simplefixgo.AllMsgTypes, s.msgStorageAllHandler)
+		_ = s.Router.RemoveIncomingHandler(s.MessageBuilders.ResendRequestBuilder.MsgType(), s.msgStorageResendHandler)
 	}
 
-	s.msgStorageAllHandler = s.router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
+	s.msgStorageAllHandler = s.Router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
 		_ = storage.Save(msg, msg.HeaderBuilder().MsgSeqNum())
 
 		return true
 	})
-	s.msgStorageResendHandler = s.router.HandleIncoming(s.MessageBuilders.ResendRequestBuilder.MsgType(), func(data []byte) bool {
+	s.msgStorageResendHandler = s.Router.HandleIncoming(s.MessageBuilders.ResendRequestBuilder.MsgType(), func(data []byte) bool {
 
 		resendMsg := s.MessageBuilders.ResendRequestBuilder.New()
 		err := s.unmarshaller.Unmarshal(resendMsg, data)
@@ -250,11 +251,15 @@ func (s *Session) SetMessageStorage(storage MessageStorage) {
 		}
 
 		for _, message := range resendMessages {
-			_ = s.router.Send(message)
+			_ = s.Router.Send(message)
 		}
 
 		return true
 	})
+}
+
+func (s *Session) SetLogonRequest(logonRequest func(*Session) error) {
+	s.logonRequest = logonRequest
 }
 
 func (s *Session) Logout() error {
@@ -275,6 +280,9 @@ func (s *Session) StartWaiting() {
 
 func (s *Session) LogonRequest() error {
 	s.changeState(WaitingLogonAnswer)
+	if s.logonRequest != nil {
+		return s.logonRequest(s)
+	}
 
 	msg := s.MessageBuilders.LogonBuilder.Build().
 		SetFieldEncryptMethod(s.LogonSettings.EncryptMethod).
@@ -286,7 +294,7 @@ func (s *Session) LogonRequest() error {
 	return nil
 }
 
-func (s *Session) handlerError(err error) {
+func (s *Session) HandlerError(err error) {
 	if s.errorHandler != nil && err != nil {
 		s.errorHandler(err)
 	}
@@ -313,7 +321,7 @@ func (s *Session) Run() (err error) {
 		})
 	}
 
-	s.router.HandleIncoming(s.MessageBuilders.LogonBuilder.MsgType(), func(data []byte) bool {
+	s.Router.HandleIncoming(s.MessageBuilders.LogonBuilder.MsgType(), func(data []byte) bool {
 
 		incomingLogon := s.MessageBuilders.LogonBuilder.New()
 		err := s.unmarshaller.Unmarshal(incomingLogon, data)
@@ -366,7 +374,7 @@ func (s *Session) Run() (err error) {
 
 		return true
 	})
-	s.router.HandleIncoming(s.MessageBuilders.LogoutBuilder.MsgType(), func(data []byte) bool {
+	s.Router.HandleIncoming(s.MessageBuilders.LogoutBuilder.MsgType(), func(data []byte) bool {
 		err := s.unmarshaller.Unmarshal(s.MessageBuilders.LogoutBuilder.New(), data)
 		if err != nil {
 			s.RejectMessage(data)
@@ -395,7 +403,7 @@ func (s *Session) Run() (err error) {
 
 		return true
 	})
-	s.router.HandleIncoming(s.MessageBuilders.HeartbeatBuilder.MsgType(), func(data []byte) bool {
+	s.Router.HandleIncoming(s.MessageBuilders.HeartbeatBuilder.MsgType(), func(data []byte) bool {
 		heartbeat := s.MessageBuilders.HeartbeatBuilder.New()
 		err := s.unmarshaller.Unmarshal(heartbeat, data)
 		if err != nil {
@@ -410,7 +418,7 @@ func (s *Session) Run() (err error) {
 
 		return true
 	})
-	s.router.HandleIncoming(s.MessageBuilders.TestRequestBuilder.MsgType(), func(data []byte) bool {
+	s.Router.HandleIncoming(s.MessageBuilders.TestRequestBuilder.MsgType(), func(data []byte) bool {
 		testRequest := s.MessageBuilders.TestRequestBuilder.New()
 		err := s.unmarshaller.Unmarshal(testRequest, data)
 		if err != nil {
@@ -444,12 +452,12 @@ func (s *Session) start() error {
 		return err
 	}
 
-	s.router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
+	s.Router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		incomingMsgTimer.Refresh()
 
 		return true
 	})
-	s.router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
+	s.Router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
 		outgoingMsgTimer.Refresh()
 
 		return true
@@ -521,12 +529,12 @@ func (s *Session) RejectMessage(msg []byte) {
 	s.sendWithErrorCheck(reject)
 }
 
-func (s *Session) currentTime() time.Time {
+func (s *Session) CurrentTime() time.Time {
 	return time.Now().In(s.timeLocation)
 }
 
 // Send is used to send a message after preparing its header tags:
-// - the sequence number with a counter
+// - the sequence number with a Counter
 // - the targetCompID and senderCompID fields
 // - the sending time, with the current time zone indicated
 // To send a message with custom fields, call the Send method for a Handler instead.
@@ -539,16 +547,16 @@ func (s *Session) send(msg messages.Message) error {
 	defer s.mu.Unlock()
 
 	msg.HeaderBuilder().
-		SetFieldMsgSeqNum(int(atomic.AddInt64(s.counter, 1))).
+		SetFieldMsgSeqNum(int(atomic.AddInt64(s.Counter, 1))).
 		SetFieldTargetCompID(s.LogonSettings.TargetCompID).
 		SetFieldSenderCompID(s.LogonSettings.SenderCompID).
-		SetFieldSendingTime(s.currentTime().Format(fix.TimeLayout))
+		SetFieldSendingTime(s.CurrentTime().Format(fix.TimeLayout))
 
-	return s.router.Send(msg)
+	return s.Router.Send(msg)
 }
 
 func (s *Session) sendWithErrorCheck(msg messages.Message) {
-	s.handlerError(s.send(msg))
+	s.HandlerError(s.send(msg))
 }
 
 func (s *Session) IsLogged() bool {
