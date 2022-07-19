@@ -33,10 +33,10 @@ type Conn struct {
 // NewConn is called to create a new connection.
 func NewConn(ctx context.Context, conn net.Conn, msgBuffSize int, writeDeadline time.Duration) *Conn {
 	c := &Conn{
-		reader: make(chan []byte, msgBuffSize),
-		writer: make(chan []byte, msgBuffSize),
-
-		conn: conn,
+		reader:        make(chan []byte, msgBuffSize),
+		writer:        make(chan []byte, msgBuffSize),
+		writeDeadline: writeDeadline,
+		conn:          conn,
 	}
 
 	c.ctx, c.cancel = context.WithCancel(ctx)
