@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
+	"strconv"
+	"time"
+
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/fix/encoding"
@@ -11,9 +15,6 @@ import (
 	"github.com/b2broker/simplefix-go/session/messages"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
 	"github.com/b2broker/simplefix-go/utils"
-	"net"
-	"strconv"
-	"time"
 )
 
 func mustConvToInt(s string) int {
@@ -70,7 +71,7 @@ func main() {
 	defer cancel()
 
 	handler := simplefixgo.NewInitiatorHandler(ctx, fixgen.FieldMsgType, 10)
-	client := simplefixgo.NewInitiator(conn, handler, 10)
+	client := simplefixgo.NewInitiator(conn, handler, 10, time.Second*5)
 
 	handler.OnConnect(func() bool {
 		return true

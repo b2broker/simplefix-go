@@ -5,13 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"testing"
+	"time"
+
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
-	"net"
-	"testing"
-	"time"
 )
 
 func RunNewInitiator(addr string, t *testing.T, settings *session.LogonSettings) (s *session.Session, handler *simplefixgo.DefaultHandler) {
@@ -21,7 +22,7 @@ func RunNewInitiator(addr string, t *testing.T, settings *session.LogonSettings)
 	}
 
 	handler = simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
-	client := simplefixgo.NewInitiator(conn, handler, 10)
+	client := simplefixgo.NewInitiator(conn, handler, 10, time.Minute*50)
 
 	s, err = session.NewInitiatorSession(
 		handler,

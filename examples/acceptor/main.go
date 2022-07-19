@@ -3,6 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"net"
+	"strconv"
+	"time"
+
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/fix/encoding"
@@ -10,9 +14,6 @@ import (
 	"github.com/b2broker/simplefix-go/session/messages"
 	"github.com/b2broker/simplefix-go/session/storages/memory"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
-	"net"
-	"strconv"
-	"time"
 )
 
 func mustConvToInt(s string) int {
@@ -69,7 +70,7 @@ func main() {
 
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 
-	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
+	server := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
 		sess, err := session.NewAcceptorSession(
 			&pseudoGeneratedOpts,
 			handler,

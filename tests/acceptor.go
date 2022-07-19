@@ -2,12 +2,13 @@ package tests
 
 import (
 	"fmt"
-	simplefixgo "github.com/b2broker/simplefix-go"
-	"github.com/b2broker/simplefix-go/session"
-	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
 	"net"
 	"testing"
 	"time"
+
+	simplefixgo "github.com/b2broker/simplefix-go"
+	"github.com/b2broker/simplefix-go/session"
+	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
 )
 
 func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) (acceptor *simplefixgo.Acceptor, addr string) {
@@ -18,7 +19,7 @@ func RunAcceptor(port int, t *testing.T, storage session.MessageStorage) (accept
 
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 
-	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
+	server := simplefixgo.NewAcceptor(listener, handlerFactory, time.Minute*50, func(handler simplefixgo.AcceptorHandler) {
 		s, err := session.NewAcceptorSession(
 			&pseudoGeneratedOpts,
 			handler,

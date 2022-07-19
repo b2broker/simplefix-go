@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/b2broker/simplefix-go/fix/encoding"
 	"net"
 	"regexp"
 	"strconv"
@@ -13,6 +12,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/b2broker/simplefix-go/fix/encoding"
 
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
@@ -87,7 +88,7 @@ func TestGroup(t *testing.T) {
 
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 
-	acceptor := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
+	acceptor := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
 		s, err := session.NewAcceptorSession(
 			&pseudoGeneratedOpts,
 			handler,
@@ -326,7 +327,7 @@ func TestCloseInitiatorConn(t *testing.T) {
 
 	waitClientClosed := make(chan struct{})
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
-	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
+	server := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
 		s, err := session.NewAcceptorSession(
 			&pseudoGeneratedOpts,
 			handler,
@@ -365,7 +366,7 @@ func TestCloseInitiatorConn(t *testing.T) {
 	}
 
 	handler := simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
-	client := simplefixgo.NewInitiator(conn, handler, 10)
+	client := simplefixgo.NewInitiator(conn, handler, 10, time.Second*5)
 
 	s, err := session.NewInitiatorSession(
 		handler,
@@ -411,7 +412,7 @@ func TestCloseAcceptorConn(t *testing.T) {
 
 	waitServerDisconnect := make(chan struct{})
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
-	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
+	server := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
 		s, err := session.NewAcceptorSession(
 			&pseudoGeneratedOpts,
 			handler,
@@ -450,7 +451,7 @@ func TestCloseAcceptorConn(t *testing.T) {
 	}
 
 	initiatorHandler := simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
-	client := simplefixgo.NewInitiator(conn, initiatorHandler, 10)
+	client := simplefixgo.NewInitiator(conn, initiatorHandler, 10, time.Second*5)
 
 	s, err := session.NewInitiatorSession(
 		initiatorHandler,
@@ -506,7 +507,7 @@ func TestLookAtClosingOfInitiator(t *testing.T) {
 
 	waitClientDisconnect := make(chan struct{})
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
-	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
+	server := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
 		acceptorSession, err := session.NewAcceptorSession(
 			&pseudoGeneratedOpts,
 			handler,
@@ -560,7 +561,7 @@ func TestLookAtClosingOfInitiator(t *testing.T) {
 	}
 
 	initiatorHandler := simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
-	client := simplefixgo.NewInitiator(conn, initiatorHandler, 10)
+	client := simplefixgo.NewInitiator(conn, initiatorHandler, 10, time.Second*5)
 
 	initiatorSession, err := session.NewInitiatorSession(
 		initiatorHandler,
@@ -610,7 +611,7 @@ func TestInterruptHandling(t *testing.T) {
 
 	waitClientDisconnect := make(chan struct{})
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
-	server := simplefixgo.NewAcceptor(listener, handlerFactory, func(handler simplefixgo.AcceptorHandler) {
+	server := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
 		acceptorSession, err := session.NewAcceptorSession(
 			&pseudoGeneratedOpts,
 			handler,
@@ -662,7 +663,7 @@ func TestInterruptHandling(t *testing.T) {
 	}
 
 	initiatorHandler := simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
-	client := simplefixgo.NewInitiator(conn, initiatorHandler, 10)
+	client := simplefixgo.NewInitiator(conn, initiatorHandler, 10, time.Second*5)
 
 	initiatorSession, err := session.NewInitiatorSession(
 		initiatorHandler,
