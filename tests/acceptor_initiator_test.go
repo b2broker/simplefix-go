@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/b2broker/simplefix-go/storages/memory"
 	"net"
 	"regexp"
 	"strconv"
@@ -18,7 +19,6 @@ import (
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session"
-	"github.com/b2broker/simplefix-go/session/storages/memory"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
 	"github.com/b2broker/simplefix-go/utils"
 )
@@ -30,7 +30,7 @@ func TestHeartbeat(t *testing.T) {
 	)
 
 	// Close the Acceptor after its work is accomplished:
-	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
+	acceptor, addr := RunAcceptor(0, t)
 	defer acceptor.Close()
 	go func() {
 		err := acceptor.ListenAndServe()
@@ -88,6 +88,8 @@ func TestGroup(t *testing.T) {
 
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 
+	testStorage := memory.NewStorage()
+
 	acceptor := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
 		s, err := session.NewAcceptorSession(
 			&pseudoGeneratedOpts,
@@ -100,6 +102,8 @@ func TestGroup(t *testing.T) {
 				},
 			},
 			func(request *session.LogonSettings) (err error) { return nil },
+			testStorage,
+			testStorage,
 		)
 		if err != nil {
 			panic(err)
@@ -132,8 +136,6 @@ func TestGroup(t *testing.T) {
 			close(done)
 			return true
 		})
-
-		s.SetMessageStorage(memory.NewStorage(100, 100))
 	})
 
 	defer acceptor.Close()
@@ -191,7 +193,7 @@ func TestTestRequest(t *testing.T) {
 	)
 
 	// Close the Acceptor after its work is accomplished:
-	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
+	acceptor, addr := RunAcceptor(0, t)
 	defer acceptor.Close()
 	go func() {
 		err := acceptor.ListenAndServe()
@@ -256,7 +258,7 @@ func TestResendSequence(t *testing.T) {
 	var countOfResending = resendEnd - resendBegin + 1 // The range encompasses the elements that mark the end and beginning.
 
 	// Close the Acceptor after its work is accomplished:
-	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
+	acceptor, addr := RunAcceptor(0, t)
 	defer acceptor.Close()
 	go func() {
 		err := acceptor.ListenAndServe()
@@ -325,6 +327,8 @@ func TestCloseInitiatorConn(t *testing.T) {
 		t.Fatalf("listening error: %s", err)
 	}
 
+	testStorage := memory.NewStorage()
+
 	waitClientClosed := make(chan struct{})
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
@@ -336,6 +340,8 @@ func TestCloseInitiatorConn(t *testing.T) {
 				Max: 30,
 			}, LogonTimeout: time.Second * 30},
 			func(request *session.LogonSettings) (err error) { return nil },
+			testStorage,
+			testStorage,
 		)
 		if err != nil {
 			panic(err)
@@ -377,6 +383,8 @@ func TestCloseInitiatorConn(t *testing.T) {
 			HeartBtInt:    1,
 			EncryptMethod: fixgen.EnumEncryptMethodNoneother,
 		},
+		testStorage,
+		testStorage,
 	)
 	if err != nil {
 		panic(err)
@@ -410,6 +418,8 @@ func TestCloseAcceptorConn(t *testing.T) {
 		t.Fatalf("listening error: %s", err)
 	}
 
+	testStorage := memory.NewStorage()
+
 	waitServerDisconnect := make(chan struct{})
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
@@ -422,6 +432,8 @@ func TestCloseAcceptorConn(t *testing.T) {
 					Max: 60,
 				}, LogonTimeout: time.Second * 30},
 			func(request *session.LogonSettings) (err error) { return nil },
+			testStorage,
+			testStorage,
 		)
 		if err != nil {
 			panic(err)
@@ -462,6 +474,8 @@ func TestCloseAcceptorConn(t *testing.T) {
 			HeartBtInt:    1,
 			EncryptMethod: fixgen.EnumEncryptMethodNoneother,
 		},
+		testStorage,
+		testStorage,
 	)
 	if err != nil {
 		panic(err)
@@ -505,6 +519,8 @@ func TestLookAtClosingOfInitiator(t *testing.T) {
 		t.Fatalf("listening error: %s", err)
 	}
 
+	testStorage := memory.NewStorage()
+
 	waitClientDisconnect := make(chan struct{})
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
@@ -517,6 +533,8 @@ func TestLookAtClosingOfInitiator(t *testing.T) {
 					Max: 60,
 				}, LogonTimeout: time.Second * 30},
 			func(request *session.LogonSettings) (err error) { return nil },
+			testStorage,
+			testStorage,
 		)
 		if err != nil {
 			panic(err)
@@ -572,6 +590,8 @@ func TestLookAtClosingOfInitiator(t *testing.T) {
 			HeartBtInt:    1,
 			EncryptMethod: fixgen.EnumEncryptMethodNoneother,
 		},
+		testStorage,
+		testStorage,
 	)
 	if err != nil {
 		panic(err)
@@ -609,6 +629,8 @@ func TestInterruptHandling(t *testing.T) {
 		t.Fatalf("listening error: %s", err)
 	}
 
+	testStorage := memory.NewStorage()
+
 	waitClientDisconnect := make(chan struct{})
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
@@ -621,6 +643,8 @@ func TestInterruptHandling(t *testing.T) {
 					Max: 60,
 				}, LogonTimeout: time.Second * 30},
 			func(request *session.LogonSettings) (err error) { return nil },
+			testStorage,
+			testStorage,
 		)
 		if err != nil {
 			t.Fatalf("could not start a new session: %s", err)
@@ -674,6 +698,8 @@ func TestInterruptHandling(t *testing.T) {
 			HeartBtInt:    1,
 			EncryptMethod: fixgen.EnumEncryptMethodNoneother,
 		},
+		testStorage,
+		testStorage,
 	)
 	if err != nil {
 		panic(err)
@@ -714,7 +740,7 @@ func TestSequenceNumHighload(t *testing.T) {
 	)
 
 	// Close the Acceptor after its work is accomplished:
-	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
+	acceptor, addr := RunAcceptor(0, t)
 	defer acceptor.Close()
 	go func() {
 		err := acceptor.ListenAndServe()
@@ -805,7 +831,7 @@ func TestSessionClosing(t *testing.T) {
 	)
 
 	// Close the Acceptor after its work is accomplished:
-	acceptor, addr := RunAcceptor(0, t, memory.NewStorage(100, 100))
+	acceptor, addr := RunAcceptor(0, t)
 	defer acceptor.Close()
 	go func() {
 		err := acceptor.ListenAndServe()

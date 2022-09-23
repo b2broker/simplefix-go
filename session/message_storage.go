@@ -13,6 +13,6 @@ var (
 
 // MessageStorage is an interface providing a basic method for storing messages awaiting to be sent.
 type MessageStorage interface {
-	Save(msg simplefixgo.SendingMessage, msgSeqNum int) error
-	Messages(msgSeqNumFrom, msgSeqNumTo int) ([]simplefixgo.SendingMessage, error)
+	Save(pk string, msg simplefixgo.SendingMessage, msgSeqNum int) error
+	Messages(pk string, msgSeqNumFrom, msgSeqNumTo int) ([]simplefixgo.SendingMessage, error)
 }

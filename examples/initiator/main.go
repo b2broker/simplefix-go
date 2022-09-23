@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/b2broker/simplefix-go/storages/memory"
 	"net"
 	"strconv"
 	"time"
@@ -77,6 +78,8 @@ func main() {
 		return true
 	})
 
+	exampleStorage := memory.NewStorage()
+
 	sess, err := session.NewInitiatorSession(
 		handler,
 		&pseudoGeneratedOpts,
@@ -88,6 +91,8 @@ func main() {
 			Password:      "password",
 			Username:      "login",
 		},
+		exampleStorage,
+		exampleStorage,
 	)
 	if err != nil {
 		panic(err)

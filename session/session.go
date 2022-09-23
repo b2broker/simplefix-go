@@ -8,7 +8,6 @@ import (
 	"math"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	simplefixgo "github.com/b2broker/simplefix-go"
@@ -85,11 +84,9 @@ type Session struct {
 	Router       Handler
 	unmarshaller Unmarshaller
 
-	msgStorageAllHandler    int64
-	msgStorageResendHandler int64
-
-	Counter      *int64
-	eventHandler *utils.EventHandlerPool
+	messageStorage MessageStorage
+	counter        CounterStorage
+	eventHandler   *utils.EventHandlerPool
 
 	// Parameters:
 	LogonHandler  logonHandler
@@ -108,8 +105,8 @@ type Session struct {
 }
 
 // NewInitiatorSession returns a session for an Initiator object.
-func NewInitiatorSession(handler Handler, opts *Opts, settings *LogonSettings) (s *Session, err error) {
-	s, err = newSession(opts, handler, settings)
+func NewInitiatorSession(handler Handler, opts *Opts, settings *LogonSettings, cs CounterStorage, ms MessageStorage) (s *Session, err error) {
+	s, err = newSession(opts, handler, settings, cs, ms)
 	if err != nil {
 		return
 	}
@@ -129,8 +126,8 @@ func NewInitiatorSession(handler Handler, opts *Opts, settings *LogonSettings) (
 }
 
 // NewAcceptorSession returns a session for an Acceptor object.
-func NewAcceptorSession(params *Opts, handler Handler, settings *LogonSettings, onLogon logonHandler) (s *Session, err error) {
-	s, err = newSession(params, handler, settings)
+func NewAcceptorSession(params *Opts, handler Handler, settings *LogonSettings, onLogon logonHandler, cs CounterStorage, ms MessageStorage) (s *Session, err error) {
+	s, err = newSession(params, handler, settings, cs, ms)
 	if err != nil {
 		return
 	}
@@ -155,7 +152,7 @@ func NewAcceptorSession(params *Opts, handler Handler, settings *LogonSettings, 
 	return
 }
 
-func newSession(opts *Opts, handler Handler, settings *LogonSettings) (session *Session, err error) {
+func newSession(opts *Opts, handler Handler, settings *LogonSettings, cs CounterStorage, ms MessageStorage) (session *Session, err error) {
 	if handler == nil {
 		return nil, ErrMissingHandler
 	}
@@ -170,14 +167,17 @@ func newSession(opts *Opts, handler Handler, settings *LogonSettings) (session *
 	}
 
 	session = &Session{
-		Opts:         opts,
-		Router:       handler,
-		Counter:      new(int64),
-		eventHandler: utils.NewEventHandlerPool(),
-		unmarshaller: encoding.NewDefaultUnmarshaller(true),
+		Opts:           opts,
+		Router:         handler,
+		messageStorage: ms,
+		counter:        cs,
+		eventHandler:   utils.NewEventHandlerPool(),
+		unmarshaller:   encoding.NewDefaultUnmarshaller(true),
 
 		LogonSettings: settings,
 	}
+
+	session.setSaveMessagesCallback()
 
 	if opts.Location != "" {
 		session.timeLocation, err = time.LoadLocation(opts.Location)
@@ -225,19 +225,16 @@ func (s *Session) checkLogonParams(incoming messages.LogonBuilder) (ok bool, tag
 	return true, 0, 0
 }
 
-func (s *Session) SetMessageStorage(storage MessageStorage) {
-	if s.msgStorageAllHandler > 0 || s.msgStorageResendHandler > 0 {
-		_ = s.Router.RemoveOutgoingHandler(simplefixgo.AllMsgTypes, s.msgStorageAllHandler)
-		_ = s.Router.RemoveIncomingHandler(s.MessageBuilders.ResendRequestBuilder.MsgType(), s.msgStorageResendHandler)
-	}
-
-	s.msgStorageAllHandler = s.Router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
-		_ = storage.Save(msg, msg.HeaderBuilder().MsgSeqNum())
-
+func (s *Session) setSaveMessagesCallback() {
+	s.Router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
+		err := s.messageStorage.Save(fmt.Sprintf("%s-%s", s.LogonSettings.SenderCompID, s.LogonSettings.TargetCompID), msg, msg.HeaderBuilder().MsgSeqNum())
+		if err != nil {
+			return false
+		}
 		return true
 	})
-	s.msgStorageResendHandler = s.Router.HandleIncoming(s.MessageBuilders.ResendRequestBuilder.MsgType(), func(data []byte) bool {
 
+	s.Router.HandleIncoming(s.MessageBuilders.ResendRequestBuilder.MsgType(), func(data []byte) bool {
 		resendMsg := s.MessageBuilders.ResendRequestBuilder.New()
 		err := s.unmarshaller.Unmarshal(resendMsg, data)
 		if err != nil {
@@ -245,7 +242,7 @@ func (s *Session) SetMessageStorage(storage MessageStorage) {
 			return true
 		}
 
-		resendMessages, err := storage.Messages(resendMsg.BeginSeqNo(), resendMsg.EndSeqNo())
+		resendMessages, err := s.messageStorage.Messages(fmt.Sprintf("%s-%s", s.LogonSettings.SenderCompID, s.LogonSettings.TargetCompID), resendMsg.BeginSeqNo(), resendMsg.EndSeqNo())
 		if err != nil {
 			return true
 		}
@@ -534,7 +531,7 @@ func (s *Session) CurrentTime() time.Time {
 }
 
 // Send is used to send a message after preparing its header tags:
-// - the sequence number with a Counter
+// - the sequence number with a counter
 // - the targetCompID and senderCompID fields
 // - the sending time, with the current time zone indicated
 // To send a message with custom fields, call the Send method for a Handler instead.
@@ -546,8 +543,12 @@ func (s *Session) send(msg messages.Message) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	nextSeqNum, err := s.counter.GetNextSeqNum(fmt.Sprintf("%s-%s", s.LogonSettings.SenderCompID, s.LogonSettings.TargetCompID))
+	if err != nil {
+		return err
+	}
 	msg.HeaderBuilder().
-		SetFieldMsgSeqNum(int(atomic.AddInt64(s.Counter, 1))).
+		SetFieldMsgSeqNum(nextSeqNum).
 		SetFieldTargetCompID(s.LogonSettings.TargetCompID).
 		SetFieldSenderCompID(s.LogonSettings.SenderCompID).
 		SetFieldSendingTime(s.CurrentTime().Format(fix.TimeLayout))
