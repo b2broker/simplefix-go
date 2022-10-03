@@ -150,7 +150,7 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 
 		for {
 			select {
-			case <-s.ctx.Done():
+			case <-ctx.Done():
 				return nil
 
 			case msg, ok := <-handler.Outgoing():
@@ -171,12 +171,12 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 
 		for {
 			select {
-			case <-s.ctx.Done():
+			case <-ctx.Done():
 				return nil
 
 			case msg, ok := <-conn.Reader():
 				if !ok {
-					continue
+					return nil
 				}
 				handler.ServeIncoming(msg)
 			}
