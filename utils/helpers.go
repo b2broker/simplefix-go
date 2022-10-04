@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -16,7 +16,7 @@ func ParseXML(path string, data interface{}) error {
 		return fmt.Errorf("could not open the file: %s", path)
 	}
 
-	sourceData, err := ioutil.ReadAll(source)
+	sourceData, err := io.ReadAll(source)
 	if err != nil {
 		return fmt.Errorf("could not read the file: %s", path)
 	}
