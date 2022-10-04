@@ -351,6 +351,10 @@ func (s *Session) Run() (err error) {
 				return true
 			}
 
+			if s.side == sideAcceptor {
+				s.LogonSettings.TargetCompID, s.LogonSettings.SenderCompID = s.LogonSettings.SenderCompID, s.LogonSettings.TargetCompID
+			}
+
 			err = s.start()
 			if err != nil {
 				s.MakeReject(s.SessionErrorCodes.IncorrectValue, s.Tags.HeartBtInt, incomingLogon.HeaderBuilder().MsgSeqNum())
