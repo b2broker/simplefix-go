@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/b2broker/simplefix-go/fix/encoding"
 	"math"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/b2broker/simplefix-go/fix/encoding"
 
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
@@ -228,10 +229,7 @@ func (s *Session) checkLogonParams(incoming messages.LogonBuilder) (ok bool, tag
 func (s *Session) setSaveMessagesCallback() {
 	s.Router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
 		err := s.messageStorage.Save(fmt.Sprintf("%s-%s", s.LogonSettings.SenderCompID, s.LogonSettings.TargetCompID), msg, msg.HeaderBuilder().MsgSeqNum())
-		if err != nil {
-			return false
-		}
-		return true
+		return err == nil
 	})
 
 	s.Router.HandleIncoming(s.MessageBuilders.ResendRequestBuilder.MsgType(), func(data []byte) bool {
