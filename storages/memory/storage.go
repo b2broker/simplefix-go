@@ -1,7 +1,6 @@
 package memory
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -39,9 +38,9 @@ func (s *Storage) ResetSeqNum(pk string) error {
 func (s *Storage) Save(pk string, msg simplefixgo.SendingMessage, msgSeqNum int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, ok := s.messages[msgSeqNum]; ok {
-		return fmt.Errorf("the sequence index already exists: %d", msgSeqNum)
-	}
+	// if _, ok := s.messages[msgSeqNum]; ok {
+	// 	return fmt.Errorf("the sequence index already exists: %d", msgSeqNum)
+	// }
 	s.messages[msgSeqNum] = msg
 	return nil
 }
