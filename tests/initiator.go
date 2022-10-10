@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/b2broker/simplefix-go/storages/memory"
 	"net"
 	"testing"
 	"time"
@@ -24,10 +25,14 @@ func RunNewInitiator(addr string, t *testing.T, settings *session.LogonSettings)
 	handler = simplefixgo.NewInitiatorHandler(context.Background(), fixgen.FieldMsgType, 10)
 	client := simplefixgo.NewInitiator(conn, handler, 10, time.Minute*50)
 
+	testStorage := memory.NewStorage()
+
 	s, err = session.NewInitiatorSession(
 		handler,
 		&pseudoGeneratedOpts,
 		settings,
+		testStorage,
+		testStorage,
 	)
 	if err != nil {
 		panic(err)

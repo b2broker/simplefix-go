@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/b2broker/simplefix-go/storages/memory"
 	"net"
 	"strconv"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/b2broker/simplefix-go/fix/encoding"
 	"github.com/b2broker/simplefix-go/session"
 	"github.com/b2broker/simplefix-go/session/messages"
-	"github.com/b2broker/simplefix-go/session/storages/memory"
 	fixgen "github.com/b2broker/simplefix-go/tests/fix44"
 )
 
@@ -70,6 +70,8 @@ func main() {
 
 	handlerFactory := simplefixgo.NewAcceptorHandlerFactory(fixgen.FieldMsgType, 10)
 
+	exampleStorage := memory.NewStorage()
+
 	server := simplefixgo.NewAcceptor(listener, handlerFactory, time.Second*5, func(handler simplefixgo.AcceptorHandler) {
 		sess, err := session.NewAcceptorSession(
 			&pseudoGeneratedOpts,
@@ -91,13 +93,14 @@ func main() {
 
 				return nil
 			},
+			exampleStorage,
+			exampleStorage,
 		)
 		if err != nil {
 			panic(err)
 		}
 
 		_ = sess.Run()
-		sess.SetMessageStorage(memory.NewStorage(100, 100))
 
 		handler.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 			fmt.Println("incoming", string(bytes.ReplaceAll(msg, fix.Delimiter, []byte("|"))))
