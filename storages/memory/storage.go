@@ -2,10 +2,10 @@ package memory
 
 import (
 	"fmt"
-	simplefixgo "github.com/b2broker/simplefix-go"
-	"github.com/b2broker/simplefix-go/session"
 	"sync"
 	"sync/atomic"
+
+	simplefixgo "github.com/b2broker/simplefix-go"
 )
 
 // Storage is used to store the most recent messages.
@@ -53,17 +53,17 @@ func (s *Storage) Messages(pk string, msgSeqNumFrom, msgSeqNumTo int) ([]simplef
 	defer s.mu.Unlock()
 
 	if msgSeqNumFrom > msgSeqNumTo {
-		return nil, session.ErrInvalidBoundaries
+		return nil, simplefixgo.ErrInvalidBoundaries
 	}
 
 	if int64(msgSeqNumTo) > s.counter {
-		return nil, session.ErrNotEnoughMessages
+		return nil, simplefixgo.ErrNotEnoughMessages
 	}
 
 	var messages []simplefixgo.SendingMessage
 	for i := msgSeqNumFrom; i <= msgSeqNumTo; i++ {
 		if _, ok := s.messages[i]; !ok {
-			return nil, session.ErrNotEnoughMessages
+			return nil, simplefixgo.ErrNotEnoughMessages
 		}
 		messages = append(messages, s.messages[i])
 	}
