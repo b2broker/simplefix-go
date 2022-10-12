@@ -122,6 +122,21 @@ func (h *DefaultHandler) Send(message SendingMessage) error {
 	return h.send(message)
 }
 
+// SendBatch is a function that sends previously prepared messages.
+func (h *DefaultHandler) SendBatch(messages []SendingMessage) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	for _, message := range messages {
+		err := h.send(message)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // RemoveIncomingHandler removes an existing handler for incoming messages.
 func (h *DefaultHandler) RemoveIncomingHandler(msgType string, id int64) (err error) {
 	return h.incomingHandlers.Remove(msgType, id)

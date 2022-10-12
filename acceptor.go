@@ -30,6 +30,7 @@ type AcceptorHandler interface {
 	Run() error
 	StopWithError(err error)
 	Send(message SendingMessage) error
+	SendBatch(messages []SendingMessage) error
 	SendRaw(data []byte) error
 	RemoveIncomingHandler(msgType string, id int64) (err error)
 	RemoveOutgoingHandler(msgType string, id int64) (err error)
