@@ -52,9 +52,7 @@ func (p *HandlerPool) handlersByMsgType(msgType string) (result []interface{}) {
 	}
 
 	result = make([]interface{}, 0, len(handlers))
-	for _, handler := range handlers {
-		result = append(result, handler)
-	}
+	result = append(result, handlers...)
 
 	return result
 }
