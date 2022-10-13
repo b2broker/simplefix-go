@@ -69,6 +69,7 @@ type Handler interface {
 	RemoveOutgoingHandler(msgType string, id int64) (err error)
 	SendRaw(data []byte) error
 	Send(message simplefixgo.SendingMessage) error
+	SendBatch(messages []simplefixgo.SendingMessage) error
 	Context() context.Context
 }
 
@@ -245,9 +246,7 @@ func (s *Session) setSaveMessagesCallback() {
 			return true
 		}
 
-		for _, message := range resendMessages {
-			_ = s.Router.Send(message)
-		}
+		_ = s.Router.SendBatch(resendMessages)
 
 		return true
 	})
@@ -466,14 +465,13 @@ func (s *Session) start() error {
 		defer incomingMsgTimer.Close()
 		testReqCounter := 0
 		for {
+			incomingMsgTimer.TakeTimeout()
 			select {
 			case <-s.ctx.Done():
 				return
 			default:
-
 			}
 
-			incomingMsgTimer.TakeTimeout()
 			testRequest := s.MessageBuilders.TestRequestBuilder.Build()
 
 			testReqCounter++
@@ -487,14 +485,12 @@ func (s *Session) start() error {
 	go func() {
 		defer outgoingMsgTimer.Close()
 		for {
+			outgoingMsgTimer.TakeTimeout()
 			select {
 			case <-s.ctx.Done():
 				return
 			default:
-
 			}
-
-			outgoingMsgTimer.TakeTimeout()
 
 			heartbeat := s.MessageBuilders.HeartbeatBuilder.Build()
 

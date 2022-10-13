@@ -3,7 +3,6 @@ package simplefixgo
 import (
 	"errors"
 	"sync"
-	"sync/atomic"
 )
 
 // ErrHandleNotFound is returned when a required handler is not found.
@@ -12,20 +11,16 @@ var ErrHandleNotFound = errors.New("handler not found")
 // HandlerPool is used for managing the pool of message handlers.
 type HandlerPool struct {
 	mu       sync.RWMutex
-	handlers map[string]map[int64]interface{}
+	handlers map[string][]interface{}
 	counter  *int64
 }
 
 // NewHandlerPool creates a new HandlerPool instance.
 func NewHandlerPool() *HandlerPool {
 	return &HandlerPool{
-		handlers: make(map[string]map[int64]interface{}),
+		handlers: make(map[string][]interface{}),
 		counter:  new(int64),
 	}
-}
-
-func (p *HandlerPool) inc() int64 {
-	return atomic.AddInt64(p.counter, 1)
 }
 
 func (p *HandlerPool) free(msgType string) {
@@ -37,12 +32,8 @@ func (p *HandlerPool) free(msgType string) {
 }
 
 // Remove is used to remove a handler with a specified identifier.
-func (p *HandlerPool) Remove(msgType string, id int64) error {
+func (p *HandlerPool) Remove(msgType string, _ int64) error {
 	if _, ok := p.handlers[msgType]; !ok {
-		return ErrHandleNotFound
-	}
-
-	if _, ok := p.handlers[msgType][id]; !ok {
 		return ErrHandleNotFound
 	}
 
@@ -61,9 +52,7 @@ func (p *HandlerPool) handlersByMsgType(msgType string) (result []interface{}) {
 	}
 
 	result = make([]interface{}, 0, len(handlers))
-	for _, handler := range handlers {
-		result = append(result, handler)
-	}
+	result = append(result, handlers...)
 
 	return result
 }
@@ -73,13 +62,12 @@ func (p *HandlerPool) add(msgType string, handle interface{}) int64 {
 	defer p.mu.Unlock()
 
 	if _, ok := p.handlers[msgType]; !ok {
-		p.handlers[msgType] = make(map[int64]interface{})
+		p.handlers[msgType] = make([]interface{}, 0)
 	}
 
-	id := p.inc()
-	p.handlers[msgType][id] = handle
+	p.handlers[msgType] = append(p.handlers[msgType], handle)
 
-	return id
+	return int64(len(p.handlers)) - 1
 }
 
 // IncomingHandlerPool is used to manage the pool of incoming messages stored in the form of byte arrays.
