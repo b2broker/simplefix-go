@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"sync"
+	"strings"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -28,6 +28,7 @@ type AcceptorHandler interface {
 	ServeIncoming(msg []byte)
 	Outgoing() <-chan []byte
 	Run() error
+	Stop()
 	StopWithError(err error)
 	Send(message SendingMessage) error
 	SendBatch(messages []SendingMessage) error
@@ -117,20 +118,24 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 	conn := NewConn(parentCtx, netConn, s.size, s.writeTimeout)
 	defer conn.Close()
 
+	cancelFun := func() {
+		conn.Close()
+		cancel()
+	}
+
 	handler := s.factory.MakeHandler(ctx)
 
 	eg := errgroup.Group{}
-	stopHandler := sync.Once{}
 
 	eg.Go(func() error {
-		defer cancel()
+		defer cancelFun()
 
 		err := conn.serve()
 		if err != nil {
 			err = fmt.Errorf("%s: %w", err, ErrConnClosed)
-			defer stopHandler.Do(func() {
+			if !strings.Contains(err.Error(), "use of closed network connection") {
 				handler.StopWithError(err)
-			})
+			}
 		}
 
 		return err
@@ -141,13 +146,13 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 	}
 
 	eg.Go(func() error {
-		defer cancel()
+		defer cancelFun()
 
 		return handler.Run()
 	})
 
 	eg.Go(func() error {
-		defer cancel()
+		defer cancelFun()
 
 		for {
 			select {
@@ -168,7 +173,7 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 	})
 
 	eg.Go(func() error {
-		defer cancel()
+		defer cancelFun()
 
 		for {
 			select {
