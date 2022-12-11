@@ -41,7 +41,7 @@ var RequiredTrailerFields = map[string]bool{
 	"CheckSum": true,
 }
 
-// RequiredTrailerFields indicates the required tags for each message type
+// DefaultFlowFields indicates the required tags for each message type
 // that must be contained in the trailer.
 // A FIX session pipeline will not operate properly if any of these tags are missing for the specified messages.
 var DefaultFlowFields = map[string][]string{
