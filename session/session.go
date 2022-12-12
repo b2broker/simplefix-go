@@ -201,12 +201,12 @@ func newSession(opts *Opts, handler Handler, settings *LogonSettings, cs Counter
 	return session, nil
 }
 
-func (s *Session) changeState(state LogonState, isTriggerRequired bool) {
+func (s *Session) changeState(state LogonState, isEventTriggerRequired bool) {
 	s.stateMu.Lock()
 	s.state = state
 	s.stateMu.Unlock()
 
-	if !isTriggerRequired {
+	if !isEventTriggerRequired {
 		return
 	}
 
@@ -469,6 +469,9 @@ func (s *Session) start() error {
 
 	s.Router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		incomingMsgTimer.Refresh()
+		if s.state == WaitingTestReqAnswer {
+			s.changeState(SuccessfulLogged, false)
+		}
 
 		return true
 	})
