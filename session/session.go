@@ -314,6 +314,10 @@ func (s *Session) OnError(handler func(error)) {
 
 func (s *Session) Run() (err error) {
 	s.changeState(WaitingLogon, true)
+	s.OnChangeState(utils.EventDisconnect, func() bool {
+		s.cancel()
+		return true
+	})
 	if s.side == sideInitiator {
 		err = s.LogonRequest()
 		if err != nil {
