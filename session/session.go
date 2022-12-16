@@ -77,6 +77,7 @@ type Handler interface {
 	Send(message simplefixgo.SendingMessage) error
 	SendBatch(messages []simplefixgo.SendingMessage) error
 	Context() context.Context
+	Stop()
 }
 
 // Session is a service that is used to maintain the default FIX API pipelines,
@@ -316,6 +317,7 @@ func (s *Session) Run() (err error) {
 	s.changeState(WaitingLogon, true)
 	s.OnChangeState(utils.EventDisconnect, func() bool {
 		s.cancel()
+		s.Router.Stop()
 		return true
 	})
 	if s.side == sideInitiator {
