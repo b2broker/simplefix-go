@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -28,6 +29,7 @@ type Conn struct {
 	cancel context.CancelFunc
 
 	writeDeadline time.Duration
+	closeOnce     sync.Once
 }
 
 // NewConn is called to create a new connection.
@@ -46,8 +48,10 @@ func NewConn(ctx context.Context, conn net.Conn, msgBuffSize int, writeDeadline 
 
 // Close is called to cancel a connection context and close a connection.
 func (c *Conn) Close() {
-	_ = c.conn.Close()
-	c.cancel()
+	c.closeOnce.Do(func() {
+		_ = c.conn.Close()
+		c.cancel()
+	})
 }
 
 func (c *Conn) serve() error {

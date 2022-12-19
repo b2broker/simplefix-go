@@ -48,6 +48,12 @@ const (
 
 	// ReceivedLogoutAnswer a response to a Logout message was received.
 	ReceivedLogoutAnswer
+
+	// WaitingTestReqAnswer waiting for a response to a Test request before disconnect
+	WaitingTestReqAnswer
+
+	// Disconnect need to disconnect session
+	Disconnect
 )
 
 const (
@@ -71,6 +77,7 @@ type Handler interface {
 	Send(message simplefixgo.SendingMessage) error
 	SendBatch(messages []simplefixgo.SendingMessage) error
 	Context() context.Context
+	Stop()
 }
 
 // Session is a service that is used to maintain the default FIX API pipelines,
@@ -122,7 +129,7 @@ func NewInitiatorSession(handler Handler, opts *Opts, settings *LogonSettings, c
 	}
 
 	s.side = sideInitiator
-	s.changeState(WaitingLogonAnswer)
+	s.changeState(WaitingLogonAnswer, true)
 
 	return
 }
@@ -148,7 +155,7 @@ func NewAcceptorSession(params *Opts, handler Handler, settings *LogonSettings, 
 	}
 
 	s.side = sideAcceptor
-	s.changeState(WaitingLogon)
+	s.changeState(WaitingLogon, true)
 	s.LogonHandler = onLogon
 
 	return
@@ -195,10 +202,14 @@ func newSession(opts *Opts, handler Handler, settings *LogonSettings, cs Counter
 	return session, nil
 }
 
-func (s *Session) changeState(state LogonState) {
+func (s *Session) changeState(state LogonState, isEventTriggerRequired bool) {
 	s.stateMu.Lock()
 	s.state = state
 	s.stateMu.Unlock()
+
+	if !isEventTriggerRequired {
+		return
+	}
 
 	switch state {
 	case SuccessfulLogged:
@@ -207,6 +218,8 @@ func (s *Session) changeState(state LogonState) {
 		s.eventHandler.Trigger(utils.EventRequest)
 	case ReceivedLogoutAnswer:
 		s.eventHandler.Trigger(utils.EventLogout)
+	case Disconnect:
+		s.eventHandler.Trigger(utils.EventDisconnect)
 	}
 }
 
@@ -257,7 +270,7 @@ func (s *Session) SetLogonRequest(logonRequest func(*Session) error) {
 }
 
 func (s *Session) Logout() error {
-	s.changeState(WaitingLogoutAnswer)
+	s.changeState(WaitingLogoutAnswer, true)
 
 	s.sendWithErrorCheck(s.MessageBuilders.LogoutBuilder.Build())
 
@@ -269,11 +282,11 @@ func (s *Session) OnChangeState(event utils.Event, handle utils.EventHandlerFunc
 }
 
 func (s *Session) StartWaiting() {
-	s.changeState(WaitingLogon)
+	s.changeState(WaitingLogon, true)
 }
 
 func (s *Session) LogonRequest() error {
-	s.changeState(WaitingLogonAnswer)
+	s.changeState(WaitingLogonAnswer, true)
 	if s.logonRequest != nil {
 		return s.logonRequest(s)
 	}
@@ -301,7 +314,12 @@ func (s *Session) OnError(handler func(error)) {
 }
 
 func (s *Session) Run() (err error) {
-	s.changeState(WaitingLogon)
+	s.changeState(WaitingLogon, true)
+	s.OnChangeState(utils.EventDisconnect, func() bool {
+		s.cancel()
+		s.Router.Stop()
+		return true
+	})
 	if s.side == sideInitiator {
 		err = s.LogonRequest()
 		if err != nil {
@@ -358,13 +376,13 @@ func (s *Session) Run() (err error) {
 			answer := s.MessageBuilders.LogonBuilder.Build()
 			answer.SetFieldEncryptMethod(s.LogonSettings.EncryptMethod).SetFieldHeartBtInt(s.LogonSettings.HeartBtInt)
 
-			s.changeState(SuccessfulLogged)
+			s.changeState(SuccessfulLogged, true)
 
 			s.sendWithErrorCheck(answer)
 			return true
 
 		case WaitingLogonAnswer:
-			s.changeState(SuccessfulLogged)
+			s.changeState(SuccessfulLogged, true)
 
 		case SuccessfulLogged:
 			s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
@@ -381,11 +399,11 @@ func (s *Session) Run() (err error) {
 
 		switch s.state {
 		case WaitingLogoutAnswer:
-			s.changeState(ReceivedLogoutAnswer)
-			s.changeState(WaitingLogon)
+			s.changeState(ReceivedLogoutAnswer, true)
+			s.changeState(WaitingLogon, true)
 
 		case SuccessfulLogged:
-			s.changeState(WaitingLogoutAnswer)
+			s.changeState(WaitingLogoutAnswer, true)
 
 			s.sendWithErrorCheck(s.MessageBuilders.LogoutBuilder.Build())
 
@@ -394,9 +412,9 @@ func (s *Session) Run() (err error) {
 		}
 
 		if s.side == sideInitiator {
-			s.changeState(WaitingLogonAnswer)
+			s.changeState(WaitingLogonAnswer, true)
 		} else {
-			s.changeState(WaitingLogon)
+			s.changeState(WaitingLogon, true)
 		}
 
 		return true
@@ -412,6 +430,11 @@ func (s *Session) Run() (err error) {
 		if !s.IsLogged() {
 			s.RejectMessage(data)
 			return true
+		}
+
+		if s.state == WaitingTestReqAnswer {
+			// reset SuccessfulLogged statue without event trigger
+			s.changeState(SuccessfulLogged, false)
 		}
 
 		return true
@@ -452,6 +475,9 @@ func (s *Session) start() error {
 
 	s.Router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		incomingMsgTimer.Refresh()
+		if s.state == WaitingTestReqAnswer {
+			s.changeState(SuccessfulLogged, false)
+		}
 
 		return true
 	})
@@ -472,12 +498,18 @@ func (s *Session) start() error {
 			default:
 			}
 
+			if s.state == WaitingTestReqAnswer {
+				s.changeState(Disconnect, true)
+				return
+			}
+
 			testRequest := s.MessageBuilders.TestRequestBuilder.Build()
 
 			testReqCounter++
 			expectedTestReq := strconv.Itoa(testReqCounter)
 			testRequest.SetFieldTestReqID(expectedTestReq)
 
+			s.changeState(WaitingTestReqAnswer, true)
 			s.sendWithErrorCheck(testRequest)
 		}
 	}()
