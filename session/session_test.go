@@ -148,8 +148,8 @@ func TestNewAcceptorSession(t *testing.T) {
 		t.Fatalf("unexpected behavior, returned error: %v", err)
 	}
 
-	session.changeState(WaitingLogoutAnswer)
-	session.changeState(ReceivedLogoutAnswer)
+	session.changeState(WaitingLogoutAnswer, true)
+	session.changeState(ReceivedLogoutAnswer, true)
 }
 
 func TestNewInitiatorSession(t *testing.T) {
@@ -176,8 +176,8 @@ func TestNewInitiatorSession(t *testing.T) {
 		t.Fatalf("unexpected behavior, returned error: %v", err)
 	}
 
-	session.changeState(WaitingLogoutAnswer)
-	session.changeState(ReceivedLogoutAnswer)
+	session.changeState(WaitingLogoutAnswer, true)
+	session.changeState(ReceivedLogoutAnswer, true)
 }
 
 func TestNewInitiatorSessionOpts(t *testing.T) {
