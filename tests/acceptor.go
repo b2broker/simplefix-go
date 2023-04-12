@@ -29,7 +29,7 @@ func RunAcceptor(port int, t *testing.T) (acceptor *simplefixgo.Acceptor, addr s
 			&session.LogonSettings{
 				LogonTimeout: time.Second * 30,
 				HeartBtLimits: &session.IntLimits{
-					Min: 5,
+					Min: 1,
 					Max: 60,
 				},
 			},

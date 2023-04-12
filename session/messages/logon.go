@@ -12,6 +12,8 @@ type Logon interface {
 	SetFieldPassword(string) LogonBuilder
 	Username() string
 	SetFieldUsername(string) LogonBuilder
+	ResetSeqNumFlag() bool
+	SetFieldResetSeqNumFlag(bool) LogonBuilder
 }
 
 // LogonBuilder is an interface providing functionality to a builder of auto-generated Logon messages.

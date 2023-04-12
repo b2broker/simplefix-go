@@ -106,7 +106,9 @@ func (g *Generator) makeFile(data, pkg string) string {
 // Execute creates a separate file for each message.
 func (g *Generator) Execute(outputDirPath string) (err error) {
 	// TODO: split generated code into packages
-	g.prepare()
+	if err = g.prepare(); err != nil {
+		return err
+	}
 	od := filepath.Clean(outputDirPath)
 
 	dpkg := filepath.SplitList(od)[0]
@@ -116,7 +118,7 @@ func (g *Generator) Execute(outputDirPath string) (err error) {
 		return fmt.Errorf("invalid package name %s: %w", pkg, err)
 	}
 
-	pathFormat := filepath.Join(outputDirPath, "%s.generated.go")
+	pathFormat := filepath.Join(outputDirPath, "%s.go")
 	err = g.write(fmt.Sprintf(pathFormat, "header"), g.makeFile(g.makeHeader(), pkg))
 	if err != nil {
 		return err
@@ -169,13 +171,20 @@ func (g *Generator) Execute(outputDirPath string) (err error) {
 	return nil
 }
 
-func (g *Generator) prepare() {
+func (g *Generator) prepare() error {
 	g.initTypes()
 
 	g.fields = make(map[string]*Field)
 	g.enums = make(map[string]*Field)
+	numbers := make(map[string]struct{}, len(g.doc.Fields))
 	for _, field := range g.doc.Fields {
-		if len(field.Values) > 0 {
+		if _, ok := numbers[field.Number]; ok {
+			return fmt.Errorf("fieldNumber %v already exists", field.Number)
+		}
+
+		numbers[field.Number] = struct{}{}
+
+		if len(field.Values) > 0 && g.typeCast[field.Type] != fixBool {
 			g.enums[field.Name] = field
 		} else {
 			g.fields[field.Name] = field
@@ -188,7 +197,14 @@ func (g *Generator) prepare() {
 	}
 
 	// The following code is used to obtain key-value groups from an XML scheme.
+	msgTypes := make(map[string]struct{}, len(g.doc.Messages))
 	for _, msg := range g.doc.Messages {
+		if _, ok := msgTypes[msg.MsgType]; ok {
+			return fmt.Errorf("msgType %v already exists", msg.MsgType)
+		}
+
+		msgTypes[msg.MsgType] = struct{}{}
+
 		for _, member := range msg.Members {
 			g.grabGroups(member)
 		}
@@ -204,6 +220,8 @@ func (g *Generator) prepare() {
 	for _, member := range g.doc.Trailer.Members {
 		g.grabGroups(member)
 	}
+
+	return nil
 }
 
 func (g *Generator) validateComponent(component *ComponentMember) {

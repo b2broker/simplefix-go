@@ -22,6 +22,10 @@ func NewDefaultUnmarshaller(strict bool) *DefaultUnmarshaller {
 }
 
 func (u DefaultUnmarshaller) Unmarshal(msg messages.Builder, d []byte) error {
+	if err := validateRaw(msg, d, u.Strict); err != nil {
+		return err
+	}
+
 	err := unmarshalItems(msg.Items(), d, u.Strict)
 	if err != nil {
 		return err
@@ -174,6 +178,49 @@ func (s *state) unmarshal(data []byte, fixItem fix.Item) error {
 
 	default:
 		return fmt.Errorf("unexpected FIX item type: %s %s", reflect.TypeOf(fixItem), fixItem)
+	}
+
+	return nil
+}
+
+func validateRaw(msg messages.Builder, d []byte, strict bool) error {
+	bs := fix.NewKeyValue(msg.BeginStringTag(), fix.NewRaw(nil))
+	bl := fix.NewKeyValue(msg.BodyLengthTag(), fix.NewRaw(nil))
+	cs := fix.NewKeyValue(msg.CheckSumTag(), fix.NewRaw(nil))
+
+	if err := unmarshalItems(fix.Items{bs, bl, cs}, d, strict); err != nil {
+		return err
+	}
+
+	blVal := fix.NewInt(0)
+	if err := blVal.FromBytes(bl.Load().ToBytes()); err != nil {
+		return fmt.Errorf("invalid body length: %w", err)
+	}
+	if blVal.IsNull() {
+		return fmt.Errorf("invalid body length: value is empty")
+	}
+	bodyLength := blVal.Value().(int)
+
+	offset := len(bs.ToBytes()) + 1 // extra delimiter
+	offset += len(bl.ToBytes()) + 1 // extra delimiter
+	length := len(d) - offset
+	length -= len(cs.ToBytes()) + 1 // extra delimiter
+
+	if length != bodyLength {
+		return fmt.Errorf("an invalid body length; specified: %d, required: %d",
+			bodyLength,
+			length,
+		)
+	}
+
+	checkSum := fix.CalcCheckSum(d[:offset+length-1])
+
+	if !bytes.Equal(cs.Load().ToBytes(), checkSum) {
+		return fmt.Errorf(
+			"an invalid checksum; specified: %s, required: %s",
+			string(cs.Load().ToBytes()),
+			string(checkSum),
+		)
 	}
 
 	return nil

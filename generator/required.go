@@ -45,11 +45,15 @@ var RequiredTrailerFields = map[string]bool{
 // that must be contained in the trailer.
 // A FIX session pipeline will not operate properly if any of these tags are missing for the specified messages.
 var DefaultFlowFields = map[string][]string{
-	"Logon":         {"HeartBtInt", "EncryptMethod", "Password", "Username"},
-	"Logout":        nil,
-	"Heartbeat":     {"TestReqID"},
-	"TestRequest":   {"TestReqID"},
-	"ResendRequest": {"BeginSeqNo", "EndSeqNo"},
-	"SequenceReset": {"NewSeqNo"},
-	"Reject":        {"SessionRejectReason", "RefSeqNum", "RefTagID"},
+	"Logon":              {"HeartBtInt", "EncryptMethod", "Password", "Username", "ResetSeqNumFlag"},
+	"Logout":             nil,
+	"Heartbeat":          {"TestReqID"},
+	"TestRequest":        {"TestReqID"},
+	"ResendRequest":      {"BeginSeqNo", "EndSeqNo"},
+	"SequenceReset":      {"NewSeqNo", "GapFillFlag"},
+	"Reject":             {"SessionRejectReason", "RefSeqNum", "RefTagID"},
+	"ExecutionReport":    nil,
+	"NewOrderSingle":     nil,
+	"MarketDataRequest":  nil,
+	"OrderCancelRequest": nil,
 }

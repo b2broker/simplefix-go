@@ -6,41 +6,72 @@ import (
 	"time"
 )
 
-func TestMessageToBytes(t *testing.T) {
-	message := NewMessage("8", "9", "10", "35", "FIX.4.4", "V").
-		SetHeader(NewComponent(
-			NewKeyValue("34", NewString("2")),
-			NewKeyValue("49", NewString("ISLD")),
-			NewKeyValue("52", NewString("20190313-16:45:21.861")),
-			NewKeyValue("56", NewString("TW")),
-		)).
-		SetBody(
-			NewKeyValue("146", NewString("3")),
-			NewKeyValue("55", NewString("BTC/USD")),
-			NewKeyValue("55", NewString("BTC/USDT_ABCDE")),
-			NewKeyValue("55", NewString("BTCABCD/ABCDEFG")),
-			NewKeyValue("262", NewString("request_1")),
-			NewKeyValue("263", NewString("1")),
-			NewKeyValue("264", NewString("5")),
-			NewKeyValue("267", NewString("2")),
-			NewKeyValue("269", NewString("0")),
-			NewKeyValue("269", NewString("1")),
-		)
-
-	byteMessage, err := message.ToBytes()
-	if err != nil {
-		t.Fatalf("could not marshal message: %s", err)
+func TestMessage_ToBytes(t *testing.T) {
+	testCases := []struct {
+		name    string
+		message *Message
+		want    []byte
+	}{
+		{
+			name: "Full Message",
+			message: NewMessage("8", "9", "10", "35", "FIX.4.4", "V").
+				SetHeader(NewComponent(
+					NewKeyValue("34", NewString("2")),
+					NewKeyValue("49", NewString("ISLD")),
+					NewKeyValue("52", NewString("20190313-16:45:21.861")),
+					NewKeyValue("56", NewString("TW")),
+				)).
+				SetBody(
+					NewKeyValue("146", NewString("3")),
+					NewKeyValue("55", NewString("BTC/USD")),
+					NewKeyValue("55", NewString("BTC/USDT_ABCDE")),
+					NewKeyValue("55", NewString("BTCABCD/ABCDEFG")),
+					NewKeyValue("262", NewString("request_1")),
+					NewKeyValue("263", NewString("1")),
+					NewKeyValue("264", NewString("5")),
+					NewKeyValue("267", NewString("2")),
+					NewKeyValue("269", NewString("0")),
+					NewKeyValue("269", NewString("1")),
+				),
+			want: []byte("8=FIX.4.49=14735=V34=249=ISLD52=20190313-16:45:21.86156=TW146=355=BTC/USD55=BTC/USDT_ABCDE55=BTCABCD/ABCDEFG262=request_1263=1264=5267=2269=0269=110=159"),
+		},
+		{
+			name: "Empty Header",
+			message: NewMessage("8", "9", "10", "35", "FIX.4.4", "V").
+				SetHeader(NewComponent()).
+				SetBody(
+					NewKeyValue("146", NewString("3")),
+					NewKeyValue("55", NewString("BTC/USD")),
+					NewKeyValue("55", NewString("BTC/USDT_ABCDE")),
+					NewKeyValue("55", NewString("BTCABCD/ABCDEFG")),
+					NewKeyValue("262", NewString("request_1")),
+					NewKeyValue("263", NewString("1")),
+					NewKeyValue("264", NewString("5")),
+					NewKeyValue("267", NewString("2")),
+					NewKeyValue("269", NewString("0")),
+					NewKeyValue("269", NewString("1")),
+				),
+			want: []byte("8=FIX.4.49=10435=V146=355=BTC/USD55=BTC/USDT_ABCDE55=BTCABCD/ABCDEFG262=request_1263=1264=5267=2269=0269=110=189"),
+		},
 	}
-	origin := "8=FIX.4.49=14735=V34=249=ISLD52=20190313-16:45:21.86156=TW146=355=BTC/USD55=BTC/USDT_ABCDE55=BTCABCD/ABCDEFG262=request_1263=1264=5267=2269=0269=110=159"
 
-	if !bytes.Equal(byteMessage, []byte(origin)) {
-		t.Log(len(byteMessage), string(byteMessage))
-		t.Log(len(origin), origin)
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			byteMessage, err := tt.message.ToBytes()
+			if err != nil {
+				t.Fatalf("could not marshal message: %s", err)
+			}
 
-		t.Log(len(byteMessage), byteMessage)
-		t.Log(len(origin), []byte(origin))
+			if !bytes.Equal(byteMessage, tt.want) {
+				t.Log(len(byteMessage), string(byteMessage))
+				t.Log(len(tt.want), string(tt.want))
 
-		t.Fatalf("not equal")
+				t.Log(len(byteMessage), byteMessage)
+				t.Log(len(tt.want), tt.want)
+
+				t.Fatalf("not equal")
+			}
+		})
 	}
 }
 

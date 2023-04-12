@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 
 	simplefixgo "github.com/b2broker/simplefix-go"
+	"github.com/b2broker/simplefix-go/fix"
 )
 
 // Storage is used to store the most recent messages.
@@ -22,20 +23,20 @@ func NewStorage() *Storage {
 	}
 }
 
-func (s *Storage) GetNextSeqNum(pk string) (int, error) {
+func (s *Storage) GetNextSeqNum(storageID fix.StorageID) (int, error) {
 	return int(atomic.AddInt64(&s.counter, 1)), nil
 }
 
-func (s *Storage) GetCurrSeqNum(pk string) (int, error) {
+func (s *Storage) GetCurrSeqNum(storageID fix.StorageID) (int, error) {
 	return int(s.counter), nil
 }
 
-func (s *Storage) ResetSeqNum(pk string) error {
+func (s *Storage) ResetSeqNum(storageID fix.StorageID) error {
 	return nil
 }
 
 // Save saves a message with seq number to storage
-func (s *Storage) Save(pk string, msg simplefixgo.SendingMessage, msgSeqNum int) error {
+func (s *Storage) Save(storageID fix.StorageID, msg simplefixgo.SendingMessage, msgSeqNum int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	// if _, ok := s.messages[msgSeqNum]; ok {
@@ -47,7 +48,7 @@ func (s *Storage) Save(pk string, msg simplefixgo.SendingMessage, msgSeqNum int)
 
 // Messages returns a message list, in a sequential order
 // (starting with msgSeqNumFrom and ending with msgSeqNumTo).
-func (s *Storage) Messages(pk string, msgSeqNumFrom, msgSeqNumTo int) ([]simplefixgo.SendingMessage, error) {
+func (s *Storage) Messages(storageID fix.StorageID, msgSeqNumFrom, msgSeqNumTo int) ([]simplefixgo.SendingMessage, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -59,13 +60,13 @@ func (s *Storage) Messages(pk string, msgSeqNumFrom, msgSeqNumTo int) ([]simplef
 		return nil, simplefixgo.ErrNotEnoughMessages
 	}
 
-	var messages []simplefixgo.SendingMessage
+	var sendingMessages []simplefixgo.SendingMessage
 	for i := msgSeqNumFrom; i <= msgSeqNumTo; i++ {
 		if _, ok := s.messages[i]; !ok {
 			return nil, simplefixgo.ErrNotEnoughMessages
 		}
-		messages = append(messages, s.messages[i])
+		sendingMessages = append(sendingMessages, s.messages[i])
 	}
 
-	return messages, nil
+	return sendingMessages, nil
 }

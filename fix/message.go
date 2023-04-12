@@ -73,9 +73,17 @@ func (msg *Message) BeginString() *KeyValue {
 	return msg.beginString
 }
 
+func (msg *Message) BeginStringTag() string {
+	return msg.beginString.Key
+}
+
 // BodyLength returns the BodyLength field value.
 func (msg *Message) BodyLength() int {
 	return msg.bodyLength.Value.Value().(int)
+}
+
+func (msg *Message) BodyLengthTag() string {
+	return msg.bodyLength.Key
 }
 
 // MsgType returns the MsgType field value.
@@ -86,6 +94,10 @@ func (msg *Message) MsgType() string {
 // CheckSum returns the CheckSum field value.
 func (msg *Message) CheckSum() string {
 	return msg.checkSum.Value.String()
+}
+
+func (msg *Message) CheckSumTag() string {
+	return msg.checkSum.Key
 }
 
 func (msg *Message) CalcBodyLength() int {
@@ -106,8 +118,11 @@ func (msg *Message) BytesWithoutChecksum() []byte {
 		msg.beginString.ToBytes(),
 		msg.bodyLength.ToBytes(),
 		msg.msgType.ToBytes(),
-		bh,
 	}, Delimiter)
+
+	if len(bh) > 0 {
+		bm = bytes.Join([][]byte{bm, bh}, Delimiter)
+	}
 
 	if len(bb) > 0 {
 		bm = bytes.Join([][]byte{bm, bb}, Delimiter)
