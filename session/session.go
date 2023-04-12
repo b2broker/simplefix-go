@@ -232,8 +232,8 @@ func (s *Session) checkLogonParams(incoming messages.LogonBuilder) (ok bool, tag
 		return true, 0, 0
 	}
 
-	if incoming.HeartBtInt() > s.LogonSettings.HeartBtLimits.Min ||
-		incoming.HeartBtInt() < s.LogonSettings.HeartBtLimits.Max {
+	if incoming.HeartBtInt() < s.LogonSettings.HeartBtLimits.Min ||
+		incoming.HeartBtInt() > s.LogonSettings.HeartBtLimits.Max {
 		return false, s.Tags.HeartBtInt, s.SessionErrorCodes.IncorrectValue
 	}
 
@@ -242,7 +242,10 @@ func (s *Session) checkLogonParams(incoming messages.LogonBuilder) (ok bool, tag
 
 func (s *Session) setSaveMessagesCallback() {
 	s.Router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
-		err := s.messageStorage.Save(fmt.Sprintf("%s-%s", s.LogonSettings.SenderCompID, s.LogonSettings.TargetCompID), msg, msg.HeaderBuilder().MsgSeqNum())
+		err := s.messageStorage.Save(fix.StorageID{
+			Sender: s.LogonSettings.SenderCompID,
+			Target: s.LogonSettings.TargetCompID,
+		}, msg, msg.HeaderBuilder().MsgSeqNum())
 		return err == nil
 	})
 
@@ -254,7 +257,10 @@ func (s *Session) setSaveMessagesCallback() {
 			return true
 		}
 
-		resendMessages, err := s.messageStorage.Messages(fmt.Sprintf("%s-%s", s.LogonSettings.SenderCompID, s.LogonSettings.TargetCompID), resendMsg.BeginSeqNo(), resendMsg.EndSeqNo())
+		resendMessages, err := s.messageStorage.Messages(fix.StorageID{
+			Sender: s.LogonSettings.SenderCompID,
+			Target: s.LogonSettings.TargetCompID,
+		}, resendMsg.BeginSeqNo(), resendMsg.EndSeqNo())
 		if err != nil {
 			return true
 		}
@@ -344,32 +350,37 @@ func (s *Session) Run() (err error) {
 
 		switch s.state {
 		case WaitingLogon:
-			if ok, tag, reasonCode := s.checkLogonParams(incomingLogon); !ok {
-				s.MakeReject(reasonCode, tag, incomingLogon.HeaderBuilder().MsgSeqNum())
-			}
-
 			s.LogonSettings = &LogonSettings{
-				HeartBtInt:    incomingLogon.HeartBtInt(),
-				EncryptMethod: incomingLogon.EncryptMethod(),
-				Password:      incomingLogon.Password(),
-				Username:      incomingLogon.Username(),
-				TargetCompID:  incomingLogon.HeaderBuilder().TargetCompID(),
-				SenderCompID:  incomingLogon.HeaderBuilder().SenderCompID(),
-			}
-
-			err := s.LogonHandler(s.LogonSettings)
-			if err != nil {
-				s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
-				return true
+				HeartBtInt:      incomingLogon.HeartBtInt(),
+				EncryptMethod:   incomingLogon.EncryptMethod(),
+				Password:        incomingLogon.Password(),
+				Username:        incomingLogon.Username(),
+				ResetSeqNumFlag: incomingLogon.ResetSeqNumFlag(),
+				TargetCompID:    incomingLogon.HeaderBuilder().TargetCompID(),
+				SenderCompID:    incomingLogon.HeaderBuilder().SenderCompID(),
+				LogonTimeout:    s.LogonSettings.LogonTimeout,
+				CloseTimeout:    s.LogonSettings.CloseTimeout,
+				HeartBtLimits:   s.LogonSettings.HeartBtLimits,
 			}
 
 			if s.side == sideAcceptor {
 				s.LogonSettings.TargetCompID, s.LogonSettings.SenderCompID = s.LogonSettings.SenderCompID, s.LogonSettings.TargetCompID
 			}
 
+			if ok, tag, reasonCode := s.checkLogonParams(incomingLogon); !ok {
+				s.sendWithErrorCheck(s.MakeReject(reasonCode, tag, incomingLogon.HeaderBuilder().MsgSeqNum()))
+				return true
+			}
+
+			err := s.LogonHandler(s.LogonSettings)
+			if err != nil {
+				s.sendWithErrorCheck(s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum()))
+				return true
+			}
+
 			err = s.start()
 			if err != nil {
-				s.MakeReject(s.SessionErrorCodes.IncorrectValue, s.Tags.HeartBtInt, incomingLogon.HeaderBuilder().MsgSeqNum())
+				s.sendWithErrorCheck(s.MakeReject(s.SessionErrorCodes.IncorrectValue, s.Tags.HeartBtInt, incomingLogon.HeaderBuilder().MsgSeqNum()))
 				return true
 			}
 
@@ -385,7 +396,7 @@ func (s *Session) Run() (err error) {
 			s.changeState(SuccessfulLogged, true)
 
 		case SuccessfulLogged:
-			s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum())
+			s.sendWithErrorCheck(s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum()))
 		}
 
 		return true
@@ -573,7 +584,10 @@ func (s *Session) send(msg messages.Message) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	nextSeqNum, err := s.counter.GetNextSeqNum(fmt.Sprintf("%s-%s", s.LogonSettings.SenderCompID, s.LogonSettings.TargetCompID))
+	nextSeqNum, err := s.counter.GetNextSeqNum(fix.StorageID{
+		Sender: s.LogonSettings.SenderCompID,
+		Target: s.LogonSettings.TargetCompID,
+	})
 	if err != nil {
 		return err
 	}

@@ -11,6 +11,9 @@ type Builder interface {
 	BeginString() *fix.KeyValue
 	MsgType() string
 	ToBytes() ([]byte, error)
+	BeginStringTag() string
+	BodyLengthTag() string
+	CheckSumTag() string
 }
 
 type PipelineBuilder interface {

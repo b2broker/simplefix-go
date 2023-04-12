@@ -2,32 +2,13 @@ package encoding
 
 import (
 	"fmt"
-	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session/messages"
 )
 
 type DefaultValidator struct{}
 
 func (v DefaultValidator) Do(msg messages.Builder) error {
-	if err := v.checkRequiredFields(msg); err != nil {
-		return err
-	}
-
-	bodyLength := msg.CalcBodyLength()
-	if bodyLength != msg.BodyLength() {
-		return fmt.Errorf("an invalid body length; specified: %d, required: %d",
-			msg.BodyLength(),
-			bodyLength,
-		)
-	}
-
-	checkSum := fix.CalcCheckSum(msg.BytesWithoutChecksum())
-
-	if string(checkSum) != msg.CheckSum() {
-		return fmt.Errorf("an invalid checksum; specified: %s, required: %s", msg.CheckSum(), checkSum)
-	}
-
-	return nil
+	return v.checkRequiredFields(msg)
 }
 
 func (DefaultValidator) checkRequiredFields(msg messages.Builder) error {

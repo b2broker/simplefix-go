@@ -4,7 +4,9 @@ type SequenceReset interface {
 	New() SequenceResetBuilder
 	Build() SequenceResetBuilder
 	NewSeqNo() int
-	SetFieldNewSeqNo(newSeqNo int) SequenceResetBuilder
+	SetFieldNewSeqNo(int) SequenceResetBuilder
+	GapFillFlag() bool
+	SetFieldGapFillFlag(bool) SequenceResetBuilder
 }
 
 // SequenceResetBuilder is an interface providing functionality to a builder of auto-generated SequenceReset messages.
