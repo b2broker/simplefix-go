@@ -15,4 +15,5 @@ type CounterStorage interface {
 	GetNextSeqNum(storageID fix.StorageID) (int, error)
 	GetCurrSeqNum(storageID fix.StorageID) (int, error)
 	ResetSeqNum(storageID fix.StorageID) error
+	SetSeqNum(storageID fix.StorageID, seqNum int) error
 }

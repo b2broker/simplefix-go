@@ -186,7 +186,7 @@ func newSession(opts *Opts, handler Handler, settings *LogonSettings, cs Counter
 		LogonSettings: settings,
 	}
 
-	session.setSaveMessagesCallback()
+	session.setStorageCallbacks()
 
 	if opts.Location != "" {
 		session.timeLocation, err = time.LoadLocation(opts.Location)
@@ -240,13 +240,36 @@ func (s *Session) checkLogonParams(incoming messages.LogonBuilder) (ok bool, tag
 	return true, 0, 0
 }
 
-func (s *Session) setSaveMessagesCallback() {
+func (s *Session) setStorageCallbacks() {
 	s.Router.HandleOutgoing(simplefixgo.AllMsgTypes, func(msg simplefixgo.SendingMessage) bool {
 		err := s.messageStorage.Save(fix.StorageID{
 			Sender: s.LogonSettings.SenderCompID,
 			Target: s.LogonSettings.TargetCompID,
+			Side:   fix.Outgoing,
 		}, msg, msg.HeaderBuilder().MsgSeqNum())
 		return err == nil
+	})
+
+	s.Router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
+		if s.state == SuccessfulLogged {
+			seqNum, err := fix.ValueByTag(msg, strconv.Itoa(s.Tags.MsgSeqNum))
+			if err != nil {
+				return true
+			}
+
+			seqNumInt, err := strconv.Atoi(string(seqNum))
+			if err != nil {
+				return true
+			}
+			err = s.counter.SetSeqNum(fix.StorageID{
+				Sender: s.LogonSettings.SenderCompID,
+				Target: s.LogonSettings.TargetCompID,
+				Side:   fix.Incoming,
+			}, seqNumInt)
+			return err == nil
+		}
+
+		return true
 	})
 
 	s.Router.HandleIncoming(s.MessageBuilders.ResendRequestBuilder.MsgType(), func(data []byte) bool {
@@ -260,6 +283,7 @@ func (s *Session) setSaveMessagesCallback() {
 		resendMessages, err := s.messageStorage.Messages(fix.StorageID{
 			Sender: s.LogonSettings.SenderCompID,
 			Target: s.LogonSettings.TargetCompID,
+			Side:   fix.Outgoing,
 		}, resendMsg.BeginSeqNo(), resendMsg.EndSeqNo())
 		if err != nil {
 			return true
@@ -390,11 +414,13 @@ func (s *Session) Run() (err error) {
 			s.changeState(SuccessfulLogged, true)
 
 			s.sendWithErrorCheck(answer)
-			return true
+
+			s.checkSeqNum(incomingLogon)
 
 		case WaitingLogonAnswer:
 			s.changeState(SuccessfulLogged, true)
 
+			s.checkSeqNum(incomingLogon)
 		case SuccessfulLogged:
 			s.sendWithErrorCheck(s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum()))
 		}
@@ -470,6 +496,25 @@ func (s *Session) Run() (err error) {
 	})
 
 	return nil
+}
+
+func (s *Session) checkSeqNum(incomingLogon messages.LogonBuilder) {
+	incSeqNum := incomingLogon.HeaderBuilder().MsgSeqNum()
+	currSeqNum, err := s.counter.GetCurrSeqNum(fix.StorageID{
+		Sender: s.LogonSettings.SenderCompID,
+		Target: s.LogonSettings.TargetCompID,
+		Side:   fix.Incoming,
+	})
+	if err != nil {
+		return
+	}
+
+	if currSeqNum+1 < incSeqNum {
+		resendMsg := s.MessageBuilders.ResendRequestBuilder.New()
+		resendMsg.SetFieldBeginSeqNo(currSeqNum)
+		resendMsg.SetFieldEndSeqNo(0)
+		s.sendWithErrorCheck(resendMsg)
+	}
 }
 
 func (s *Session) start() error {
@@ -587,6 +632,7 @@ func (s *Session) send(msg messages.Message) error {
 	nextSeqNum, err := s.counter.GetNextSeqNum(fix.StorageID{
 		Sender: s.LogonSettings.SenderCompID,
 		Target: s.LogonSettings.TargetCompID,
+		Side:   fix.Outgoing,
 	})
 	if err != nil {
 		return err
