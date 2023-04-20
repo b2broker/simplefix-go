@@ -4,7 +4,7 @@ type StorageSide string
 
 const (
 	Incoming StorageSide = "incoming"
-	Outgoing             = "outgoing"
+	Outgoing StorageSide = "outgoing"
 )
 
 type StorageID struct {
