@@ -1,18 +1,18 @@
 package memory
 
 import (
-	"sync"
-	"sync/atomic"
-
 	simplefixgo "github.com/b2broker/simplefix-go"
 	"github.com/b2broker/simplefix-go/fix"
+	"sync"
+	"sync/atomic"
 )
 
 // Storage is used to store the most recent messages.
 type Storage struct {
-	counter  int64
-	messages map[int]simplefixgo.SendingMessage
-	mu       sync.Mutex
+	counterIncoming int64
+	counterOutgoing int64
+	messages        map[int]simplefixgo.SendingMessage
+	mu              sync.Mutex
 }
 
 // NewStorage is a constructor for creation of a new in-memory Storage.
@@ -24,31 +24,50 @@ func NewStorage() *Storage {
 }
 
 func (s *Storage) GetNextSeqNum(storageID fix.StorageID) (int, error) {
-	return int(atomic.AddInt64(&s.counter, 1)), nil
+	if storageID.Side == fix.Incoming {
+		return int(atomic.AddInt64(&s.counterIncoming, 1)), nil
+	} else {
+		return int(atomic.AddInt64(&s.counterOutgoing, 1)), nil
+	}
 }
 
 func (s *Storage) GetCurrSeqNum(storageID fix.StorageID) (int, error) {
-	return int(s.counter), nil
+	if storageID.Side == fix.Incoming {
+		return int(s.counterIncoming), nil
+	} else {
+		return int(s.counterOutgoing), nil
+	}
 }
 
 func (s *Storage) ResetSeqNum(storageID fix.StorageID) error {
+	if storageID.Side == fix.Incoming {
+		s.counterIncoming = 0
+	} else {
+		s.counterOutgoing = 0
+	}
+	return nil
+}
+
+func (s *Storage) SetSeqNum(storageID fix.StorageID, seqNum int) error {
+	if storageID.Side == fix.Incoming {
+		s.counterIncoming = int64(seqNum)
+	} else {
+		s.counterOutgoing = int64(seqNum)
+	}
 	return nil
 }
 
 // Save saves a message with seq number to storage
-func (s *Storage) Save(storageID fix.StorageID, msg simplefixgo.SendingMessage, msgSeqNum int) error {
+func (s *Storage) Save(_ fix.StorageID, msg simplefixgo.SendingMessage, msgSeqNum int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	// if _, ok := s.messages[msgSeqNum]; ok {
-	// 	return fmt.Errorf("the sequence index already exists: %d", msgSeqNum)
-	// }
 	s.messages[msgSeqNum] = msg
 	return nil
 }
 
 // Messages returns a message list, in a sequential order
 // (starting with msgSeqNumFrom and ending with msgSeqNumTo).
-func (s *Storage) Messages(storageID fix.StorageID, msgSeqNumFrom, msgSeqNumTo int) ([]simplefixgo.SendingMessage, error) {
+func (s *Storage) Messages(_ fix.StorageID, msgSeqNumFrom, msgSeqNumTo int) ([]simplefixgo.SendingMessage, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -56,7 +75,7 @@ func (s *Storage) Messages(storageID fix.StorageID, msgSeqNumFrom, msgSeqNumTo i
 		return nil, simplefixgo.ErrInvalidBoundaries
 	}
 
-	if int64(msgSeqNumTo) > s.counter {
+	if int64(msgSeqNumTo) > s.counterOutgoing {
 		return nil, simplefixgo.ErrNotEnoughMessages
 	}
 
