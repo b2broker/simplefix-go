@@ -17,6 +17,7 @@ type InitiatorHandler interface {
 	Run() error
 	StopWithError(err error)
 	Send(message SendingMessage) error
+	Context() context.Context
 }
 
 // Initiator provides the client-side service functionality.
@@ -99,11 +100,14 @@ func (c *Initiator) Serve() error {
 
 	eg.Go(func() error {
 		defer c.Close()
-
-		<-c.ctx.Done()
-		stopHandler.Do(func() {
-			c.handler.StopWithError(nil)
-		})
+		select {
+		case <-c.handler.Context().Done():
+			stopHandler.Do(func() {})
+		case <-c.ctx.Done():
+			stopHandler.Do(func() {
+				c.handler.StopWithError(nil)
+			})
+		}
 
 		return nil
 	})
