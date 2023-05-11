@@ -251,21 +251,28 @@ func (s *Session) setStorageCallbacks() {
 	})
 
 	s.Router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
-		if s.state == SuccessfulLogged {
+		if s.state != WaitingLogonAnswer && s.state != WaitingLogon {
 			seqNum, err := fix.ValueByTag(msg, strconv.Itoa(s.Tags.MsgSeqNum))
 			if err != nil {
 				return true
 			}
-
 			seqNumInt, err := strconv.Atoi(string(seqNum))
 			if err != nil {
 				return true
 			}
-			err = s.counter.SetSeqNum(fix.StorageID{
-				Sender: s.LogonSettings.SenderCompID,
-				Target: s.LogonSettings.TargetCompID,
-				Side:   fix.Incoming,
-			}, seqNumInt)
+
+			msgType, err := fix.ValueByTag(msg, strconv.Itoa(s.Tags.MsgType))
+			if err != nil {
+				return true
+			}
+			msgTypeStr := string(msgType)
+			if s.MessageBuilders.SequenceResetBuilder == nil || msgTypeStr != s.MessageBuilders.SequenceResetBuilder.MsgType() {
+				err = s.counter.SetSeqNum(fix.StorageID{
+					Sender: s.LogonSettings.SenderCompID,
+					Target: s.LogonSettings.TargetCompID,
+					Side:   fix.Incoming,
+				}, seqNumInt)
+			}
 			return err == nil
 		}
 
@@ -415,12 +422,12 @@ func (s *Session) Run() (err error) {
 
 			s.sendWithErrorCheck(answer)
 
-			s.checkSeqNum(incomingLogon)
+			s.processIncSeq(incomingLogon)
 
 		case WaitingLogonAnswer:
 			s.changeState(SuccessfulLogged, true)
 
-			s.checkSeqNum(incomingLogon)
+			s.processIncSeq(incomingLogon)
 		case SuccessfulLogged:
 			s.sendWithErrorCheck(s.MakeReject(s.SessionErrorCodes.Other, 0, incomingLogon.HeaderBuilder().MsgSeqNum()))
 		}
@@ -498,7 +505,7 @@ func (s *Session) Run() (err error) {
 	return nil
 }
 
-func (s *Session) checkSeqNum(incomingLogon messages.LogonBuilder) {
+func (s *Session) processIncSeq(incomingLogon messages.LogonBuilder) {
 	incSeqNum := incomingLogon.HeaderBuilder().MsgSeqNum()
 	currSeqNum, err := s.counter.GetCurrSeqNum(fix.StorageID{
 		Sender: s.LogonSettings.SenderCompID,
@@ -515,6 +522,12 @@ func (s *Session) checkSeqNum(incomingLogon messages.LogonBuilder) {
 		resendMsg.SetFieldEndSeqNo(0)
 		s.sendWithErrorCheck(resendMsg)
 	}
+
+	_ = s.counter.SetSeqNum(fix.StorageID{
+		Sender: s.LogonSettings.SenderCompID,
+		Target: s.LogonSettings.TargetCompID,
+		Side:   fix.Incoming,
+	}, incSeqNum)
 }
 
 func (s *Session) start() error {
