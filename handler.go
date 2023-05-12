@@ -202,16 +202,33 @@ func (h *DefaultHandler) Run() (err error) {
 			}
 
 		case <-h.ctx.Done():
+			h.processRemainingIncoming()
+
 			h.eventHandlers.Trigger(utils.EventStopped)
 
 			return
 
 		case err := <-h.errors:
+			h.processRemainingIncoming()
+
 			if errors.Is(err, ErrConnClosed) {
 				h.eventHandlers.Trigger(utils.EventDisconnect)
 			}
 
 			return err
+		}
+	}
+}
+
+func (h *DefaultHandler) processRemainingIncoming() {
+	for {
+		select {
+		case msg, ok := <-h.incoming:
+			if ok {
+				_ = h.serve(msg)
+			}
+		default:
+			return
 		}
 	}
 }
