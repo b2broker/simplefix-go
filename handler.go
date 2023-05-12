@@ -221,7 +221,6 @@ func (h *DefaultHandler) Run() (err error) {
 }
 
 func (h *DefaultHandler) processRemainingIncoming() {
-done:
 	for {
 		select {
 		case msg, ok := <-h.incoming:
@@ -229,7 +228,7 @@ done:
 				_ = h.serve(msg)
 			}
 		default:
-			break done
+			return
 		}
 	}
 }
