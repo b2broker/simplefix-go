@@ -104,10 +104,22 @@ func (msg *Message) CalcBodyLength() int {
 	bh := msg.header.ToBytes()
 	bb := msg.body.ToBytes()
 	mt := msg.msgType.ToBytes()
-	if len(bb) == 0 {
-		return len(bh) + len(mt) + len(bb) + CountOfSOHSymbolsWithoutBody
+
+	var length int
+
+	if len(mt) > 0 {
+		length += len(mt) + 1
 	}
-	return len(bh) + len(mt) + len(bb) + CountOfSOHSymbols
+
+	if len(bb) > 0 {
+		length += len(bb) + 1
+	}
+
+	if len(bh) > 0 {
+		length += len(bh) + 1
+	}
+
+	return length
 }
 
 func (msg *Message) BytesWithoutChecksum() []byte {

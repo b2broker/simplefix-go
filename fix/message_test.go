@@ -51,7 +51,7 @@ func TestMessage_ToBytes(t *testing.T) {
 					NewKeyValue("269", NewString("0")),
 					NewKeyValue("269", NewString("1")),
 				),
-			want: []byte("8=FIX.4.49=10435=V146=355=BTC/USD55=BTC/USDT_ABCDE55=BTCABCD/ABCDEFG262=request_1263=1264=5267=2269=0269=110=189"),
+			want: []byte("8=FIX.4.49=10335=V146=355=BTC/USD55=BTC/USDT_ABCDE55=BTCABCD/ABCDEFG262=request_1263=1264=5267=2269=0269=110=188"),
 		},
 	}
 
@@ -191,5 +191,62 @@ func TestMessage_FromBytes_Coincidence(t *testing.T) {
 		t.Log(len(testMsg), testMsg)
 
 		t.Fatalf("not equal")
+	}
+}
+
+func TestMessage_CalcBodyLength(t *testing.T) {
+	testCases := []struct {
+		name    string
+		message *Message
+		want    int
+	}{
+		{
+			name: "base",
+			message: NewMessage("8", "9", "10", "35", "FIX4.4", "A").
+				SetHeader(NewComponent()).
+				SetTrailer(NewComponent()),
+			want: 5,
+		},
+		{
+			name: "headers only",
+			message: NewMessage("8", "9", "10", "35", "FIX4.4", "A").
+				SetHeader(NewComponent(NewKeyValue("49", NewString("test")), NewKeyValue("56", NewString("test")))).
+				SetTrailer(NewComponent()),
+			want: 21,
+		},
+		{
+			name: "body only",
+			message: NewMessage("8", "9", "10", "35", "FIX4.4", "A").
+				SetHeader(NewComponent()).
+				SetBody(NewKeyValue("100", NewString("test"))).
+				SetTrailer(NewComponent()),
+			want: 14,
+		},
+		{
+			name: "headers and body",
+			message: NewMessage("8", "9", "10", "35", "FIX4.4", "A").
+				SetHeader(NewComponent(NewKeyValue("49", NewString("test")), NewKeyValue("56", NewString("test")))).
+				SetBody(NewKeyValue("100", NewString("test"))).
+				SetTrailer(NewComponent()),
+			want: 30,
+		},
+		{
+			name: "headers, body and checksum",
+			message: NewMessage("8", "9", "10", "35", "FIX4.4", "A").
+				SetHeader(NewComponent(NewKeyValue("49", NewString("test")), NewKeyValue("56", NewString("test")))).
+				SetBody(NewKeyValue("100", NewString("test"))).
+				SetTrailer(NewComponent(NewKeyValue("10", NewString("000")))),
+			want: 30,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.message.CalcBodyLength()
+			if tt.want != actual {
+				t.Logf("body length: expected %d, got %d", tt.want, actual)
+				t.FailNow()
+			}
+		})
 	}
 }
