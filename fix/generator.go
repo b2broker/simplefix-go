@@ -9,7 +9,11 @@ import (
 const TimeLayout = "20060102-15:04:05.000"
 
 const (
-	CountOfSOHSymbols            = 3
+	// CountOfSOHSymbols
+	// Deprecated: should not be used, count SOH symbols by yourself
+	CountOfSOHSymbols = 3
+	// CountOfSOHSymbolsWithoutBody
+	// Deprecated: should not be used, count SOH symbols by yourself
 	CountOfSOHSymbolsWithoutBody = 2
 )
 
