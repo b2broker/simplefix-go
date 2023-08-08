@@ -6,19 +6,21 @@ import (
 )
 
 type MessageBuilders struct {
-	HeaderBuilder             messages.HeaderBuilder
-	TrailerBuilder            messages.TrailerBuilder
-	LogonBuilder              messages.LogonBuilder
-	LogoutBuilder             messages.LogoutBuilder
-	RejectBuilder             messages.RejectBuilder
-	HeartbeatBuilder          messages.HeartbeatBuilder
-	TestRequestBuilder        messages.TestRequestBuilder
-	ResendRequestBuilder      messages.ResendRequestBuilder
-	SequenceResetBuilder      messages.SequenceResetBuilder
-	ExecutionReportBuilder    messages.ExecutionReportBuilder
-	NewOrderSingleBuilder     messages.NewOrderSingleBuilder
-	MarketDataRequestBuilder  messages.MarketDataRequestBuilder
-	OrderCancelRequestBuilder messages.OrderCancelRequestBuilder
+	HeaderBuilder              messages.HeaderBuilder
+	TrailerBuilder             messages.TrailerBuilder
+	LogonBuilder               messages.LogonBuilder
+	LogoutBuilder              messages.LogoutBuilder
+	RejectBuilder              messages.RejectBuilder
+	HeartbeatBuilder           messages.HeartbeatBuilder
+	TestRequestBuilder         messages.TestRequestBuilder
+	ResendRequestBuilder       messages.ResendRequestBuilder
+	SequenceResetBuilder       messages.SequenceResetBuilder
+	ExecutionReportBuilder     messages.ExecutionReportBuilder
+	NewOrderSingleBuilder      messages.NewOrderSingleBuilder
+	MarketDataRequestBuilder   messages.MarketDataRequestBuilder
+	OrderCancelRequestBuilder  messages.OrderCancelRequestBuilder
+	SecurityListRequestBuilder messages.SecurityListRequestBuilder
+	SecurityListBuilder        messages.SecurityListBuilder
 }
 
 // Opts is a structure providing auto-generated Session options.
