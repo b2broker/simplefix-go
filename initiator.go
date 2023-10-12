@@ -18,6 +18,7 @@ type InitiatorHandler interface {
 	StopWithError(err error)
 	Send(message SendingMessage) error
 	Context() context.Context
+	Stop()
 }
 
 // Initiator provides the client-side service functionality.
@@ -92,6 +93,8 @@ func (c *Initiator) Serve() error {
 
 				err := c.conn.Write(msg)
 				if err != nil {
+					c.handler.Stop()
+
 					return ErrConnClosed
 				}
 			}
