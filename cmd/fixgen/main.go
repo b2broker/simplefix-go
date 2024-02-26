@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/b2broker/simplefix-go/generator"
-	"github.com/b2broker/simplefix-go/utils"
 	"os"
 	"path/filepath"
+
+	"github.com/b2broker/simplefix-go/generator"
+	"github.com/b2broker/simplefix-go/utils"
 )
 
 func main() {
@@ -14,7 +15,7 @@ func main() {
 
 	outputDir := flag.String("o", "./fix44/", "output directory")
 	typesMappingPath := flag.String("t", "./source/types.xml", "path to XML file with types mapping")
-	sourceXMLPath := flag.String("s", "./source/fix44.xml", "path to main XML file")
+	sourceXMLPath := flag.String("s", "./source/fix4.4.ozmaker.xml", "path to main XML file")
 
 	flag.Parse()
 

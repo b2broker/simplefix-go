@@ -16,6 +16,7 @@ type InitiatorHandler interface {
 	Outgoing() <-chan []byte
 	Run() error
 	StopWithError(err error)
+	CloseErrorChan()
 	Send(message SendingMessage) error
 	Context() context.Context
 	Stop()
@@ -55,6 +56,7 @@ func (c *Initiator) Send(message SendingMessage) error {
 func (c *Initiator) Serve() error {
 	eg := errgroup.Group{}
 	defer c.Close()
+	defer c.handler.CloseErrorChan()
 
 	stopHandler := sync.Once{}
 

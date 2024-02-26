@@ -30,6 +30,7 @@ type AcceptorHandler interface {
 	Run() error
 	Stop()
 	StopWithError(err error)
+	CloseErrorChan()
 	Send(message SendingMessage) error
 	SendBatch(messages []SendingMessage) error
 	SendRaw(data []byte) error
@@ -124,6 +125,7 @@ func (s *Acceptor) serve(parentCtx context.Context, netConn net.Conn) {
 	}
 
 	handler := s.factory.MakeHandler(ctx)
+	defer handler.CloseErrorChan()
 
 	eg := errgroup.Group{}
 
