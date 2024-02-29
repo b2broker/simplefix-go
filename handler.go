@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session/messages"
 	"github.com/b2broker/simplefix-go/utils"
-	"sync"
 )
 
 const AllMsgTypes = "ALL"
@@ -188,6 +189,7 @@ func (h *DefaultHandler) serve(msg []byte) (err error) {
 // Run is a function that is used for listening and processing messages.
 func (h *DefaultHandler) Run() (err error) {
 	h.eventHandlers.Trigger(utils.EventConnect)
+	defer h.processRemainingErrors()
 
 	for {
 		select {
@@ -233,6 +235,17 @@ func (h *DefaultHandler) processRemainingIncoming() {
 	}
 }
 
+func (h *DefaultHandler) processRemainingErrors() {
+	go func() {
+		for {
+			_, ok := <-h.errors
+			if !ok {
+				return
+			}
+		}
+	}()
+}
+
 func (h *DefaultHandler) Context() context.Context {
 	return h.ctx
 }
@@ -251,6 +264,11 @@ func (h *DefaultHandler) Stop() {
 // StopWithError is a function that enables graceful termination of a session with throwing an error.
 func (h *DefaultHandler) StopWithError(err error) {
 	h.errors <- err
+}
+
+// CloseErrorChan is a function that closes the handler's error chan.
+func (h *DefaultHandler) CloseErrorChan() {
+	close(h.errors)
 }
 
 // OnDisconnect handles disconnection events.

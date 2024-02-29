@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/b2broker/simplefix-go/generator"
-	"github.com/b2broker/simplefix-go/utils"
 	"os"
 	"path/filepath"
+
+	"github.com/b2broker/simplefix-go/generator"
+	"github.com/b2broker/simplefix-go/utils"
 )
 
 func main() {
