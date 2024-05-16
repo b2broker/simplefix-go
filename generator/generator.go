@@ -3,12 +3,11 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"go/parser"
-	"go/printer"
-	"go/token"
+	gofmt "go/format"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"text/template"
 )
@@ -66,14 +65,7 @@ func (g *Generator) write(path, data string) (err error) {
 		return err
 	}
 
-	fset := token.NewFileSet()
-
-	f, err := parser.ParseFile(fset, "", data, parser.ParseComments)
-	if err != nil {
-		return fmt.Errorf("could not parse the Go file: %w", err)
-	}
-
-	err = (&printer.Config{Mode: printer.TabIndent, Tabwidth: 4}).Fprint(output, fset, f)
+	_, err = fmt.Fprint(output, data)
 	if err != nil {
 		return err
 	}
@@ -96,11 +88,18 @@ func (g *Generator) makeFile(data, pkg string) string {
 		imports = append(imports, `"time"`)
 	}
 
-	return g.mustExecuteTemplate(fileTemplateFormat, fileTemplate{
+	source := g.mustExecuteTemplate(fileTemplateFormat, fileTemplate{
 		Data:    data,
 		Pkg:     pkg,
 		Imports: strings.Join(imports, "\n"),
 	})
+
+	formatted, err := gofmt.Source([]byte(source))
+	if err != nil {
+		panic(err)
+	}
+
+	return string(formatted)
 }
 
 // Execute creates a separate file for each message.
@@ -355,7 +354,8 @@ func (g *Generator) makeHeader() string {
 	beginString := fmt.Sprintf("var beginString = \"%s.%s.%s\"", g.doc.Type, g.doc.Major, g.doc.Minor)
 	header := g.makeComponent(g.doc.Header, componentName)
 	fieldSetters := make([]string, len(RequiredHeaderFields))
-	for fieldName := range RequiredHeaderFields {
+	requiredFields := sortedMapKeys(RequiredHeaderFields)
+	for _, fieldName := range requiredFields {
 		if g.isFieldExcluded(fieldName) {
 			continue
 		}
@@ -705,4 +705,18 @@ func (g *Generator) makeCallConstructor(member *ComponentMember) string {
 		"Unexpected item time. Expected value: %s, %s, %s; specified value: '%s'",
 		ComponentItem, GroupItem, FieldItem, member.XMLName.Local,
 	))
+}
+
+func sortedMapKeys(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
+	return keys
 }
