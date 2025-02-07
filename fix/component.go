@@ -1,6 +1,7 @@
 package fix
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 )
@@ -63,6 +64,32 @@ func (c *Component) ToBytes() []byte {
 	}
 
 	return joinBody(msg...)
+}
+func (c *Component) IsEmpty() bool {
+	for _, item := range c.items {
+		if !item.IsEmpty() {
+			return false
+		}
+	}
+	return true
+}
+func (c *Component) WriteBytes(writer *bytes.Buffer) bool {
+	addDelimeter := false
+	written := false
+	for i, item := range c.items {
+		if !item.IsEmpty() && addDelimeter {
+			_ = writer.WriteByte(DelimiterChar)
+			addDelimeter = false
+		}
+		if item.WriteBytes(writer) {
+			written = true
+			if i <= len(c.items)-1 {
+				addDelimeter = true
+			}
+		}
+	}
+
+	return written
 }
 
 // Get returns a specific component item identified by its sequence number.

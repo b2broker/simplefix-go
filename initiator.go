@@ -18,6 +18,7 @@ type InitiatorHandler interface {
 	StopWithError(err error)
 	CloseErrorChan()
 	Send(message SendingMessage) error
+	SendBuffered(message SendingMessage) error
 	Context() context.Context
 	Stop()
 }

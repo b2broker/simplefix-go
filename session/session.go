@@ -75,6 +75,7 @@ type Handler interface {
 	RemoveOutgoingHandler(msgType string, id int64) (err error)
 	SendRaw(data []byte) error
 	Send(message simplefixgo.SendingMessage) error
+	SendBuffered(message simplefixgo.SendingMessage) error
 	SendBatch(messages []simplefixgo.SendingMessage) error
 	Context() context.Context
 	Stop()
@@ -141,7 +142,7 @@ func NewAcceptorSession(params *Opts, handler Handler, settings *LogonSettings, 
 		return
 	}
 
-	if params.AllowedEncryptedMethods == nil || len(params.AllowedEncryptedMethods) == 0 {
+	if len(params.AllowedEncryptedMethods) == 0 {
 		return nil, ErrMissingEncryptedMethods
 	}
 
@@ -657,6 +658,31 @@ func (s *Session) send(msg messages.Message) error {
 		SetFieldSendingTime(s.CurrentTime().Format(fix.TimeLayout))
 
 	return s.Router.Send(msg)
+}
+
+func (s *Session) SendBuffered(msg messages.Message) error {
+	return s.sendBuffered(msg)
+}
+
+func (s *Session) sendBuffered(msg messages.Message) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	nextSeqNum, err := s.counter.GetNextSeqNum(fix.StorageID{
+		Sender: s.LogonSettings.SenderCompID,
+		Target: s.LogonSettings.TargetCompID,
+		Side:   fix.Outgoing,
+	})
+	if err != nil {
+		return err
+	}
+	msg.HeaderBuilder().
+		SetFieldMsgSeqNum(nextSeqNum).
+		SetFieldTargetCompID(s.LogonSettings.TargetCompID).
+		SetFieldSenderCompID(s.LogonSettings.SenderCompID).
+		SetFieldSendingTime(s.CurrentTime().Format(fix.TimeLayout))
+
+	return s.Router.SendBuffered(msg)
 }
 
 func (s *Session) sendWithErrorCheck(msg messages.Message) {

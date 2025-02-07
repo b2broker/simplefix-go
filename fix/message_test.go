@@ -71,6 +71,22 @@ func TestMessage_ToBytes(t *testing.T) {
 
 				t.Fatalf("not equal")
 			}
+
+			converter := NewMessageByteConverter(200)
+			byteMessage, err = converter.ConvertToBytes(tt.message)
+			if err != nil {
+				t.Fatalf("could not marshal message: %s", err)
+			}
+
+			if !bytes.Equal(byteMessage, tt.want) {
+				t.Log(len(byteMessage), string(byteMessage))
+				t.Log(len(tt.want), string(tt.want))
+
+				t.Log(len(byteMessage), byteMessage)
+				t.Log(len(tt.want), tt.want)
+
+				t.Fatalf("not equal")
+			}
 		})
 	}
 }
@@ -158,6 +174,22 @@ func TestMessage_FromBytes(t *testing.T) {
 
 		t.Fatalf("not equal")
 	}
+
+	converter := NewMessageByteConverter(200)
+	byteMessage, err = converter.ConvertToBytes(msg)
+	if err != nil {
+		t.Fatalf("could not marshal message: %s", err)
+	}
+
+	if !bytes.Equal(byteMessage, testMsg) {
+		t.Log(len(byteMessage), string(byteMessage))
+		t.Log(len(testMsg), string(testMsg))
+
+		t.Log(len(byteMessage), byteMessage)
+		t.Log(len(testMsg), testMsg)
+
+		t.Fatalf("not equal")
+	}
 }
 
 func TestMessage_FromBytes_Coincidence(t *testing.T) {
@@ -179,6 +211,22 @@ func TestMessage_FromBytes_Coincidence(t *testing.T) {
 		SetTrailer(NewComponent())
 
 	byteMessage, err := msg.ToBytes()
+	if err != nil {
+		t.Fatalf("could not marshal message: %s", err)
+	}
+
+	if !bytes.Equal(byteMessage, testMsg) {
+		t.Log(len(byteMessage), string(byteMessage))
+		t.Log(len(testMsg), string(testMsg))
+
+		t.Log(len(byteMessage), byteMessage)
+		t.Log(len(testMsg), testMsg)
+
+		t.Fatalf("not equal")
+	}
+
+	converter := NewMessageByteConverter(200)
+	byteMessage, err = converter.ConvertToBytes(msg)
 	if err != nil {
 		t.Fatalf("could not marshal message: %s", err)
 	}
@@ -242,11 +290,40 @@ func TestMessage_CalcBodyLength(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.message.CalcBodyLength()
+			converter := NewMessageByteConverter(200)
+			_, _ = converter.ConvertToBytes(tt.message)
+			actual := tt.message.bodyLength.Value.Value().(int)
 			if tt.want != actual {
 				t.Logf("body length: expected %d, got %d", tt.want, actual)
 				t.FailNow()
 			}
 		})
+	}
+}
+
+// BenchmarkMessage_Prepare-24    	 1263648	       982.7 ns/op
+func BenchmarkMessage_Prepare(b *testing.B) {
+	msg := NewMessage("8", "9", "10", "35", "FIX4.4", "A").
+		SetHeader(NewComponent(NewKeyValue("49", NewString("test")), NewKeyValue("56", NewString("test")))).
+		SetBody(NewKeyValue("100", NewString("test"))).
+		SetTrailer(NewComponent())
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = msg.Prepare()
+	}
+}
+
+var testMsg = NewMessage("8", "9", "10", "35", "FIX4.4", "A").
+	SetHeader(NewComponent(NewKeyValue("49", NewString("test")), NewKeyValue("56", NewString("test")))).
+	SetBody(NewKeyValue("100", NewString("test"))).
+	SetTrailer(NewComponent())
+var testConverter = NewMessageByteConverter(500)
+
+// BenchmarkMessage_PrepareBuffered-24    	 5583252	       211.5 ns/op
+func BenchmarkMessage_PrepareBuffered(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = testConverter.ConvertToBytes(testMsg)
 	}
 }

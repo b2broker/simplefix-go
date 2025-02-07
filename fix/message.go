@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+
+	"github.com/b2broker/simplefix-go/fix/buffer"
 )
 
 // Message is a structure providing functionality to FIX messages.
@@ -143,6 +145,45 @@ func (msg *Message) BytesWithoutChecksum() []byte {
 	return bm
 }
 
+func (msg *Message) WriteBytesWithoutChecksum(buffers *buffer.MessageByteBuffers) {
+	messageBuffer := buffers.GetMessageBuffer()
+	bodyBuffer := buffers.GetBodyBuffer()
+	headerBuffer := buffers.GetHeaderBuffer()
+
+	bodyWritten := msg.body.WriteBytes(bodyBuffer)
+	headerWritten := msg.header.WriteBytes(headerBuffer)
+	totalLength := 0
+	if headerWritten {
+		totalLength += headerBuffer.Len() + 1
+	}
+	if bodyWritten {
+		totalLength += bodyBuffer.Len() + 1
+	}
+
+	typeBuffer := buffers.GetTypeBuffer()
+	if msg.msgType.WriteBytes(typeBuffer) {
+		totalLength += typeBuffer.Len() + 1
+	}
+
+	msg.bodyLength.Value = NewInt(totalLength)
+
+	msg.beginString.WriteBytes(messageBuffer)
+	_ = messageBuffer.WriteByte(DelimiterChar)
+	msg.bodyLength.WriteBytes(messageBuffer)
+	_ = messageBuffer.WriteByte(DelimiterChar)
+	msg.msgType.WriteBytes(messageBuffer)
+
+	if headerWritten {
+		_ = messageBuffer.WriteByte(DelimiterChar)
+		_, _ = messageBuffer.Write(headerBuffer.Bytes())
+	}
+
+	if bodyWritten {
+		_ = messageBuffer.WriteByte(DelimiterChar)
+		_, _ = messageBuffer.Write(bodyBuffer.Bytes())
+	}
+}
+
 // Prepare prepares message by calculating body length and check sum
 func (msg *Message) Prepare() error {
 	msg.bodyLength.Value = NewInt(msg.CalcBodyLength())
@@ -164,10 +205,40 @@ func (msg *Message) Prepare() error {
 	return nil
 }
 
+func (msg *Message) prepareBuffered(buffers *buffer.MessageByteBuffers) error {
+	msgBuff := buffers.GetMessageBuffer()
+
+	msg.WriteBytesWithoutChecksum(buffers)
+	checkSum := CalcCheckSumOptimizedFromBuffer(msgBuff)
+	if err := msg.checkSum.Value.Set(string(checkSum)); err != nil {
+		return err
+	}
+
+	msgBuff.WriteByte(DelimiterChar)
+	_, _ = msgBuff.WriteString(msg.checkSum.Key)
+	_ = msgBuff.WriteByte('=')
+	_, _ = msgBuff.Write(checkSum)
+	msgBuff.WriteByte(DelimiterChar)
+
+	msg.prepared = make([]byte, msgBuff.Len())
+	copy(msg.prepared, msgBuff.Bytes())
+
+	return nil
+}
+
 // Prepared returns a byte representation of a specified message.
 func (msg *Message) ToBytes() ([]byte, error) {
-	err := msg.Prepare()
-	if err != nil {
+
+	if err := msg.Prepare(); err != nil {
+		return nil, err
+	}
+
+	return msg.prepared, nil
+}
+
+func (msg *Message) ToBytesBuffered(buffers *buffer.MessageByteBuffers) ([]byte, error) {
+
+	if err := msg.prepareBuffered(buffers); err != nil {
 		return nil, err
 	}
 
@@ -222,3 +293,7 @@ func (msg *Message) SetTrailer(trailer *Component) *Message { msg.setTrailer(tra
 func (msg *Message) setHeader(header *Component)   { msg.header = header }
 func (msg *Message) setTrailer(trailer *Component) { msg.trailer = trailer }
 func (msg *Message) setBody(body []Item)           { msg.body = body }
+
+func makeTagValue(tag string, value []byte) []byte {
+	return bytes.Join([][]byte{[]byte(tag), value}, []byte{61})
+}

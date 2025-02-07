@@ -1,5 +1,9 @@
 package messages
 
+import (
+	"github.com/b2broker/simplefix-go/fix/buffer"
+)
+
 type MockMessage struct {
 	Type string
 	Data []byte
@@ -19,5 +23,8 @@ func (m MockMessage) MsgType() string {
 }
 
 func (m MockMessage) ToBytes() ([]byte, error) {
+	return m.Data, m.Err
+}
+func (m MockMessage) ToBytesBuffered(_ *buffer.MessageByteBuffers) ([]byte, error) {
 	return m.Data, m.Err
 }
