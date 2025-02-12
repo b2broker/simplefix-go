@@ -27,7 +27,6 @@ func BenchmarkFormatFloat(b *testing.B) {
 	}
 }
 
-// BenchmarkFormatToFloat-24   a         			 7569190	         105.0 ns/op
 // BenchmarkFormatToFloat-24   0         			 540723948	         2.209 ns/op
 // BenchmarkFormatToFloat-24   123         			 439286569	         2.725 ns/op
 // BenchmarkFormatToFloat-24   0.12345678  			 162624674	         7.719 ns/op
@@ -36,7 +35,7 @@ func BenchmarkFormatFloat(b *testing.B) {
 // BenchmarkFormatToFloat-24   a					 58579447	         15.25 ns/op
 // BenchmarkFormatToFloat-24   12312312312.131212212 123302217	         39.66 ns/op
 func BenchmarkFormatToFloat(b *testing.B) {
-	v := []byte("12312312312.131212212")
+	v := []byte("я")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = bytesToFloat(v)
