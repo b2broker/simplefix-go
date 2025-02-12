@@ -584,6 +584,7 @@ func init() {
 	}
 }
 
+// inspired by https://github.com/valyala/fastjson/blob/6dae91c8e11a7fa6a257a550b75cba53ab81693e/fastfloat/parse.go#L203
 func bytesToFloat(s []byte) (float64, error) {
 	l := uint(len(s))
 	if l == 0 {
