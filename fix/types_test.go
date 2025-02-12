@@ -184,8 +184,10 @@ func TestFormatToFloatStrConv(t *testing.T) {
 		{[]byte("3.402823466385288598e+10"), 3.402823466385288598e+10, "", ""},
 		{[]byte("3.40282346638528859811704183484516925440e+10"), 3.40282346638528859811704183484516925440e+10, "", ""},
 		{[]byte("3.40282346638528859811704183484516925440e+38"), math.MaxFloat32, "", ""},
+		{[]byte("1.401298464324817e-45"), math.SmallestNonzeroFloat32, "", ""},
 		{[]byte("1.79769313486231570814527423731704356798070e+308"), math.MaxFloat64, "", ""},
-		{[]byte("3.40282346638528859811704183484516925440e+300"), 3.40282346638528859811704183484516925440e+300, "", ""},
+		{[]byte("1.79769313486231570814527423731704356798070e-308"), 1.79769313486231570814527423731704356798070e-308, "", ""},
+		{[]byte("5e-324"), math.SmallestNonzeroFloat64, "", ""},
 		{[]byte("179769313486231574112351123123"), 179769313486231574112351123123, "", ""},
 		{[]byte(""), 0,
 			"strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -216,7 +218,7 @@ func TestFormatToFloatStrConv(t *testing.T) {
 
 	tstr := ""
 	for _, c := range vv {
-		t.Run(fmt.Sprintf("float case %+v", c.e), func(t *testing.T) {
+		t.Run(fmt.Sprintf("float case %s", c.v), func(t *testing.T) {
 			str := fmt.Sprintf("%s,", string(c.v))
 			v, err := strconv.ParseFloat(string(c.v), 64)
 			if v != c.e {
