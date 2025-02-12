@@ -571,50 +571,164 @@ func floatToBytes(f float64) []byte {
 	}
 	return strconv.AppendFloat(make([]byte, 0, 64), f, 'f', -1, 64)
 }
-func bytesToFloat(data []byte) (float64, error) {
-	// Проверяем на пустой ввод
-	if len(data) == 0 {
-		return 0, errors.New("invalid input: empty data")
+
+var float64pow10 = [...]float64{
+	1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16,
+}
+
+var allowedFloat [256]bool
+
+func init() {
+	for _, ch := range "0123456789.eE+-" {
+		allowedFloat[ch] = true
+	}
+}
+
+func bytesToFloat(s []byte) (float64, error) {
+	l := uint(len(s))
+	if l == 0 {
+		return 0, fmt.Errorf("invalid syntax: empty string")
+	}
+	i := uint(0)
+	minus := s[0] == '-'
+	if minus {
+		i++
+		if i >= l {
+			return 0, errors.New("invalid syntax: ony minus sign")
+		}
 	}
 
-	var (
-		result     float64
-		sign       float64 = 1
-		decimalPos int     = -1
-	)
-
-	// Обработка отрицательных чисел
-	if data[0] == '-' {
-		sign = -1
-		data = data[1:]
-	}
-	if len(data) == 1 && data[0] == '.' {
-		return 0, errors.New("invalid input: single decimal point")
+	if l > 18 {
+		return strconv.ParseFloat(string(s), 64)
 	}
 
-	for i, c := range data {
-		if c == '.' {
-			if decimalPos != -1 {
-				return 0, errors.New("invalid input: multiple decimal points")
+	d := uint64(0)
+	j := i
+	for i < l {
+		if !allowedFloat[s[i]] {
+			return 0, errors.New("invalid syntax: invalid character")
+		}
+		if s[i] >= '0' && s[i] <= '9' {
+			d = d*10 + uint64(s[i]-'0')
+			i++
+			if i > 18 {
+				// The integer part may be out of range for uint64.
+				// Fall back to slow parsing.
+				f, err := strconv.ParseFloat(string(s), 64)
+				if err != nil && !math.IsInf(f, 0) {
+					return 0, err
+				}
+				return f, nil
 			}
-			decimalPos = i
 			continue
 		}
-
-		if c < '0' || c > '9' {
-			return 0, errors.New("invalid input: non-numeric character")
+		break
+	}
+	f := float64(d)
+	if s[0] != '.' || l == 1 {
+		if i <= j {
+			ss := s[i:]
+			if bytes.HasPrefix(ss, []byte{'+'}) {
+				ss = ss[1:]
+			}
+			return 0, errors.New("invalid syntax: unparsable tail left")
 		}
-
-		result = result*10 + float64(c-'0')
+		if i >= l {
+			// Fast path - just integer.
+			if minus {
+				return -f, nil
+			}
+			return f, nil
+		}
 	}
 
-	// Применяем корректировку для дробной части
-	if decimalPos != -1 {
-		scale := math.Pow10(len(data) - decimalPos - 1)
-		result /= scale
+	if s[i] == '.' {
+		// Parse fractional part.
+		i++
+		if i >= l {
+			if l == 2 && s[0] == '0' {
+				return 0, nil
+			}
+			return 0, errors.New("cannot parse fractional part")
+		}
+		k := i
+		for i < l {
+			if s[i] >= '0' && s[i] <= '9' {
+				d = d*10 + uint64(s[i]-'0')
+				i++
+				if i-j >= uint(len(float64pow10)) {
+					// The mantissa is out of range. Fall back to standard parsing.
+					f, err := strconv.ParseFloat(string(s), 64)
+					if err != nil && !math.IsInf(f, 0) {
+						return 0, errors.New("cannot parse mantissa")
+					}
+					return f, nil
+				}
+				continue
+			}
+			break
+		}
+		if i < k {
+			return 0, errors.New("cannot find mantissa")
+		}
+		// Convert the entire mantissa to a float at once to avoid rounding errors.
+		f = float64(d) / float64pow10[i-k]
+		if i >= l {
+			// Fast path - parsed fractional number.
+			if minus {
+				return -f, nil
+			}
+			return f, nil
+		}
 	}
-
-	return result * sign, nil
+	if s[i] == 'e' || s[i] == 'E' {
+		// Parse exponent part.
+		i++
+		if i >= l {
+			return 0, errors.New("cannot parse exponent")
+		}
+		expMinus := false
+		if s[i] == '+' || s[i] == '-' {
+			expMinus = s[i] == '-'
+			i++
+			if i >= l {
+				return 0, errors.New("cannot parse exponent from string")
+			}
+		}
+		exp := int16(0)
+		j := i
+		for i < l {
+			if s[i] >= '0' && s[i] <= '9' {
+				exp = exp*10 + int16(s[i]-'0')
+				i++
+				if exp > 32 {
+					// The exponent may be too big for float64.
+					// Fall back to standard parsing.
+					f, err := strconv.ParseFloat(string(s), 64)
+					if err != nil && !math.IsInf(f, 0) {
+						return 0, errors.New("cannot parse exponent by strconv")
+					}
+					return f, nil
+				}
+				continue
+			}
+			break
+		}
+		if i <= j {
+			return 0, errors.New("cannot parse exponent tail")
+		}
+		if expMinus {
+			exp = -exp
+		}
+		f *= math.Pow10(int(exp))
+		if i >= l {
+			if minus {
+				return -f, nil
+			}
+			return f, nil
+		}
+	}
+	return 0, errors.New("invalid syntax")
 }
 
 func bytesToInt(d []byte) (int, error) {
@@ -623,7 +737,7 @@ func bytesToInt(d []byte) (int, error) {
 	}
 
 	var result int
-	var sign int = 1
+	var sign = 1
 	start := 0
 
 	if d[0] == '-' {
