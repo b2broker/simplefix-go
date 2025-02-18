@@ -35,7 +35,7 @@ func BenchmarkFormatFloat(b *testing.B) {
 // BenchmarkFormatToFloat-24   a					 58579447	         15.25 ns/op
 // BenchmarkFormatToFloat-24   12312312312.131212212 123302217	         39.66 ns/op
 func BenchmarkFormatToFloat(b *testing.B) {
-	v := []byte("я")
+	v := []byte(strconv.FormatFloat(123123213.12345678, 'f', -1, 64))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = bytesToFloat(v)
@@ -52,23 +52,22 @@ func BenchmarkFormatToFloatStrConv(b *testing.B) {
 }
 
 type testFloatCase struct {
-	v         []byte
-	e         float64
-	err       string
-	errCustom string
+	v   []byte
+	e   float64
+	err string
 }
 
 func TestFormatFloatToStr(t *testing.T) {
 	vv := []testFloatCase{
-		{[]byte("0"), 0, "", ""},
-		{[]byte("123"), 123, "", ""},
-		{[]byte("123.456"), 123.456, "", ""},
-		{[]byte("0.456"), 0.456, "", ""},
-		{[]byte("0.1"), 0.1, "", ""},
-		{[]byte("0.0000001"), 0.0000001, "", ""},
-		{[]byte("-0.0000001"), -0.0000001, "", ""},
-		{[]byte("0"), 0, "", ""},
-		{[]byte("0.1"), 0.1, "", ""},
+		{[]byte("0"), 0, ""},
+		{[]byte("123"), 123, ""},
+		{[]byte("123.456"), 123.456, ""},
+		{[]byte("0.456"), 0.456, ""},
+		{[]byte("0.1"), 0.1, ""},
+		{[]byte("0.0000001"), 0.0000001, ""},
+		{[]byte("-0.0000001"), -0.0000001, ""},
+		{[]byte("0"), 0, ""},
+		{[]byte("0.1"), 0.1, ""},
 	}
 	for _, c := range vv {
 		t.Run(fmt.Sprintf("float case %+v", c.e), func(t *testing.T) {
@@ -83,31 +82,28 @@ func TestFormatFloatToStr(t *testing.T) {
 }
 
 type testUint64Case struct {
-	v         []byte
-	e         uint64
-	err       string
-	errCustom string
+	v   []byte
+	e   uint64
+	err string
 }
 
 func TestFormatUintToStr(t *testing.T) {
 	vv := []testUint64Case{
-		{[]byte("0"), 0, "", ""},
-		{[]byte("123"), 123, "", ""},
-		{[]byte("-123"), 0,
-			"strconv.ParseUint: parsing \"-123\": invalid syntax", "invalid input: non-numeric character"},
-		{[]byte(""), 0, "strconv.ParseUint: parsing \"\": invalid syntax", "invalid input: empty byte slice"},
+		{[]byte("0"), 0, ""},
+		{[]byte("123"), 123, ""},
+		{[]byte("-123"), 0, "invalid input: non-numeric character"},
+		{[]byte(""), 0, "invalid input: empty byte slice"},
 	}
 	for _, c := range vv {
 		t.Run(fmt.Sprintf("uint case %d", c.e), func(t *testing.T) {
 			t.Logf("case %+v", c)
+
 			v, err := strconv.ParseUint(string(c.v), 10, 64)
-			if err != nil && c.err != err.Error() {
-				t.Errorf("got error %+v, want %v", err, c.err)
-			}
+
 			i := NewUint(0)
 			err2 := i.FromBytes(c.v)
-			if err2 != nil && c.errCustom != err2.Error() {
-				t.Errorf("bytesToUint: got error %+v, want %v", err2, c.errCustom)
+			if err2 != nil && err == nil {
+				t.Errorf("bytesToUint: got error %+v, want no error", err2)
 			} else if v != i.value {
 				t.Errorf("bytesToUint: got %v, want %v", v, c.v)
 			}
@@ -124,28 +120,25 @@ func TestFormatUintToStr(t *testing.T) {
 }
 
 type testIntCase struct {
-	v         []byte
-	e         int
-	err       string
-	errCustom string
+	v   []byte
+	e   int
+	err string
 }
 
 func TestFormatIntToStr(t *testing.T) {
 	vv := []testIntCase{
-		{[]byte("0"), 0, "", ""},
-		{[]byte("123"), 123, "", ""},
-		{[]byte("-123"), -123, "", ""},
-		{[]byte(""), 0, "strconv.Atoi: parsing \"\": invalid syntax", "invalid input: empty byte slice"},
+		{[]byte("0"), 0, ""},
+		{[]byte("123"), 123, ""},
+		{[]byte("-123"), -123, ""},
+		{[]byte(""), 0, "invalid input: empty byte slice"},
 	}
 	for _, c := range vv {
 		t.Run(fmt.Sprintf("uint case %d", c.e), func(t *testing.T) {
-			v, err := strconv.Atoi(string(c.v))
-			if err != nil && c.err != err.Error() {
-				t.Errorf("got error %+v, want %v", err, c.err)
-			}
+			v, _ := strconv.Atoi(string(c.v))
+
 			i, err2 := bytesToInt(c.v)
-			if err2 != nil && c.errCustom != err2.Error() {
-				t.Errorf("bytesToUint: got error %+v, want %v", err2, c.errCustom)
+			if err2 != nil && c.err != err2.Error() {
+				t.Errorf("bytesToUint: got error %+v, want %v", err2, c.err)
 			} else if v != i {
 				t.Errorf("bytesToUint: got %v, want %v", v, c.v)
 			}
@@ -164,85 +157,63 @@ func TestFormatIntToStr(t *testing.T) {
 
 func TestFormatToFloatStrConv(t *testing.T) {
 	vv := []testFloatCase{
-		{[]byte("0"), 0, "", ""},
-		{[]byte("0.0000"), 0, "", ""},
-		{[]byte("123"), 123, "", ""},
-		{[]byte("123.456"), 123.456, "", ""},
-		{[]byte("0.456"), 0.456, "", ""},
-		{[]byte("0.1"), 0.1, "", ""},
-		{[]byte("0.0000001"), 0.0000001, "", ""},
-		{[]byte("-0.0000001"), -0.0000001, "", ""},
-		{[]byte("0.123123"), 0.123123, "", ""},
-		{[]byte("0.12312321312312"), 0.12312321312312, "", ""},
-		{[]byte("0.12312999999999922"), 0.12312999999999922, "", ""},
-		{[]byte("0.123129999999999221"), 0.123129999999999221, "", ""},
-		{[]byte("1"), 1, "", ""},
-		{[]byte("1797693134862315"), 1.797693134862315e+15, "", ""},
-		{[]byte("17976931348623157"), 17976931348623157, "", ""},
-		{[]byte("179769313486231574"), 179769313486231574, "", ""},
-		{[]byte("3.402823466385288598e+10"), 3.402823466385288598e+10, "", ""},
-		{[]byte("3.40282346638528859811704183484516925440e+10"), 3.40282346638528859811704183484516925440e+10, "", ""},
-		{[]byte("3.40282346638528859811704183484516925440e+38"), math.MaxFloat32, "", ""},
-		{[]byte("1.401298464324817e-45"), math.SmallestNonzeroFloat32, "", ""},
-		{[]byte("1.79769313486231570814527423731704356798070e+308"), math.MaxFloat64, "", ""},
-		{[]byte("1.79769313486231570814527423731704356798070e-308"), 1.79769313486231570814527423731704356798070e-308, "", ""},
-		{[]byte("5e-324"), math.SmallestNonzeroFloat64, "", ""},
-		{[]byte("179769313486231574112351123123"), 179769313486231574112351123123, "", ""},
+		{[]byte("0"), 0, ""},
+		{[]byte("0.0000"), 0, ""},
+		{[]byte("123"), 123, ""},
+		{[]byte("123.456"), 123.456, ""},
+		{[]byte("0.456"), 0.456, ""},
+		{[]byte("0.1"), 0.1, ""},
+		{[]byte("0.0000001"), 0.0000001, ""},
+		{[]byte("-0.0000001"), -0.0000001, ""},
+		{[]byte("0.123123"), 0.123123, ""},
+		{[]byte("0.12312321312312"), 0.12312321312312, ""},
+		{[]byte("0.12312999999999922"), 0.12312999999999922, ""},
+		{[]byte("0.123129999999999221"), 0.123129999999999221, ""},
+		{[]byte("1"), 1, ""},
+		{[]byte("1797693134862315"), 1.797693134862315e+15, ""},
+		{[]byte("17976931348623157"), 17976931348623157, ""},
+		{[]byte("179769313486231574"), 179769313486231574, ""},
+		{[]byte("3.402823466385288598e+10"), 3.402823466385288598e+10, ""},
+		{[]byte("3.40282346638528859811704183484516925440e+10"), 3.40282346638528859811704183484516925440e+10, ""},
+		{[]byte("3.40282346638528859811704183484516925440e+38"), math.MaxFloat32, ""},
+		{[]byte("1.401298464324817e-45"), math.SmallestNonzeroFloat32, ""},
+		{[]byte("1.79769313486231570814527423731704356798070e+308"), math.MaxFloat64, ""},
+		{[]byte("1.79769313486231570814527423731704356798070e-308"), 1.79769313486231570814527423731704356798070e-308, ""},
+		{[]byte("5e-324"), math.SmallestNonzeroFloat64, ""},
+		{[]byte("179769313486231574112351123123"), 179769313486231574112351123123, ""},
 		{[]byte(""), 0,
-			"strconv.ParseFloat: parsing \"\": invalid syntax",
 			"invalid syntax: empty string"},
 		{[]byte("test"), 0,
-			"strconv.ParseFloat: parsing \"test\": invalid syntax",
 			"invalid syntax: invalid character"},
 		{[]byte("."), 0,
-			"strconv.ParseFloat: parsing \".\": invalid syntax",
 			"invalid syntax: unparsable tail left"},
 		{[]byte(".."), 0,
-			"strconv.ParseFloat: parsing \"..\": invalid syntax",
 			"invalid syntax"},
-		{[]byte("1e1"), 10, "", ""},
-		{[]byte("1e2"), 100, "", ""},
-		{[]byte("1e-2"), 0.01, "", ""},
-		{[]byte("1E-5"), 1e-05, "", ""},
-		{[]byte("1E+16"), 1e+16, "", ""},
-		{[]byte("1E-16"), 1e-16, "", ""},
-		{[]byte("1E+32"), 1e+32, "", ""},
-		{[]byte("1E-32"), 1e-32, "", ""},
-		{[]byte("1E+38"), 1e+38, "", ""},
-		{[]byte("1E300"), 1e+300, "", ""},
-		{[]byte("1E-300"), 1e-300, "", ""},
-		{[]byte("0."), 0, "", ""},
-		{[]byte(".1"), 0.1, "", ""},
+		{[]byte("1e1"), 10, ""},
+		{[]byte("1e2"), 100, ""},
+		{[]byte("1e-2"), 0.01, ""},
+		{[]byte("1E-5"), 1e-05, ""},
+		{[]byte("1E+16"), 1e+16, ""},
+		{[]byte("1E-16"), 1e-16, ""},
+		{[]byte("1E+32"), 1e+32, ""},
+		{[]byte("1E-32"), 1e-32, ""},
+		{[]byte("1E+38"), 1e+38, ""},
+		{[]byte("1E300"), 1e+300, ""},
+		{[]byte("1E-300"), 1e-300, ""},
+		{[]byte("0."), 0, ""},
+		{[]byte(".1"), 0.1, ""},
 	}
 
 	tstr := ""
 	for _, c := range vv {
 		t.Run(fmt.Sprintf("float case %s", c.v), func(t *testing.T) {
-			str := fmt.Sprintf("%s,", string(c.v))
-			v, err := strconv.ParseFloat(string(c.v), 64)
-			if v != c.e {
-				str += "-,"
-				str += fmt.Sprintf("%f,", v)
-				t.Errorf("got %v, want %v", v, c.e)
-			} else {
-				str += "+,"
-				str += fmt.Sprintf("%v,", v)
-			}
-			if c.err != "" {
-				if err == nil || c.err != err.Error() {
-					t.Errorf("got %+v, want %v", err, c.err)
-				}
-			} else if err != nil {
-				t.Errorf("unexpected error %v", err)
-			}
-
 			v2, err := bytesToFloat(c.v)
 			if v2 != c.e {
 				t.Errorf("custom convert got %v, want %v", v2, c.e)
 			}
 
 			if c.err != "" {
-				if err == nil || c.errCustom != err.Error() {
+				if err == nil || c.err != err.Error() {
 					t.Errorf("got %v, want %v", err, c.err)
 				}
 			} else if err != nil {

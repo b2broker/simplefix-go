@@ -628,14 +628,9 @@ func bytesToFloat(s []byte) (float64, error) {
 	f := float64(d)
 	if s[0] != '.' || l == 1 {
 		if i <= j {
-			ss := s[i:]
-			if bytes.HasPrefix(ss, []byte{'+'}) {
-				ss = ss[1:]
-			}
 			return 0, errors.New("invalid syntax: unparsable tail left")
 		}
 		if i >= l {
-			// Fast path - just integer.
 			if minus {
 				return -f, nil
 			}
