@@ -1,6 +1,7 @@
 package fix
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 )
@@ -8,7 +9,9 @@ import (
 // Item is an interface providing a method required to implement basic FIX item functionality.
 type Item interface {
 	ToBytes() []byte
+	WriteBytes(writer *bytes.Buffer) bool
 	String() string
+	IsEmpty() bool
 }
 
 // Items is an array of Item elements.
@@ -24,6 +27,34 @@ func (v Items) ToBytes() []byte {
 		}
 	}
 	return joinBody(msg...)
+}
+
+func (v Items) IsEmpty() bool {
+	for _, item := range v {
+		if !item.IsEmpty() {
+			return false
+		}
+	}
+	return true
+}
+
+func (v Items) WriteBytes(writer *bytes.Buffer) bool {
+	addDelimeter := false
+	written := false
+	for i, item := range v {
+		if !item.IsEmpty() && addDelimeter {
+			_ = writer.WriteByte(DelimiterChar)
+			addDelimeter = false
+		}
+		if item.WriteBytes(writer) {
+			written = true
+			if i <= len(v)-1 {
+				addDelimeter = true
+			}
+		}
+	}
+
+	return written
 }
 
 // String returns a string representation of an Items array.

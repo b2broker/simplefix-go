@@ -3,9 +3,10 @@ package encoding
 import (
 	"bytes"
 	"fmt"
+	"reflect"
+
 	"github.com/b2broker/simplefix-go/fix"
 	"github.com/b2broker/simplefix-go/session/messages"
-	"reflect"
 )
 
 type Validator interface {
@@ -213,7 +214,7 @@ func validateRaw(msg messages.Builder, d []byte, strict bool) error {
 		)
 	}
 
-	checkSum := fix.CalcCheckSum(d[:offset+length-1])
+	checkSum := fix.CalcCheckSumOptimized(d[:offset+length-1])
 
 	if !bytes.Equal(cs.Load().ToBytes(), checkSum) {
 		return fmt.Errorf(

@@ -1,5 +1,9 @@
 package messages
 
+import (
+	"github.com/b2broker/simplefix-go/fix/buffer"
+)
+
 // Tags is a structure specifying the required tags for session pipelines.
 type Tags struct {
 	MsgType         int
@@ -28,4 +32,5 @@ type Message interface {
 	HeaderBuilder() HeaderBuilder
 	MsgType() string
 	ToBytes() ([]byte, error)
+	ToBytesBuffered(buffers *buffer.MessageByteBuffers) ([]byte, error)
 }

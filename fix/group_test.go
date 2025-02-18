@@ -118,6 +118,17 @@ func TestGroup_AddItem(t *testing.T) {
 		t.Log(len(res), string(res))
 		t.Fatalf("message length is not equal")
 	}
+
+	converter := NewMessageByteConverter(200)
+	res, err = converter.ConvertToBytes(msg)
+	if err != nil {
+		t.Fatalf("could not marshal message: %s", err)
+	}
+	if !bytes.Equal(testMsg, res) {
+		t.Log(len(testMsg), string(testMsg))
+		t.Log(len(res), string(res))
+		t.Fatalf("message length is not equal")
+	}
 }
 
 func TestGroup_Parse(t *testing.T) {

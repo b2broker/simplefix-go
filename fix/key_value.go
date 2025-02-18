@@ -50,6 +50,31 @@ func (kv *KeyValue) ToBytes() []byte {
 		[]byte(kv.Key), v,
 	}, []byte{61})
 }
+func (kv *KeyValue) IsNull() bool {
+	if kv == nil || kv.Value == nil || kv.Value.IsNull() {
+		return false
+	}
+	return kv.Value.IsNull()
+}
+func (kv *KeyValue) IsEmpty() bool {
+	if kv.IsNull() {
+		return true
+	}
+	return kv.Value.IsEmpty()
+}
+func (kv *KeyValue) WriteBytes(writer *bytes.Buffer) bool {
+	if kv == nil || kv.Value == nil || kv.Value.IsNull() {
+		return false
+	}
+	if kv.Value.IsEmpty() {
+		return false
+	}
+	_, _ = writer.WriteString(kv.Key)
+	_ = writer.WriteByte('=')
+	kv.Value.WriteBytes(writer)
+
+	return true
+}
 
 // Set replaces a specified value.
 func (kv *KeyValue) Set(value Value) {
@@ -79,12 +104,11 @@ type KeyValues []*KeyValue
 
 // ToBytes returns a byte representation of a KeyValues array.
 func (kvs KeyValues) ToBytes() []byte {
-	var msg [][]byte
-	for _, kv := range kvs {
-		if len(kv.Value.ToBytes()) > 0 {
-			msg = append(msg, kv.ToBytes())
+	buffer := bytes.NewBuffer([]byte{})
+	for i, kv := range kvs {
+		if kv.WriteBytes(buffer) && i < len(kvs)-1 {
+			buffer.WriteByte(DelimiterChar)
 		}
 	}
-
-	return joinBody(msg...)
+	return buffer.Bytes()
 }

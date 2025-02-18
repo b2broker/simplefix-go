@@ -1,6 +1,7 @@
 package fix
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 )
@@ -60,6 +61,36 @@ func (g *Group) ToBytes() []byte {
 		}
 	}
 	return joinBody(msg...)
+}
+
+// always have size tag
+func (g *Group) IsEmpty() bool {
+	return false
+}
+
+func (g *Group) WriteBytes(writer *bytes.Buffer) bool {
+
+	if len(g.items) == 0 {
+		return false
+	}
+	intVal := NewInt(len(g.items))
+	NewKeyValue(g.noTag, intVal).WriteBytes(writer)
+
+	_ = writer.WriteByte(DelimiterChar)
+
+	addDelimeter := false
+	for i, item := range g.items {
+		if !item.IsEmpty() && addDelimeter {
+			_ = writer.WriteByte(DelimiterChar)
+			addDelimeter = false
+		}
+		if item.WriteBytes(writer) {
+			if i <= len(g.items)-1 {
+				addDelimeter = true
+			}
+		}
+	}
+	return true
 }
 
 // AddEntry adds a new entry with the same list of tags as in a specified group.

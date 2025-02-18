@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/b2broker/simplefix-go/fix"
+	"github.com/b2broker/simplefix-go/fix/buffer"
 	"github.com/b2broker/simplefix-go/session/messages"
 	"github.com/b2broker/simplefix-go/utils"
 )
@@ -18,6 +19,7 @@ type SendingMessage interface {
 	HeaderBuilder() messages.HeaderBuilder
 	MsgType() string
 	ToBytes() ([]byte, error)
+	ToBytesBuffered(buffers *buffer.MessageByteBuffers) ([]byte, error)
 }
 
 // DefaultHandler is a standard handler for the Acceptor and Initiator objects.
@@ -30,7 +32,8 @@ type DefaultHandler struct {
 	incomingHandlers IncomingHandlerPool
 	outgoingHandlers OutgoingHandlerPool
 
-	eventHandlers *utils.EventHandlerPool
+	eventHandlers    *utils.EventHandlerPool
+	messageConverter *fix.MessageByteConverter
 
 	msgTypeTag string
 
@@ -51,6 +54,7 @@ func NewAcceptorHandler(ctx context.Context, msgTypeTag string, bufferSize int) 
 
 		incomingHandlers: NewIncomingHandlerPool(),
 		outgoingHandlers: NewOutgoingHandlerPool(),
+		messageConverter: fix.NewMessageByteConverter(500),
 	}
 
 	sh.ctx, sh.cancel = context.WithCancel(ctx)
@@ -70,6 +74,7 @@ func NewInitiatorHandler(ctx context.Context, msgTypeTag string, bufferSize int)
 
 		incomingHandlers: NewIncomingHandlerPool(),
 		outgoingHandlers: NewOutgoingHandlerPool(),
+		messageConverter: fix.NewMessageByteConverter(500),
 	}
 
 	sh.ctx, sh.cancel = context.WithCancel(ctx)
@@ -109,6 +114,29 @@ func (h *DefaultHandler) send(msg SendingMessage) error {
 	return h.sendRaw(data)
 }
 
+func (h *DefaultHandler) sendBuffered(msg SendingMessage) error {
+	ok := h.outgoingHandlers.Range(AllMsgTypes, func(handle OutgoingHandlerFunc) bool {
+		return handle(msg)
+	})
+	if !ok {
+		return errors.New("the handler for all message types has refused the message and returned false")
+	}
+
+	ok = h.outgoingHandlers.Range(msg.MsgType(), func(handle OutgoingHandlerFunc) bool {
+		return handle(msg)
+	})
+	if !ok {
+		return errors.New("the handler for the current type has refused the message and returned false")
+	}
+
+	data, err := h.messageConverter.ConvertToBytes(msg)
+	if err != nil {
+		return errors.New("failed to convert message to bytes: " + err.Error())
+	}
+
+	return h.sendRaw(data)
+}
+
 // SendRaw sends a message in the byte array format
 // without involving any additional handlers.
 func (h *DefaultHandler) SendRaw(data []byte) error {
@@ -121,6 +149,12 @@ func (h *DefaultHandler) Send(message SendingMessage) error {
 	defer h.mu.Unlock()
 
 	return h.send(message)
+}
+func (h *DefaultHandler) SendBuffered(message SendingMessage) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	return h.sendBuffered(message)
 }
 
 // SendBatch is a function that sends previously prepared messages.
