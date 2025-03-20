@@ -7,6 +7,7 @@ import (
 	"math"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/b2broker/simplefix-go/fix/encoding"
@@ -87,8 +88,7 @@ type Session struct {
 	*Opts
 	side Side
 
-	state   LogonState
-	stateMu sync.RWMutex
+	state atomic.Int64
 
 	// Services:
 	Router       Handler
@@ -204,9 +204,7 @@ func newSession(opts *Opts, handler Handler, settings *LogonSettings, cs Counter
 }
 
 func (s *Session) changeState(state LogonState, isEventTriggerRequired bool) {
-	s.stateMu.Lock()
-	s.state = state
-	s.stateMu.Unlock()
+	s.state.Store(int64(state))
 
 	if !isEventTriggerRequired {
 		return
@@ -252,7 +250,7 @@ func (s *Session) setStorageCallbacks() {
 	})
 
 	s.Router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
-		if s.state != WaitingLogonAnswer && s.state != WaitingLogon {
+		if state := s.State(); state != WaitingLogonAnswer && state != WaitingLogon {
 			seqNum, err := fix.ValueByTag(msg, strconv.Itoa(s.Tags.MsgSeqNum))
 			if err != nil {
 				return true
@@ -380,7 +378,7 @@ func (s *Session) Run() (err error) {
 			return true
 		}
 
-		switch s.state {
+		switch s.State() {
 		case WaitingLogon:
 			s.LogonSettings = &LogonSettings{
 				HeartBtInt:      incomingLogon.HeartBtInt(),
@@ -442,7 +440,7 @@ func (s *Session) Run() (err error) {
 			return true
 		}
 
-		switch s.state {
+		switch s.State() {
 		case WaitingLogoutAnswer:
 			s.changeState(ReceivedLogoutAnswer, true)
 			s.changeState(WaitingLogon, true)
@@ -477,7 +475,7 @@ func (s *Session) Run() (err error) {
 			return true
 		}
 
-		if s.state == WaitingTestReqAnswer {
+		if s.State() == WaitingTestReqAnswer {
 			// reset SuccessfulLogged statue without event trigger
 			s.changeState(SuccessfulLogged, false)
 		}
@@ -545,7 +543,7 @@ func (s *Session) start() error {
 
 	s.Router.HandleIncoming(simplefixgo.AllMsgTypes, func(msg []byte) bool {
 		incomingMsgTimer.Refresh()
-		if s.state == WaitingTestReqAnswer {
+		if s.State() == WaitingTestReqAnswer {
 			s.changeState(SuccessfulLogged, false)
 		}
 
@@ -568,7 +566,7 @@ func (s *Session) start() error {
 			default:
 			}
 
-			if s.state == WaitingTestReqAnswer {
+			if s.State() == WaitingTestReqAnswer {
 				s.changeState(Disconnect, true)
 				return
 			}
@@ -690,10 +688,7 @@ func (s *Session) sendWithErrorCheck(msg messages.Message) {
 }
 
 func (s *Session) IsLogged() bool {
-	s.stateMu.RLock()
-	defer s.stateMu.RUnlock()
-
-	return s.state == SuccessfulLogged
+	return s.State() == SuccessfulLogged
 }
 
 func (s *Session) Context() context.Context {
@@ -740,4 +735,8 @@ func (s *Session) Stop() (err error) {
 	})
 
 	return nil
+}
+
+func (s *Session) State() LogonState {
+	return LogonState(s.state.Load())
 }
