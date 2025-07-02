@@ -19,6 +19,7 @@ type MessageBuilders struct {
 	NewOrderSingleBuilder     messages.NewOrderSingleBuilder
 	MarketDataRequestBuilder  messages.MarketDataRequestBuilder
 	OrderCancelRequestBuilder messages.OrderCancelRequestBuilder
+	OrderCancelRejectBuilder  messages.OrderCancelRejectBuilder
 }
 
 // Opts is a structure providing auto-generated Session options.

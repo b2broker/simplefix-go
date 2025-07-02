@@ -56,4 +56,5 @@ var DefaultFlowFields = map[string][]string{
 	"NewOrderSingle":     nil,
 	"MarketDataRequest":  nil,
 	"OrderCancelRequest": nil,
+	"OrderCancelReject":  nil,
 }
