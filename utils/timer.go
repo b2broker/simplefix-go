@@ -62,6 +62,7 @@ func (t *Timer) Refresh() {
 func (t *Timer) TakeTimeout() {
 	t.Refresh()
 	ticker := time.NewTicker(t.checkingTimeout)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
