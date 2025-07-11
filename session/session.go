@@ -517,8 +517,8 @@ func (s *Session) processIncSeq(incomingLogon messages.LogonBuilder) {
 
 	if currSeqNum+1 < incSeqNum {
 		resendMsg := s.MessageBuilders.ResendRequestBuilder.New()
-		resendMsg.SetFieldBeginSeqNo(currSeqNum)
-		resendMsg.SetFieldEndSeqNo(0)
+		resendMsg.SetFieldBeginSeqNo(currSeqNum + 1)
+		resendMsg.SetFieldEndSeqNo(incSeqNum - 1)
 		s.sendWithErrorCheck(resendMsg)
 	}
 
